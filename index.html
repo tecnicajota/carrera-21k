@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-colores-split">
+<meta name="totem-version" content="2026-08-11-mapa-simple">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -725,6 +725,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --hidra:var(--ba-verde);
   --tarjeta:#FFFFFF;
   --boton:#FFFFFF;              /* fondo de botones */
+  --standby:var(--ba-papel);    /* pantalla stand-by / attract */
   --linea:rgba(24,50,70,.22);
   --sombra:0 12px 40px rgba(24,50,70,.18);
 }
@@ -741,6 +742,7 @@ body.noche{
   --hidra:var(--ba-fluo);
   --tarjeta:var(--ba-verde);
   --boton:var(--ba-verde);
+  --standby:var(--ba-azul);
   --linea:rgba(243,242,241,.22);
   --sombra:0 12px 50px rgba(0,0,0,.55);
 }
@@ -864,6 +866,25 @@ path.trazaRuta{
   58%{opacity:0;}
   100%{opacity:0;}
 }
+
+/* etiquetas de avenidas / calles del circuito */
+.calleLabel{
+  font-family:'Montserrat',sans-serif;
+  font-weight:700;
+  font-size:11px;
+  letter-spacing:.02em;
+  color:var(--tinta);
+  white-space:nowrap;
+  pointer-events:none;
+  transform:translate(-50%, -50%);
+  text-shadow:
+    0 0 3px var(--fondo),
+    0 1px 2px var(--fondo),
+    1px 0 2px var(--fondo),
+    -1px 0 2px var(--fondo);
+  opacity:.92;
+}
+body.noche .calleLabel{opacity:.88;}
 
 /* marcadores de km */
 .kmIcono{
@@ -1230,7 +1251,7 @@ path.trazaRuta{
 
 /* ---------- ATTRACT ---------- */
 #attract{
-  position:absolute;inset:0;z-index:1100;background:var(--fondo);
+  position:absolute;inset:0;z-index:1100;background:var(--standby);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;padding:40px;gap:6px;
   opacity:1;transition:opacity .5s ease;
@@ -1751,8 +1772,8 @@ const CFG = {
   /* Positron: mapa minimalista (avenidas y barrios, sin íconos).
      Si estos tiles no cargan en la red del tótem, el respaldo
      OSM entra solo. */
-  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-  tilesRespaldo: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
+  tilesRespaldo: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
@@ -1831,6 +1852,16 @@ capaDia.on("tileerror", ()=>{
 });
 setTimeout(()=>{ if(tilesOk === 0) activarRespaldo(); }, 6000);
 
+/* capas: huellas abajo, km al medio, hitos arriba */
+map.createPane("huellas");
+map.getPane("huellas").style.zIndex = 450;
+map.createPane("kms");
+map.getPane("kms").style.zIndex = 550;
+map.createPane("calles");
+map.getPane("calles").style.zIndex = 460;
+map.createPane("hitos");
+map.getPane("hitos").style.zIndex = 650;
+
 function padMapa(){
   const w = window.innerWidth, h = window.innerHeight;
   if(h < 500) return [24, 24];
@@ -1902,7 +1933,9 @@ function generarHuellas(){
               <path class="surcos" d="M -5.2,-7 H 5 M -5.4,-3 H 5.4 M -4.6,1 H 4.2 M -4,5 H 3.8 M -3,9.5 H 3"/>
             </svg>`
     });
-    capaHuellas.addLayer(L.marker(latlng, {icon:icono, interactive:false, keyboard:false}));
+    capaHuellas.addLayer(L.marker(latlng, {
+      icon:icono, interactive:false, keyboard:false, pane:"huellas"
+    }));
   }
 }
 
@@ -1916,7 +1949,7 @@ function renderKms(){
   for(let n = 1; n <= 21; n++){
     const {latlng} = puntoEn(n * porKm);
     capaKms.addLayer(L.marker(latlng, {
-      interactive:false, keyboard:false,
+      interactive:false, keyboard:false, pane:"kms",
       icon: L.divIcon({className:"", iconSize:[30,30], iconAnchor:[15,15],
         html:`<div class="kmIcono">${n}</div>`})
     }));
@@ -1924,7 +1957,7 @@ function renderKms(){
   HIDRA_KM.forEach(km=>{
     const {latlng} = puntoEn(km * porKm);
     capaKms.addLayer(L.marker(latlng, {
-      interactive:false, keyboard:false,
+      interactive:false, keyboard:false, pane:"kms",
       icon: L.divIcon({className:"", iconSize:[20,20], iconAnchor:[10,-4],
         html:`<div class="hidraIcono">≈</div>`})
     }));
@@ -1939,6 +1972,8 @@ function renderHitos(){
   HITOS.forEach((h,i)=>{
     const pin = L.marker(h.geo, {
       keyboard:true,
+      pane:"hitos",
+      zIndexOffset: 800,
       icon: L.divIcon({
         className:"", iconSize:[36,36], iconAnchor:[18,18],
         html:`<div class="pinIcono" id="pin-${h.id}" style="width:36px;height:36px;--delay:${(i*0.35).toFixed(2)}s">
@@ -1951,6 +1986,90 @@ function renderHitos(){
   });
   document.getElementById("statHitos").textContent = HITOS.length;
 }
+
+/* Etiquetas: solo avenidas / calles importantes cerca del recorrido */
+const capaCalles = L.layerGroup().addTo(map);
+const RANGO_HW = {motorway:0, trunk:1, primary:2, secondary:3, tertiary:4};
+function muestrasRuta(pasoM){
+  const pts = [];
+  for(let m = 0; m < LARGO_TOTAL; m += pasoM){
+    pts.push(puntoEn(m).latlng);
+  }
+  return pts;
+}
+function cercaDeRuta(lat, lng, muestras, maxM){
+  let min = Infinity;
+  for(const p of muestras){
+    const d = haversine(p, [lat, lng]);
+    if(d < min) min = d;
+    if(min <= maxM) return true;
+  }
+  return false;
+}
+function nombreCortoCalle(name){
+  return String(name || "")
+    .replace(/^Avenida\s+/i, "Av. ")
+    .replace(/^Avenida\s+del?\s+/i, "Av. ")
+    .trim();
+}
+async function cargarEtiquetasCalles(){
+  const b = bounds.pad(0.06);
+  const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
+  const query = `[out:json][timeout:45];
+(
+  way["highway"~"^(motorway|trunk|primary|secondary)$"]["name"](${bbox});
+  way["highway"="tertiary"]["name"~"^(Avenida|Av\\.|Diagonal|Paseo)"](${bbox});
+);
+out center tags;`;
+  const endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter"
+  ];
+  let elements = null;
+  for(const endpoint of endpoints){
+    try{
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: "data=" + encodeURIComponent(query),
+        headers: {"Content-Type": "application/x-www-form-urlencoded"}
+      });
+      if(!res.ok) continue;
+      const data = await res.json();
+      elements = data.elements || [];
+      break;
+    }catch(_){}
+  }
+  if(!elements || !elements.length) return;
+  const muestras = muestrasRuta(180);
+  const vistos = new Map();
+  for(const el of elements){
+    if(!el.center || !el.tags || !el.tags.name) continue;
+    const hw = el.tags.highway;
+    const rank = RANGO_HW[hw];
+    if(rank == null) continue;
+    const lat = el.center.lat, lng = el.center.lon;
+    if(!cercaDeRuta(lat, lng, muestras, 110)) continue;
+    const key = el.tags.name.toLowerCase();
+    const prev = vistos.get(key);
+    if(prev && prev.rank <= rank) continue;
+    vistos.set(key, {rank, lat, lng, name: nombreCortoCalle(el.tags.name)});
+  }
+  const lista = [...vistos.values()].sort((a,b)=> a.rank - b.rank).slice(0, 36);
+  capaCalles.clearLayers();
+  lista.forEach(c=>{
+    capaCalles.addLayer(L.marker([c.lat, c.lng], {
+      interactive:false, keyboard:false, pane:"calles",
+      icon: L.divIcon({
+        className: "",
+        html: `<div class="calleLabel">${c.name}</div>`,
+        iconSize: [1, 1],
+        iconAnchor: [0, 0]
+      })
+    }));
+  });
+}
+cargarEtiquetasCalles();
+
 function marcarActivo(id){
   HITOS.forEach(h=>{
     const pinEl = document.getElementById("pin-" + h.id);
@@ -2541,7 +2660,8 @@ const TEMA_DEFAULT = {
       acento: "#EF981F",
       hidra: "#054D4B",
       tarjeta: "#FFFFFF",
-      boton: "#FFFFFF"
+      boton: "#FFFFFF",
+      standby: "#F3F2F1"
     },
     filters: { sat: 1.22, hue: 6, bri: 1.03, con: 1.06, inv: 0 }
   },
@@ -2558,13 +2678,15 @@ const TEMA_DEFAULT = {
       acento: "#5E992E",
       hidra: "#5E992E",
       tarjeta: "#054D4B",
-      boton: "#054D4B"
+      boton: "#054D4B",
+      standby: "#183246"
     },
     filters: { sat: 1.18, hue: 180, bri: 1.1, con: 0.94, inv: 1 }
   }
 };
 const COLOR_LABELS = {
-  fondo: "Fondo",
+  fondo: "Fondo mapa / UI",
+  standby: "Fondo stand-by",
   boton: "Fondo botones",
   marca: "21K (marca)",
   km: "Círculos km",
@@ -2610,7 +2732,7 @@ function cssTemaLive(){
   --fondo:${col(modo,"fondo")};--tinta:${col(modo,"tinta")};--tinta-suave:${col(modo,"tinta-suave")};
   --ruta:${col(modo,"ruta")};--km:${col(modo,"km")};--km-num:${col(modo,"km-num")};
   --hito:${col(modo,"hito")};--marca:${col(modo,"marca")};--acento:${col(modo,"acento")};
-  --hidra:${col(modo,"hidra")};--tarjeta:${col(modo,"tarjeta")};--boton:${col(modo,"boton")};`;
+  --hidra:${col(modo,"hidra")};--tarjeta:${col(modo,"tarjeta")};--boton:${col(modo,"boton")};--standby:${col(modo,"standby")};`;
   return `
 :root{
   ${block(d)}
