@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-popup-mapa">
+<meta name="totem-version" content="2026-08-11-color-blend-zoomout">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -810,25 +810,26 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* mapa claro (como la ref AI) + degradé fusionado con multiply */
+/* mapa claro + contraste alto para letras más oscuras;
+   el degradé se fusiona con blend "color" (tinte sin lavar el texto) */
 .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.55))
-    brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
-    contrast(var(--map-con, 1.08));
+    saturate(var(--map-sat, 0.35))
+    brightness(calc(var(--map-bri, 0.94) * (1 - var(--map-dark, 0.08) * 0.55)))
+    contrast(var(--map-con, 1.28));
 }
 body.noche .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.55))
-    brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
-    contrast(var(--map-con, 1.08));
+    saturate(var(--map-sat, 0.35))
+    brightness(calc(var(--map-bri, 0.94) * (1 - var(--map-dark, 0.08) * 0.55)))
+    contrast(var(--map-con, 1.28));
 }
 
-/* degradé CSS unido al mapa (multiply = calles toman el color del filtro) */
+/* color = mantiene luminosidad del mapa (letras oscuras) + tinte del degradé */
 .leaflet-tinte-pane{
   z-index:350;
   pointer-events:none;
-  mix-blend-mode:multiply;
+  mix-blend-mode:color;
   isolation:auto;
 }
 .mapa-tinte{
@@ -841,10 +842,10 @@ body.noche .leaflet-tile-pane{
     var(--sb-grad-2, #E7671A) 48%,
     var(--sb-grad-3, #F7C21C) 100%
   );
-  opacity:var(--map-tinte-op, 0.88);
+  opacity:var(--map-tinte-op, 0.92);
 }
-@supports not (mix-blend-mode: multiply){
-  .leaflet-tinte-pane{opacity:0.55;}
+@supports not (mix-blend-mode: color){
+  .leaflet-tinte-pane{mix-blend-mode:multiply; opacity:0.75;}
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -1458,7 +1459,7 @@ header{display:none !important;}
     <div id="tiltStage">
       <div id="mapa"></div>
     </div>
-    <div class="hint">👆 <b>Tocá los corazones</b> y descubrí qué esconde el recorrido · pellizcá para hacer zoom</div>
+    <div class="hint" hidden></div>
     <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar el mapa con el celular">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
@@ -1818,7 +1819,7 @@ map.createPane("tinte");
 map.getPane("tinte").classList.add("leaflet-tinte-pane");
 map.getPane("tinte").style.zIndex = 350;
 map.getPane("tinte").style.pointerEvents = "none";
-map.getPane("tinte").style.mixBlendMode = "multiply";
+map.getPane("tinte").style.mixBlendMode = "color";
 
 const TinteDegrade = L.Layer.extend({
   onAdd(map){
@@ -1963,11 +1964,13 @@ function renderHitos(){
     });
     pin.on("click", ()=> volarYAbrir(h));
     pin.on("popupclose", ()=>{
+      if(S._cerrandoPopup) return;
       if(S.estado === "POPUP" && S.hito && S.hito.id === h.id){
         S.estado = "MAPA";
         S.hito = null;
         marcarActivo(null);
         pausarTiltPorPopup(false);
+        encuadrar(true);
       }
     });
     marcadores[h.id] = pin;
@@ -2022,7 +2025,7 @@ function animarTrazado(){
    9. ESTADO — ATTRACT | MAPA | POPUP
    ============================================================ */
 const S = { estado:"ATTRACT", hito:null, slide:0,
-            tInactividad:null, tSlides:null, tRotador:null };
+            tInactividad:null, tSlides:null, tRotador:null, _cerrandoPopup:false };
 const $ = s => document.querySelector(s);
 const attract = $("#attract");
 const qrModal = document.getElementById("qrModal");
@@ -2042,11 +2045,13 @@ function irA(estado, dato){
   }
   if(estado === "MAPA"){
     attract.classList.add("oculto");
+    const veniaPopup = anterior === "POPUP";
     cerrarPopupDom(); marcarActivo(null); pararRotador();
     if(anterior === "ATTRACT"){
       map.invalidateSize(); ajustarZoomMin();
       animarTrazado();
     }
+    if(veniaPopup) encuadrar(true);
     pausarTiltPorPopup(false);
   }
   if(estado === "POPUP"){
@@ -2061,8 +2066,10 @@ function irA(estado, dato){
    10. POPUP — cartel blanco Leaflet anclado al corazón
    ============================================================ */
 function cerrarPopupDom(){
+  S._cerrandoPopup = true;
   map.closePopup();
   S.hito = null;
+  S._cerrandoPopup = false;
 }
 
 /* ============================================================
@@ -2459,7 +2466,7 @@ initInclinacion();
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v10";
+const TEMA_KEY = "totem21k-tema-v11";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -2477,11 +2484,11 @@ const TEMA_DEFAULT = {
     "tarjeta": "#FFFFFF"
   },
   "filters": {
-    "sat": 0.55,
-    "bri": 1.02,
-    "dark": 0,
-    "con": 1.08,
-    "tinte": 0.88
+    "sat": 0.35,
+    "bri": 0.94,
+    "dark": 0.08,
+    "con": 1.28,
+    "tinte": 0.92
   }
 };
 const COLOR_SECTIONS = [
@@ -2544,7 +2551,7 @@ function cssTemaLive(){
   --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
-  --map-sat:${f.sat ?? 0.55};--map-bri:${f.bri};--map-dark:${f.dark ?? 0};--map-con:${f.con};--map-tinte-op:${f.tinte ?? 0.88};
+  --map-sat:${f.sat ?? 0.35};--map-bri:${f.bri};--map-dark:${f.dark ?? 0.08};--map-con:${f.con};--map-tinte-op:${f.tinte ?? 0.92};
 }`;
 }
 function aplicarTemaLive(){
@@ -2595,7 +2602,7 @@ function renderPanelTema(){
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "tinte" ? 0.88 : key === "dark" ? 0 : key === "sat" ? 0.55 : 1;
+    const fallback = key === "tinte" ? 0.92 : key === "dark" ? 0.08 : key === "sat" ? 0.35 : key === "bri" ? 0.94 : key === "con" ? 1.28 : 1;
     const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
