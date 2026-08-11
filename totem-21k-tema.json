@@ -1,0 +1,50 @@
+{
+  "dia": {
+    "colors": {
+      "fondo": "#F3F2F1",
+      "tinta": "#183246",
+      "tinta-suave": "#5E605F",
+      "ruta": "#183246",
+      "km": "#183246",
+      "km-num": "#F7C21C",
+      "hito": "#EF981F",
+      "marca": "#EF981F",
+      "acento": "#EF981F",
+      "hidra": "#054D4B",
+      "tarjeta": "#FFFFFF",
+      "boton": "#FFFFFF",
+      "standby": "#F3F2F1"
+    },
+    "filters": {
+      "sat": 1.24,
+      "hue": 5,
+      "bri": 0.8,
+      "con": 1.58,
+      "inv": 0
+    }
+  },
+  "noche": {
+    "colors": {
+      "fondo": "#183246",
+      "tinta": "#F3F2F1",
+      "tinta-suave": "#989791",
+      "ruta": "#054D4B",
+      "km": "#F7C21C",
+      "km-num": "#183246",
+      "hito": "#E7671A",
+      "marca": "#5E992E",
+      "acento": "#5E992E",
+      "hidra": "#5E992E",
+      "tarjeta": "#054D4B",
+      "boton": "#054D4B",
+      "standby": "#183246"
+    },
+    "filters": {
+      "sat": 0.98,
+      "hue": 204,
+      "bri": 1.21,
+      "con": 0.95,
+      "inv": 1
+    }
+  }
+}
