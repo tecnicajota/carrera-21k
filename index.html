@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-degrade-vivo">
+<meta name="totem-version" content="2026-08-11-voyager-css-grad">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -810,22 +810,21 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* mapa claro con nombres; el tinte degradé va en pane propio */
+/* mapa estándar (Voyager); el tinte degradé va en pane propio */
 .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.75))
-    brightness(calc(var(--map-bri, 0.92) * (1 - var(--map-dark, 0.12) * 0.55)))
-    contrast(var(--map-con, 1.18));
+    saturate(var(--map-sat, 1))
+    brightness(calc(var(--map-bri, 1) * (1 - var(--map-dark, 0) * 0.55)))
+    contrast(var(--map-con, 1));
 }
-/* sin invert: el mapa se mantiene blanco también en modo noche UI */
 body.noche .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.75))
-    brightness(calc(var(--map-bri, 0.92) * (1 - var(--map-dark, 0.12) * 0.55)))
-    contrast(var(--map-con, 1.18));
+    saturate(var(--map-sat, 1))
+    brightness(calc(var(--map-bri, 1) * (1 - var(--map-dark, 0) * 0.55)))
+    contrast(var(--map-con, 1));
 }
 
-/* degradé editable (mismos colores que stand-by) encima de tiles */
+/* mismo degradé CSS que el stand-by (sin PNG), semi-transparente sobre el mapa */
 .mapa-tinte{
   position:absolute;
   left:0;top:0;
@@ -836,13 +835,7 @@ body.noche .leaflet-tile-pane{
     var(--sb-grad-2, #E7671A) 48%,
     var(--sb-grad-3, #F7C21C) 100%
   );
-  mix-blend-mode:multiply;
-  opacity:var(--map-tinte-op, 0.58);
-}
-@supports not (mix-blend-mode: multiply){
-  .mapa-tinte{
-    opacity:0.42;
-  }
+  opacity:var(--map-tinte-op, 0.5);
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -1301,10 +1294,7 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
 /* ---------- ATTRACT / STAND-BY ---------- */
 #attract{
   position:absolute;inset:0;z-index:1100;
-  background:
-    linear-gradient(135deg, var(--sb-grad-1, #DD3466) 0%, var(--sb-grad-2, #E7671A) 48%, var(--sb-grad-3, #F7C21C) 100%),
-    url("filtro-mapa-degrade.png") center / cover no-repeat;
-  background-blend-mode:multiply;
+  background:linear-gradient(135deg, var(--sb-grad-1, #DD3466) 0%, var(--sb-grad-2, #E7671A) 48%, var(--sb-grad-3, #F7C21C) 100%);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;padding:40px;gap:6px;
   opacity:1;transition:opacity .5s ease, background .4s ease;
@@ -1838,11 +1828,10 @@ const CFG = {
   /* Tiles online (CARTO sobre OpenStreetMap, con atribución).
      Para el tótem offline: bajar los tiles de la zona y cambiar
      estas URLs por http://localhost:8000/{z}/{x}/{y}.png */
-  /* Positron: mapa minimalista (avenidas y barrios, sin íconos).
-     Si estos tiles no cargan en la red del tótem, el respaldo
-     OSM entra solo. */
-  tilesDia: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-  tilesRespaldo: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+  /* Voyager: mapa color estándar con calles y barrios.
+     Respaldo: OSM clásico si Voyager no carga. */
+  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+  tilesRespaldo: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
@@ -2640,7 +2629,7 @@ aplicarModo(true);
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v7";
+const TEMA_KEY = "totem21k-tema-v8";
 const TEMA_DEFAULT = {
   "dia": {
     "colors": {
@@ -2665,11 +2654,11 @@ const TEMA_DEFAULT = {
       "standby": "#F3F2F1"
     },
     "filters": {
-      "sat": 0.72,
-      "bri": 0.9,
-      "dark": 0.18,
-      "con": 1.22,
-      "tinte": 0.58
+      "sat": 1,
+      "bri": 1,
+      "dark": 0,
+      "con": 1.05,
+      "tinte": 0.5
     }
   },
   "noche": {
@@ -2695,11 +2684,11 @@ const TEMA_DEFAULT = {
       "standby": "#183246"
     },
     "filters": {
-      "sat": 0.72,
-      "bri": 0.9,
-      "dark": 0.18,
-      "con": 1.22,
-      "tinte": 0.58
+      "sat": 1,
+      "bri": 1,
+      "dark": 0,
+      "con": 1.05,
+      "tinte": 0.5
     }
   }
 };
@@ -2775,11 +2764,11 @@ function cssTemaLive(){
   return `
 :root{
   ${block(d)}
-  --map-sat:${d.filters.sat ?? 0.72};--map-bri:${d.filters.bri};--map-dark:${d.filters.dark ?? 0.18};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.58};
+  --map-sat:${d.filters.sat ?? 1};--map-bri:${d.filters.bri};--map-dark:${d.filters.dark ?? 0};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.5};
 }
 body.noche{
   ${block(n)}
-  --map-sat:${n.filters.sat ?? 0.72};--map-bri:${n.filters.bri};--map-dark:${n.filters.dark ?? 0.18};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.58};
+  --map-sat:${n.filters.sat ?? 1};--map-bri:${n.filters.bri};--map-dark:${n.filters.dark ?? 0};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.5};
 }`;
 }
 function aplicarTemaLive(){
@@ -2835,7 +2824,7 @@ function renderPanelTema(){
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "tinte" ? 0.58 : key === "dark" ? 0.18 : key === "bri" ? 0.9 : key === "con" ? 1.22 : key === "sat" ? 0.72 : 1;
+    const fallback = key === "tinte" ? 0.5 : key === "dark" ? 0 : 1;
     const val = block.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
