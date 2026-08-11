@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-noche-filtro">
+<meta name="totem-version" content="2026-08-11-brand-dia-noche">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -700,29 +700,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
    ============================================================ */
 
 :root{
-  /* Paleta noche 21K */
-  --fondo:#183246;
-  --tinta:#F2F6F4;
-  --tinta-suave:#9BB5B0;
-  --ruta:#F7C21C;       /* recorrido + km */
-  --hito:#DD3466;       /* puntos de interés */
-  --acento:#5E992E;     /* acentos UI */
-  --hidra:#5E992E;
-  --tarjeta:#054D4B;
-  --linea:rgba(242,246,244,.22);
-  --sombra:0 12px 50px rgba(0,0,0,.55);
+  /* Marca 21K — modo día (board campaña) */
+  --ba-negro:#1B2221;
+  --ba-papel:#F3F2F1;
+  --ba-naranja:#EF981F;
+  --ba-azul:#183246;
+  --ba-verde:#054D4B;
+  --ba-fluo:#5E992E;
+  --ba-heart-1:#F7C21C;
+  --ba-heart-2:#E7671A;
+  --ba-heart-3:#DD3466;
+  --ba-gris:#5E605F;
+  --ba-gris-claro:#989791;
+
+  --fondo:var(--ba-papel);
+  --tinta:var(--ba-azul);
+  --tinta-suave:var(--ba-gris);
+  --ruta:var(--ba-heart-1);     /* recorrido + km */
+  --hito:var(--ba-heart-3);     /* puntos de interés */
+  --acento:var(--ba-naranja);   /* acentos UI día */
+  --hidra:var(--ba-verde);
+  --tarjeta:#FFFFFF;
+  --linea:rgba(24,50,70,.22);
+  --sombra:0 12px 40px rgba(24,50,70,.18);
 }
 body.noche{
-  /* misma paleta (modo noche fijo) */
-  --fondo:#183246;
-  --tinta:#F2F6F4;
-  --tinta-suave:#9BB5B0;
-  --ruta:#F7C21C;
-  --hito:#DD3466;
-  --acento:#5E992E;
-  --hidra:#5E992E;
-  --tarjeta:#054D4B;
-  --linea:rgba(242,246,244,.22);
+  --fondo:var(--ba-azul);
+  --tinta:var(--ba-papel);
+  --tinta-suave:var(--ba-gris-claro);
+  --ruta:var(--ba-heart-1);
+  --hito:var(--ba-heart-3);
+  --acento:var(--ba-fluo);      /* acentos UI noche */
+  --hidra:var(--ba-fluo);
+  --tarjeta:var(--ba-verde);
+  --linea:rgba(243,242,241,.22);
   --sombra:0 12px 50px rgba(0,0,0,.55);
 }
 
@@ -769,23 +780,22 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* mapa original (Voyager) + modo noche por filtro CSS */
+/* mapa Voyager + un poco más de viveza (sin pasarse) */
 .leaflet-tile-pane{
   filter:
-    saturate(0.92)
-    hue-rotate(12deg)
-    brightness(0.98)
-    contrast(1.05);
+    saturate(1.22)
+    hue-rotate(6deg)
+    brightness(1.03)
+    contrast(1.06);
 }
-/* Truco: invertimos tiles claros → se lee como noche,
-   manteniendo calles y parques más legibles que un basemap dark. */
+/* Modo noche: invertimos tiles claros; saturate después recupera color */
 body.noche .leaflet-tile-pane{
   filter:
     invert(1)
     hue-rotate(180deg)
-    brightness(1.08)
-    contrast(0.92)
-    saturate(0.7);
+    brightness(1.1)
+    contrast(0.94)
+    saturate(1.18);
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -892,23 +902,29 @@ path.trazaRuta{
 }
 .pinIcono.activo .punto{background:#fff;border-color:var(--hito);}
 
-#btnInclinar{
+#btnInclinar,
+#btnModo{
   display:inline-flex;
-  position:absolute;left:12px;top:12px;z-index:900;
+  position:absolute;left:12px;z-index:900;
   align-items:center;gap:8px;
   padding:10px 14px;border-radius:99px;min-height:44px;
   background:var(--tarjeta);border:2.5px solid var(--tinta);
   font-size:12px;font-weight:600;letter-spacing:.04em;
   color:var(--tinta);box-shadow:var(--sombra);
 }
-#btnInclinar .dot{
+#btnInclinar{top:12px;}
+#btnModo{top:62px;}
+#btnInclinar .dot,
+#btnModo .dot{
   width:8px;height:8px;border-radius:50%;
   background:var(--tinta-suave);
 }
-#btnInclinar.activo{
+#btnInclinar.activo,
+#btnModo.noche-on{
   border-color:var(--acento);color:var(--acento);
 }
-#btnInclinar.activo .dot{
+#btnInclinar.activo .dot,
+#btnModo.noche-on .dot{
   background:var(--acento);
   box-shadow:0 0 0 4px color-mix(in srgb, var(--acento) 25%, transparent);
 }
@@ -1148,11 +1164,7 @@ path.trazaRuta{
   animation:latir 2.2s ease-in-out infinite;
 }
 
-#demoBar{position:fixed;left:12px;bottom:12px;z-index:1200;display:flex;flex-direction:column;gap:6px;opacity:.55;}
-#demoBar button{
-  font-size:11px;padding:7px 10px;border:1px solid var(--linea);
-  background:var(--tarjeta);color:var(--tinta-suave);text-align:left;
-}
+#demoBar{display:none;}
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;}
@@ -1312,9 +1324,7 @@ path.trazaRuta{
 </svg>
 
 <div id="demoBar">
-  <button id="btnModo">☀︎/☾ modo</button>
   <button id="btnAnim">✨ animación</button>
-
 </div>
 
 <div id="app">
@@ -1349,6 +1359,10 @@ path.trazaRuta{
     <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar el mapa con el celular">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
+    </button>
+    <button id="btnModo" type="button" aria-pressed="true" title="Cambiar modo día / noche">
+      <span class="dot" aria-hidden="true"></span>
+      Modo día
     </button>
     <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
     <div id="zoomCtrl">
@@ -1980,8 +1994,16 @@ function reiniciarInactividad(){
   document.addEventListener(ev, reiniciarInactividad, {passive:true}));
 
 function aplicarModo(noche){
-  /* OSM no tiene tiles oscuros: el modo noche se logra con filtro CSS */
-  document.body.classList.toggle("noche", noche);
+  /* OSM/Voyager claros + filtro CSS para noche */
+  document.body.classList.toggle("noche", !!noche);
+  const btn = document.getElementById("btnModo");
+  if(!btn) return;
+  btn.classList.toggle("noche-on", !!noche);
+  btn.setAttribute("aria-pressed", noche ? "true" : "false");
+  btn.innerHTML = noche
+    ? '<span class="dot" aria-hidden="true"></span> Modo día'
+    : '<span class="dot" aria-hidden="true"></span> Modo noche';
+  btn.title = noche ? "Pasar a modo día" : "Pasar a modo noche";
 }
 /*function aplicarModoPorHora(){
   const h = new Date().getHours();
@@ -2102,7 +2124,11 @@ btnUbicacion.addEventListener("click", e=>{
   reiniciarInactividad();
 });
 
-$("#btnModo").addEventListener("click", ()=> aplicarModo(!document.body.classList.contains("noche")));
+$("#btnModo").addEventListener("click", e=>{
+  e.stopPropagation();
+  aplicarModo(!document.body.classList.contains("noche"));
+  reiniciarInactividad();
+});
 $("#btnAnim").addEventListener("click", ()=>{
   CFG.animarMapa = !CFG.animarMapa;
   aplicarAnimacion();
