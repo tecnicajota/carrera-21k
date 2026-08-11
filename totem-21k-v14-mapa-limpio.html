@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-noche">
+<meta name="totem-version" content="2026-08-11-parques">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -769,20 +769,27 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* tiles oscuros + tinte hacia la paleta (#183246 / #054D4B / #5E992E) */
+/* tiles oscuros: más contraste para que se lean las calles */
 .leaflet-tile-pane{
   filter:
-    saturate(0.75)
-    hue-rotate(-8deg)
-    brightness(0.92)
-    contrast(1.08);
+    saturate(0.45)
+    brightness(1.12)
+    contrast(1.42)
+    hue-rotate(-6deg);
 }
 body.noche .leaflet-tile-pane{
   filter:
-    saturate(0.7)
-    hue-rotate(-12deg)
-    brightness(0.95)
-    contrast(1.1);
+    saturate(0.45)
+    brightness(1.14)
+    contrast(1.48)
+    hue-rotate(-8deg);
+}
+
+/* espacios verdes (parques) en verde oscuro encima de los tiles */
+.leaflet-parques-pane path,
+path.parquePoly{
+  stroke:#0A2F1C;
+  fill:#1B4D2E;
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -1681,6 +1688,72 @@ capaDia.on("tileerror", ()=>{
   if(tilesOk === 0 && tilesMal >= 3) activarRespaldo();
 });
 setTimeout(()=>{ if(tilesOk === 0) activarRespaldo(); }, 6000);
+
+/* Parques / verdes encima de los tiles, debajo de la ruta */
+map.createPane("parques");
+map.getPane("parques").style.zIndex = 350;
+map.getPane("parques").classList.add("leaflet-parques-pane");
+const capaParques = L.layerGroup([], {pane: "parques"}).addTo(map);
+
+function overpassAPoligonos(elements){
+  const capas = [];
+  const estilo = {
+    pane: "parques",
+    className: "parquePoly",
+    color: "#0A2F1C",
+    weight: 1,
+    opacity: 0.9,
+    fillColor: "#1B4D2E",
+    fillOpacity: 0.72,
+    interactive: false
+  };
+  for(const el of elements){
+    if(!el.geometry || el.geometry.length < 3) continue;
+    const latlngs = el.geometry
+      .filter(g => g.lat != null && g.lon != null)
+      .map(g => [g.lat, g.lon]);
+    if(latlngs.length < 3) continue;
+    capas.push(L.polygon(latlngs, estilo));
+  }
+  return capas;
+}
+async function cargarEspaciosVerdes(){
+  const b = bounds.pad(0.18);
+  const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
+  const query = `[out:json][timeout:40];
+(
+  way["leisure"="park"](${bbox});
+  way["leisure"="garden"](${bbox});
+  way["leisure"="nature_reserve"](${bbox});
+  way["leisure"="recreation_ground"](${bbox});
+  way["landuse"="grass"](${bbox});
+  way["landuse"="forest"](${bbox});
+  way["landuse"="meadow"](${bbox});
+  way["landuse"="recreation_ground"](${bbox});
+);
+out geom;`;
+  const endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter"
+  ];
+  for(const endpoint of endpoints){
+    try{
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: query,
+        headers: {"Content-Type": "application/x-www-form-urlencoded"}
+      });
+      if(!res.ok) continue;
+      const data = await res.json();
+      const polys = overpassAPoligonos(data.elements || []);
+      if(!polys.length) continue;
+      capaParques.clearLayers();
+      polys.forEach(p => capaParques.addLayer(p));
+      return;
+    }catch(_){ /* prueba el siguiente mirror */ }
+  }
+}
+cargarEspaciosVerdes();
 
 function padMapa(){
   const w = window.innerWidth, h = window.innerHeight;
