@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-brand-dia-noche">
+<meta name="totem-version" content="2026-08-11-tema-panel">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -780,22 +780,21 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* mapa Voyager + un poco más de viveza (sin pasarse) */
+/* mapa Voyager — filtros vía variables (editables en el panel) */
 .leaflet-tile-pane{
   filter:
-    saturate(1.22)
-    hue-rotate(6deg)
-    brightness(1.03)
-    contrast(1.06);
+    saturate(var(--map-sat, 1.22))
+    hue-rotate(calc(var(--map-hue, 6) * 1deg))
+    brightness(var(--map-bri, 1.03))
+    contrast(var(--map-con, 1.06));
 }
-/* Modo noche: invertimos tiles claros; saturate después recupera color */
 body.noche .leaflet-tile-pane{
   filter:
-    invert(1)
-    hue-rotate(180deg)
-    brightness(1.1)
-    contrast(0.94)
-    saturate(1.18);
+    invert(var(--map-inv, 1))
+    hue-rotate(calc(var(--map-hue, 180) * 1deg))
+    brightness(var(--map-bri, 1.1))
+    contrast(var(--map-con, 0.94))
+    saturate(var(--map-sat, 1.18));
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -902,8 +901,12 @@ path.trazaRuta{
 }
 .pinIcono.activo .punto{background:#fff;border-color:var(--hito);}
 
+#btnInclinar{top:12px;}
+#btnModo{top:62px;}
+#btnTema{top:112px;}
 #btnInclinar,
-#btnModo{
+#btnModo,
+#btnTema{
   display:inline-flex;
   position:absolute;left:12px;z-index:900;
   align-items:center;gap:8px;
@@ -912,21 +915,107 @@ path.trazaRuta{
   font-size:12px;font-weight:600;letter-spacing:.04em;
   color:var(--tinta);box-shadow:var(--sombra);
 }
-#btnInclinar{top:12px;}
-#btnModo{top:62px;}
 #btnInclinar .dot,
-#btnModo .dot{
+#btnModo .dot,
+#btnTema .dot{
   width:8px;height:8px;border-radius:50%;
   background:var(--tinta-suave);
 }
 #btnInclinar.activo,
-#btnModo.noche-on{
+#btnModo.noche-on,
+#btnTema.activo{
   border-color:var(--acento);color:var(--acento);
 }
 #btnInclinar.activo .dot,
-#btnModo.noche-on .dot{
+#btnModo.noche-on .dot,
+#btnTema.activo .dot{
   background:var(--acento);
   box-shadow:0 0 0 4px color-mix(in srgb, var(--acento) 25%, transparent);
+}
+
+/* ---------- PANEL DE TEMA ---------- */
+#temaPanel{
+  position:absolute;inset:0;z-index:1300;
+  display:none;place-items:stretch;justify-content:flex-end;
+  background:rgba(0,0,0,.35);
+  backdrop-filter:blur(2px);
+}
+#temaPanel.abierto{display:grid;}
+#temaCard{
+  width:min(420px,100%);
+  height:100%;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;
+  box-shadow:var(--sombra);
+  -webkit-user-select:text;user-select:text;
+}
+#temaCard.tema-dia{
+  background:#F3F2F1;color:#183246;
+  border-left:4px solid #EF981F;
+}
+#temaCard.tema-noche{
+  background:#183246;color:#F3F2F1;
+  border-left:4px solid #5E992E;
+}
+.temaHead{
+  position:sticky;top:0;z-index:2;
+  padding:14px 16px 12px;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(127,127,127,.25);
+  backdrop-filter:blur(8px);
+}
+#temaCard.tema-dia .temaHead{background:rgba(243,242,241,.94);}
+#temaCard.tema-noche .temaHead{background:rgba(24,50,70,.94);}
+.temaHead h3{
+  font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0;
+}
+.temaTabs{display:flex;gap:6px;}
+.temaTabs button{
+  padding:8px 12px;border-radius:99px;font-size:12px;font-weight:700;
+  border:2px solid currentColor;opacity:.55;
+}
+.temaTabs button.on{opacity:1;}
+#temaCard.tema-dia .temaTabs button.on{background:#EF981F;border-color:#EF981F;color:#1B2221;}
+#temaCard.tema-noche .temaTabs button.on{background:#5E992E;border-color:#5E992E;color:#F3F2F1;}
+.temaBody{padding:14px 16px 24px;display:flex;flex-direction:column;gap:16px;}
+.temaSec h4{
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  margin:0 0 10px;opacity:.7;
+}
+.temaGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.temaField{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.temaField label{font-size:11px;font-weight:600;opacity:.8;}
+.temaField .row{display:flex;gap:8px;align-items:center;}
+.temaField input[type="color"]{
+  width:42px;height:36px;border:0;padding:0;background:transparent;cursor:pointer;
+}
+.temaField input[type="text"]{
+  flex:1;min-width:0;padding:8px 10px;border-radius:8px;
+  border:1px solid rgba(127,127,127,.35);
+  background:rgba(255,255,255,.12);color:inherit;font-size:12px;font-family:ui-monospace,monospace;
+}
+#temaCard.tema-dia .temaField input[type="text"]{background:#fff;color:#183246;}
+.temaField input[type="range"]{width:100%;accent-color:#EF981F;}
+#temaCard.tema-noche .temaField input[type="range"]{accent-color:#5E992E;}
+.temaVal{font-size:11px;font-family:ui-monospace,monospace;opacity:.75;}
+.temaAcciones{display:flex;flex-wrap:wrap;gap:8px;}
+.temaAcciones button{
+  flex:1;min-width:110px;padding:11px 12px;border-radius:12px;
+  font-size:12px;font-weight:700;border:2px solid currentColor;
+}
+.temaAcciones .primario{
+  background:#EF981F;border-color:#EF981F;color:#1B2221;
+}
+#temaCard.tema-noche .temaAcciones .primario{
+  background:#5E992E;border-color:#5E992E;color:#F3F2F1;
+}
+.temaMsg{
+  font-size:12px;min-height:1.2em;opacity:.85;
+}
+.temaCerrar{
+  width:36px;height:36px;border-radius:50%;border:2px solid currentColor;
+  font-size:18px;line-height:1;
 }
 
 #zoomCtrl button#btnUbicacion.activo{
@@ -1364,6 +1453,10 @@ path.trazaRuta{
       <span class="dot" aria-hidden="true"></span>
       Modo día
     </button>
+    <button id="btnTema" type="button" aria-pressed="false" title="Configurar colores y filtros">
+      <span class="dot" aria-hidden="true"></span>
+      Colores
+    </button>
     <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
     <div id="zoomCtrl">
       <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Mi ubicación" title="Mostrar mi ubicación">◎</button>
@@ -1371,6 +1464,37 @@ path.trazaRuta{
       <button id="zMenos" aria-label="Alejar">−</button>
       <button id="zReset" aria-label="Ver todo">⌂</button>
     </div>
+  </div>
+
+  <div id="temaPanel" aria-hidden="true">
+    <aside id="temaCard" class="tema-noche" role="dialog" aria-label="Configuración de colores">
+      <div class="temaHead">
+        <h3>Configuración</h3>
+        <div class="temaTabs">
+          <button type="button" data-tab="dia">Día</button>
+          <button type="button" data-tab="noche" class="on">Noche</button>
+        </div>
+        <button type="button" class="temaCerrar" id="temaCerrar" aria-label="Cerrar">×</button>
+      </div>
+      <div class="temaBody">
+        <div class="temaSec">
+          <h4>Colores</h4>
+          <div class="temaGrid" id="temaColores"></div>
+        </div>
+        <div class="temaSec">
+          <h4>Filtros del mapa</h4>
+          <div class="temaGrid" id="temaFiltros" style="grid-template-columns:1fr"></div>
+        </div>
+        <div class="temaAcciones">
+          <button type="button" class="primario" id="temaGuardar">Guardar</button>
+          <button type="button" id="temaReset">Restablecer</button>
+          <button type="button" id="temaExport">Exportar</button>
+          <button type="button" id="temaImport">Importar</button>
+        </div>
+        <div class="temaMsg" id="temaMsg"></div>
+        <input type="file" id="temaFile" accept="application/json,.json" hidden>
+      </div>
+    </aside>
   </div>
 
   <div id="qrModal">
@@ -2389,7 +2513,261 @@ aplicarAnimacion();
 //aplicarModoPorHora();
 initInclinacion();
 aplicarModo(true);
+initPanelTema();
 irA("ATTRACT");
+
+/* ============================================================
+   PANEL DE TEMA — colores + filtros día/noche (localStorage)
+   ============================================================ */
+const TEMA_KEY = "totem21k-tema-v1";
+const TEMA_DEFAULT = {
+  dia: {
+    colors: {
+      fondo: "#F3F2F1",
+      tinta: "#183246",
+      "tinta-suave": "#5E605F",
+      ruta: "#F7C21C",
+      hito: "#DD3466",
+      acento: "#EF981F",
+      hidra: "#054D4B",
+      tarjeta: "#FFFFFF"
+    },
+    filters: { sat: 1.22, hue: 6, bri: 1.03, con: 1.06, inv: 0 }
+  },
+  noche: {
+    colors: {
+      fondo: "#183246",
+      tinta: "#F3F2F1",
+      "tinta-suave": "#989791",
+      ruta: "#F7C21C",
+      hito: "#DD3466",
+      acento: "#5E992E",
+      hidra: "#5E992E",
+      tarjeta: "#054D4B"
+    },
+    filters: { sat: 1.18, hue: 180, bri: 1.1, con: 0.94, inv: 1 }
+  }
+};
+const COLOR_LABELS = {
+  fondo: "Fondo",
+  tinta: "Texto",
+  "tinta-suave": "Texto suave",
+  ruta: "Recorrido / km",
+  hito: "Puntos de interés",
+  acento: "Acento UI",
+  hidra: "Hidratación",
+  tarjeta: "Tarjetas"
+};
+const FILTER_META = {
+  sat: {label: "Saturación", min: 0, max: 2.5, step: 0.01},
+  hue: {label: "Hue rotate (°)", min: 0, max: 360, step: 1},
+  bri: {label: "Brillo", min: 0.4, max: 1.8, step: 0.01},
+  con: {label: "Contraste", min: 0.4, max: 1.8, step: 0.01},
+  inv: {label: "Invert (noche)", min: 0, max: 1, step: 0.01}
+};
+let temaState = JSON.parse(JSON.stringify(TEMA_DEFAULT));
+let temaTab = "noche";
+
+function deepMergeTema(base, patch){
+  const out = JSON.parse(JSON.stringify(base));
+  for(const modo of ["dia", "noche"]){
+    if(!patch || !patch[modo]) continue;
+    if(patch[modo].colors) Object.assign(out[modo].colors, patch[modo].colors);
+    if(patch[modo].filters) Object.assign(out[modo].filters, patch[modo].filters);
+  }
+  return out;
+}
+function cargarTemaGuardado(){
+  try{
+    const raw = localStorage.getItem(TEMA_KEY);
+    if(!raw) return;
+    temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(raw));
+  }catch(_){}
+}
+function cssTemaLive(){
+  const d = temaState.dia, n = temaState.noche;
+  const col = (modo, key) => modo.colors[key];
+  return `
+:root{
+  --fondo:${col(d,"fondo")};--tinta:${col(d,"tinta")};--tinta-suave:${col(d,"tinta-suave")};
+  --ruta:${col(d,"ruta")};--hito:${col(d,"hito")};--acento:${col(d,"acento")};
+  --hidra:${col(d,"hidra")};--tarjeta:${col(d,"tarjeta")};
+  --map-sat:${d.filters.sat};--map-hue:${d.filters.hue};--map-bri:${d.filters.bri};--map-con:${d.filters.con};--map-inv:${d.filters.inv};
+}
+body.noche{
+  --fondo:${col(n,"fondo")};--tinta:${col(n,"tinta")};--tinta-suave:${col(n,"tinta-suave")};
+  --ruta:${col(n,"ruta")};--hito:${col(n,"hito")};--acento:${col(n,"acento")};
+  --hidra:${col(n,"hidra")};--tarjeta:${col(n,"tarjeta")};
+  --map-sat:${n.filters.sat};--map-hue:${n.filters.hue};--map-bri:${n.filters.bri};--map-con:${n.filters.con};--map-inv:${n.filters.inv};
+}`;
+}
+function aplicarTemaLive(){
+  let el = document.getElementById("temaLiveStyle");
+  if(!el){
+    el = document.createElement("style");
+    el.id = "temaLiveStyle";
+    document.head.appendChild(el);
+  }
+  el.textContent = cssTemaLive();
+}
+function temaMsg(txt){
+  const m = document.getElementById("temaMsg");
+  if(m) m.textContent = txt || "";
+}
+function renderPanelTema(){
+  const card = document.getElementById("temaCard");
+  const colores = document.getElementById("temaColores");
+  const filtros = document.getElementById("temaFiltros");
+  if(!card || !colores || !filtros) return;
+  card.classList.toggle("tema-dia", temaTab === "dia");
+  card.classList.toggle("tema-noche", temaTab === "noche");
+  document.querySelectorAll(".temaTabs button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.tab === temaTab);
+  });
+  const block = temaState[temaTab];
+  colores.innerHTML = "";
+  for(const key of Object.keys(COLOR_LABELS)){
+    const val = block.colors[key];
+    const field = document.createElement("div");
+    field.className = "temaField";
+    field.innerHTML = `
+      <label>${COLOR_LABELS[key]}</label>
+      <div class="row">
+        <input type="color" data-color="${key}" value="${val.length===7?val:"#000000"}">
+        <input type="text" data-color-text="${key}" value="${val}" maxlength="20" spellcheck="false">
+      </div>`;
+    colores.appendChild(field);
+  }
+  filtros.innerHTML = "";
+  const filterKeys = temaTab === "noche"
+    ? ["inv", "hue", "bri", "con", "sat"]
+    : ["sat", "hue", "bri", "con"];
+  for(const key of filterKeys){
+    const meta = FILTER_META[key];
+    const val = block.filters[key];
+    const field = document.createElement("div");
+    field.className = "temaField";
+    field.innerHTML = `
+      <label>${meta.label} <span class="temaVal" data-fval="${key}">${val}</span></label>
+      <input type="range" data-filter="${key}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${val}">`;
+    filtros.appendChild(field);
+  }
+}
+function abrirPanelTema(si){
+  const panel = document.getElementById("temaPanel");
+  const btn = document.getElementById("btnTema");
+  const open = !!si;
+  panel.classList.toggle("abierto", open);
+  panel.setAttribute("aria-hidden", open ? "false" : "true");
+  btn.classList.toggle("activo", open);
+  btn.setAttribute("aria-pressed", open ? "true" : "false");
+  if(open){
+    temaTab = document.body.classList.contains("noche") ? "noche" : "dia";
+    renderPanelTema();
+    clearTimeout(S.tInactividad);
+  }else{
+    reiniciarInactividad();
+  }
+}
+function initPanelTema(){
+  cargarTemaGuardado();
+  aplicarTemaLive();
+  const panel = document.getElementById("temaPanel");
+  document.getElementById("btnTema").addEventListener("click", e=>{
+    e.stopPropagation();
+    abrirPanelTema(!panel.classList.contains("abierto"));
+  });
+  document.getElementById("temaCerrar").addEventListener("click", e=>{
+    e.stopPropagation();
+    abrirPanelTema(false);
+  });
+  panel.addEventListener("pointerdown", e=>{
+    if(e.target === panel) abrirPanelTema(false);
+  });
+  document.querySelectorAll(".temaTabs button").forEach(b=>{
+    b.addEventListener("click", e=>{
+      e.stopPropagation();
+      temaTab = b.dataset.tab;
+      aplicarModo(temaTab === "noche");
+      renderPanelTema();
+      temaMsg(`Editando modo ${temaTab}`);
+    });
+  });
+  document.getElementById("temaColores").addEventListener("input", e=>{
+    const t = e.target;
+    if(t.dataset.color){
+      temaState[temaTab].colors[t.dataset.color] = t.value;
+      const text = document.querySelector(`[data-color-text="${t.dataset.color}"]`);
+      if(text) text.value = t.value;
+      aplicarTemaLive();
+    }
+    if(t.dataset.colorText){
+      const v = t.value.trim();
+      if(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v) || /^rgba?\(/.test(v)){
+        temaState[temaTab].colors[t.dataset.colorText] = v;
+        const pick = document.querySelector(`[data-color="${t.dataset.colorText}"]`);
+        if(pick && /^#([0-9a-fA-F]{6})$/.test(v)) pick.value = v;
+        aplicarTemaLive();
+      }
+    }
+  });
+  document.getElementById("temaFiltros").addEventListener("input", e=>{
+    const t = e.target;
+    if(!t.dataset.filter) return;
+    const key = t.dataset.filter;
+    const num = Number(t.value);
+    temaState[temaTab].filters[key] = num;
+    const lab = document.querySelector(`[data-fval="${key}"]`);
+    if(lab) lab.textContent = String(num);
+    aplicarTemaLive();
+  });
+  document.getElementById("temaGuardar").addEventListener("click", e=>{
+    e.stopPropagation();
+    localStorage.setItem(TEMA_KEY, JSON.stringify(temaState));
+    temaMsg("Guardado en este dispositivo ✓");
+  });
+  document.getElementById("temaReset").addEventListener("click", e=>{
+    e.stopPropagation();
+    temaState = JSON.parse(JSON.stringify(TEMA_DEFAULT));
+    aplicarTemaLive();
+    renderPanelTema();
+    temaMsg("Valores de fábrica (sin guardar todavía)");
+  });
+  document.getElementById("temaExport").addEventListener("click", e=>{
+    e.stopPropagation();
+    const blob = new Blob([JSON.stringify(temaState, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "totem-21k-tema.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    temaMsg("JSON exportado");
+  });
+  document.getElementById("temaImport").addEventListener("click", e=>{
+    e.stopPropagation();
+    document.getElementById("temaFile").click();
+  });
+  document.getElementById("temaFile").addEventListener("change", async e=>{
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    try{
+      const data = JSON.parse(await file.text());
+      temaState = deepMergeTema(TEMA_DEFAULT, data);
+      aplicarTemaLive();
+      renderPanelTema();
+      temaMsg("Importado (tocá Guardar para fijarlo)");
+    }catch(_){
+      temaMsg("No se pudo leer el JSON");
+    }
+  });
+  ["pointerdown","pointermove","keydown"].forEach(ev=>{
+    document.getElementById("temaCard").addEventListener(ev, e=>{
+      e.stopPropagation();
+      clearTimeout(S.tInactividad);
+    }, {passive:true});
+  });
+}
 
 /* ============================================================
    NOTAS PARA EL TÓTEM OFFLINE
