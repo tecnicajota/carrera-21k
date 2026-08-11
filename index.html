@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-mapa-degrade">
+<meta name="totem-version" content="2026-08-11-tema-pantallas">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -715,18 +715,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --ba-gris-claro:#989791;
 
   --fondo:var(--ba-papel);
+  --header:var(--ba-papel);
   --tinta:var(--ba-azul);
   --tinta-suave:var(--ba-gris);
-  --ruta:#183246;
+  --ruta:#F7C21C;
   --km:#183246;
   --km-num:#F7C21C;
-  --hito:#EF981F;
+  --hito:#FFFFFF;
   --marca:#EF981F;
   --acento:#EF981F;
   --hidra:var(--ba-verde);
   --tarjeta:#FFFFFF;
   --boton:#FFFFFF;
   --standby:var(--ba-papel);
+  --sb-grad-1:#DD3466;
+  --sb-grad-2:#E7671A;
+  --sb-grad-3:#F7C21C;
+  --sb-texto:#F7C21C;
+  --sb-borde:#FFFFFF;
   --linea:rgba(24,50,70,.22);
   --sombra:0 12px 40px rgba(24,50,70,.18);
   --ani-dur:.9s;
@@ -737,18 +743,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
 }
 body.noche{
   --fondo:var(--ba-azul);
+  --header:var(--ba-azul);
   --tinta:var(--ba-papel);
   --tinta-suave:var(--ba-gris-claro);
-  --ruta:#054D4B;
+  --ruta:#F7C21C;
   --km:#F7C21C;
   --km-num:var(--ba-azul);
-  --hito:#E7671A;
+  --hito:#FFFFFF;
   --marca:var(--ba-fluo);
   --acento:var(--ba-fluo);
   --hidra:var(--ba-fluo);
   --tarjeta:var(--ba-verde);
   --boton:var(--ba-verde);
   --standby:var(--ba-azul);
+  --sb-grad-1:#DD3466;
+  --sb-grad-2:#E7671A;
+  --sb-grad-3:#F7C21C;
+  --sb-texto:#F7C21C;
+  --sb-borde:#FFFFFF;
   --linea:rgba(243,242,241,.22);
   --sombra:0 12px 50px rgba(0,0,0,.55);
 }
@@ -773,12 +785,14 @@ button:focus-visible{outline:3px dashed var(--acento);outline-offset:4px;}
 header{
   padding:18px 28px 12px;z-index:20;position:relative;
   display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
-  border-bottom:2px dashed var(--linea);background:var(--fondo);
-  transition:background .6s ease;
+  border-bottom:2px dashed var(--linea);background:var(--header, var(--fondo));
+  color:var(--tinta);
+  transition:background .6s ease,color .6s ease;
 }
 .titulo h1{
   font-family:'Montserrat',sans-serif;font-weight:900;
   font-size:clamp(22px,3.2vw,36px);line-height:1;text-transform:uppercase;
+  color:var(--tinta);
 }
 .titulo h1 em{font-style:normal;color:var(--marca);}
 .titulo .sub{
@@ -799,18 +813,16 @@ header{
 /* mapa claro con nombres; el tinte degradé va en pane propio */
 .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.9))
-    hue-rotate(calc(var(--map-hue, 0) * 1deg))
-    brightness(var(--map-bri, 1.06))
-    contrast(var(--map-con, 1.05));
+    saturate(var(--map-sat, 1))
+    brightness(calc(var(--map-bri, 1.14) * (1 - var(--map-dark, 0) * 0.55)))
+    contrast(var(--map-con, 1.02));
 }
 /* sin invert: el mapa se mantiene blanco también en modo noche UI */
 body.noche .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.9))
-    hue-rotate(calc(var(--map-hue, 0) * 1deg))
-    brightness(var(--map-bri, 1.06))
-    contrast(var(--map-con, 1.05));
+    saturate(var(--map-sat, 1))
+    brightness(calc(var(--map-bri, 1.14) * (1 - var(--map-dark, 0) * 0.55)))
+    contrast(var(--map-con, 1.02));
 }
 
 /* degradé marca encima de los tiles, debajo de ruta/hitos */
@@ -822,19 +834,19 @@ body.noche .leaflet-tile-pane{
   background-size:cover;
   background-position:center;
   mix-blend-mode:multiply;
-  opacity:var(--map-tinte-op, 0.62);
+  opacity:var(--map-tinte-op, 0.38);
 }
 @supports not (mix-blend-mode: multiply){
   .mapa-tinte{
     background:linear-gradient(135deg, #DD3466 0%, #E7671A 45%, #F7C21C 100%);
-    opacity:0.45;
+    opacity:0.32;
   }
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
 path.trazaRuta{
   stroke:var(--ruta);
-  filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
+  filter:drop-shadow(0 0.5px 1px rgba(0,0,0,.22));
 }
 
 /* ---------- INCLINACIÓN ---------- */
@@ -907,33 +919,27 @@ path.trazaRuta{
   border:2px solid var(--fondo);
 }
 
-/* pin del hito con halo pulsante */
+/* pin del hito — corazón blanco con borde amarillo fino */
 .pinIcono{
   position:relative;
   display:grid;place-items:center;
   cursor:pointer;
 }
-.pinIcono .punto{
-  position:absolute;left:50%;top:50%;
-  width:16px;height:16px;margin:-8px 0 0 -8px;
-  border-radius:50%;
-  background:var(--hito);border:3px solid #183246;
-  box-shadow:0 2px 8px rgba(0,0,0,.4);
+.pinIcono .corazon{
+  width:22px;height:22px;
+  display:block;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));
+  transition:transform .25s ease;
 }
-.pinIcono .halo{
-  position:absolute;left:50%;top:50%;
-  width:16px;height:16px;margin:-8px 0 0 -8px;
-  border-radius:50%;
-  border:3px solid #fff;
-  animation:halo 2.8s ease-out infinite;
-  animation-delay:var(--delay,0s);
+.pinIcono .corazon path{
+  fill:var(--hito, #fff);
+  stroke:var(--ruta, #F7C21C);
+  stroke-width:1.35;
+  stroke-linejoin:round;
+  paint-order:stroke fill;
 }
-@keyframes halo{
-  0%{transform:scale(1);opacity:.8;}
-  55%{transform:scale(2.4);opacity:0;}
-  100%{transform:scale(2.4);opacity:0;}
-}
-.pinIcono.activo .punto{background:#fff;border-color:var(--hito);}
+.pinIcono.activo .corazon{transform:scale(1.18);}
+.pinIcono.activo .corazon path{stroke-width:1.8;}
 
 #btnInclinar{top:12px;}
 #btnModo{top:62px;}
@@ -1016,6 +1022,12 @@ path.trazaRuta{
 .temaSec h4{
   font-size:11px;letter-spacing:.14em;text-transform:uppercase;
   margin:0 0 10px;opacity:.7;
+}
+.temaSecInner{margin-bottom:14px;}
+.temaSecInner:last-child{margin-bottom:0;}
+.temaSecInner h5{
+  font-size:12px;font-weight:800;letter-spacing:.04em;
+  margin:0 0 8px;opacity:.9;
 }
 .temaGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .temaField{display:flex;flex-direction:column;gap:4px;min-width:0;}
@@ -1284,36 +1296,56 @@ path.trazaRuta{
 #mapaWrap:has(+ #popup.abierto) .hint,
 body:has(#popup.abierto) .hint{opacity:0 !important;}
 
-/* ---------- ATTRACT ---------- */
+/* ---------- ATTRACT / STAND-BY ---------- */
 #attract{
-  position:absolute;inset:0;z-index:1100;background:var(--standby);
+  position:absolute;inset:0;z-index:1100;
+  background:
+    linear-gradient(135deg, var(--sb-grad-1, #DD3466) 0%, var(--sb-grad-2, #E7671A) 48%, var(--sb-grad-3, #F7C21C) 100%),
+    url("filtro-mapa-degrade.png") center / cover no-repeat;
+  background-blend-mode:multiply;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;padding:40px;gap:6px;
-  opacity:1;transition:opacity .5s ease;
+  opacity:1;transition:opacity .5s ease, background .4s ease;
+  color:var(--sb-texto, #F7C21C);
 }
 #attract.oculto{opacity:0;pointer-events:none;}
+#attract .marca,
+#attract h1,
+#attract .rotador,
+#attract .cta{
+  color:var(--sb-texto, #F7C21C);
+  -webkit-text-stroke:1.5px var(--sb-borde, #fff);
+  paint-order:stroke fill;
+  text-shadow:0 1px 0 var(--sb-borde, #fff), 0 0 1px var(--sb-borde, #fff);
+}
 #attract .marca{
-  font-size:13px;letter-spacing:.35em;color:var(--tinta-suave);
+  font-size:13px;letter-spacing:.35em;
   text-transform:uppercase;margin-bottom:16px;
+  -webkit-text-stroke:1px var(--sb-borde, #fff);
+  font-weight:700;
 }
 #attract h1{
   font-family:'Montserrat',sans-serif;font-weight:900;
   font-size:clamp(52px,11vw,120px);line-height:.95;text-transform:uppercase;
+  -webkit-text-stroke:3px var(--sb-borde, #fff);
 }
-#attract h1 em{font-style:normal;color:var(--marca);}
+#attract h1 em{font-style:normal;color:var(--sb-texto, #F7C21C);}
 #attract .rotador{
-  font-family:'Montserrat',sans-serif;font-weight:600;
-  font-size:clamp(24px,4vw,40px);color:var(--acento);
+  font-family:'Montserrat',sans-serif;font-weight:700;
+  font-size:clamp(24px,4vw,40px);
   height:1.5em;margin-top:18px;
+  -webkit-text-stroke:1.5px var(--sb-borde, #fff);
 }
 #attract svg.miniruta{width:min(72vw,480px);margin:30px 0 8px;}
 #attract .miniruta path{
-  fill:none;stroke:var(--ruta);stroke-width:6;stroke-linecap:round;
+  fill:none;stroke:var(--sb-texto, #F7C21C);stroke-width:6;stroke-linecap:round;
   stroke-dasharray:3 14;animation:dibujar 6s linear infinite;
+  filter:drop-shadow(0 0 1.2px var(--sb-borde, #fff)) drop-shadow(0 0 1.2px var(--sb-borde, #fff));
 }
 @keyframes dibujar{to{stroke-dashoffset:-170;}}
 #attract .cta{
-  margin-top:12px;font-size:clamp(14px,2vw,18px);
+  margin-top:12px;font-size:clamp(14px,2vw,18px);font-weight:700;
+  -webkit-text-stroke:1px var(--sb-borde, #fff);
   animation:latir 2.2s ease-in-out infinite;
 }
 
@@ -1371,8 +1403,7 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
 
   .kmIcono{width:24px;height:24px;font-size:11px;}
   .hidraIcono{width:16px;height:16px;font-size:9px;}
-  .pinIcono .punto,
-  .pinIcono .halo{width:18px;height:18px;margin:-9px 0 0 -9px;}
+  .pinIcono .corazon{width:20px;height:20px;}
 
   #popCard{
     left:12px;right:12px;width:auto;
@@ -1508,7 +1539,7 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
     <div id="tiltStage">
       <div id="mapa"></div>
     </div>
-    <div class="hint">👆 <b>Tocá los puntos magenta</b> y descubrí qué esconde el recorrido · pellizcá para hacer zoom</div>
+    <div class="hint">👆 <b>Tocá los corazones</b> y descubrí qué esconde el recorrido · pellizcá para hacer zoom</div>
     <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar el mapa con el celular">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
@@ -1542,11 +1573,11 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
       </div>
       <div class="temaBody">
         <div class="temaSec">
-          <h4>Colores</h4>
-          <div class="temaGrid" id="temaColores"></div>
+          <h4>Colores por pantalla</h4>
+          <div id="temaColores"></div>
         </div>
         <div class="temaSec">
-          <h4>Filtros del mapa</h4>
+          <h4>Transparencia, brillo y claridad</h4>
           <div class="temaGrid" id="temaFiltros" style="grid-template-columns:1fr"></div>
         </div>
         <div class="temaAcciones">
@@ -1931,7 +1962,7 @@ function padMapa(){
   return [52, 52];
 }
 function grosorRuta(){
-  return window.innerWidth < 768 ? 4 : 6;
+  return window.innerWidth < 768 ? 2 : 2.5;
 }
 function encuadrar(animado){
   const opts = {
@@ -2001,33 +2032,16 @@ function generarHuellas(){
 }
 
 /* ============================================================
-   6. KM + HIDRATACIÓN — por distancia real
+   6. KM + HIDRATACIÓN — desactivados (referencia sin km en mapa)
    ============================================================ */
-const capaKms = L.layerGroup().addTo(map);
-function renderKms(){
-  capaKms.clearLayers();
-  const porKm = LARGO_TOTAL / 21.0975;
-  for(let n = 1; n <= 21; n++){
-    const {latlng} = puntoEn(n * porKm);
-    capaKms.addLayer(L.marker(latlng, {
-      interactive:false, keyboard:false, pane:"kms",
-      icon: L.divIcon({className:"", iconSize:[30,30], iconAnchor:[15,15],
-        html:`<div class="kmIcono">${n}</div>`})
-    }));
-  }
-  HIDRA_KM.forEach(km=>{
-    const {latlng} = puntoEn(km * porKm);
-    capaKms.addLayer(L.marker(latlng, {
-      interactive:false, keyboard:false, pane:"kms",
-      icon: L.divIcon({className:"", iconSize:[20,20], iconAnchor:[10,-4],
-        html:`<div class="hidraIcono">≈</div>`})
-    }));
-  });
-}
+function renderKms(){ /* sin marcadores de km / hidratación */ }
 
 /* ============================================================
-   7. HITOS — pin violeta con halo (tocá el punto → popup)
+   7. HITOS — corazón blanco + borde amarillo (tocá → popup)
    ============================================================ */
+const CORAZON_SVG = `<svg class="corazon" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+</svg>`;
 const marcadores = {};
 function renderHitos(){
   HITOS.forEach((h,i)=>{
@@ -2036,10 +2050,8 @@ function renderHitos(){
       pane:"hitos",
       zIndexOffset: 800,
       icon: L.divIcon({
-        className:"", iconSize:[36,36], iconAnchor:[18,18],
-        html:`<div class="pinIcono" id="pin-${h.id}" style="width:36px;height:36px;--delay:${(i*0.35).toFixed(2)}s">
-                <div class="halo"></div><div class="punto"></div>
-              </div>`
+        className:"", iconSize:[28,28], iconAnchor:[14,14],
+        html:`<div class="pinIcono" id="pin-${h.id}" style="width:28px;height:28px">${CORAZON_SVG}</div>`
       })
     }).addTo(map);
     pin.on("click", ()=> volarYAbrir(h));
@@ -2620,78 +2632,107 @@ irA("ATTRACT");
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v3";
+const TEMA_KEY = "totem21k-tema-v6";
 const TEMA_DEFAULT = {
   "dia": {
     "colors": {
-      "fondo": "#F3F2F1",
+      "header": "#F3F2F1",
       "tinta": "#183246",
       "tinta-suave": "#5E605F",
-      "ruta": "#F7C21C",
-      "km": "#183246",
-      "km-num": "#F7C21C",
-      "hito": "#FFFFFF",
       "marca": "#EF981F",
       "acento": "#EF981F",
-      "hidra": "#054D4B",
-      "tarjeta": "#FFFFFF",
+      "sb-grad-1": "#DD3466",
+      "sb-grad-2": "#E7671A",
+      "sb-grad-3": "#F7C21C",
+      "sb-texto": "#F7C21C",
+      "sb-borde": "#FFFFFF",
+      "fondo": "#F3F2F1",
+      "ruta": "#F7C21C",
+      "hito": "#FFFFFF",
       "boton": "#FFFFFF",
+      "tarjeta": "#FFFFFF",
+      "km": "#183246",
+      "km-num": "#F7C21C",
+      "hidra": "#054D4B",
       "standby": "#F3F2F1"
     },
     "filters": {
-      "sat": 0.88,
-      "hue": 0,
-      "bri": 1.08,
-      "con": 1.04,
-      "tinte": 0.62
+      "sat": 1.0,
+      "bri": 1.14,
+      "dark": 0,
+      "con": 1.02,
+      "tinte": 0.38
     }
   },
   "noche": {
     "colors": {
-      "fondo": "#183246",
+      "header": "#183246",
       "tinta": "#F3F2F1",
       "tinta-suave": "#989791",
-      "ruta": "#F7C21C",
-      "km": "#F7C21C",
-      "km-num": "#183246",
-      "hito": "#FFFFFF",
       "marca": "#5E992E",
       "acento": "#5E992E",
-      "hidra": "#5E992E",
-      "tarjeta": "#054D4B",
+      "sb-grad-1": "#DD3466",
+      "sb-grad-2": "#E7671A",
+      "sb-grad-3": "#F7C21C",
+      "sb-texto": "#F7C21C",
+      "sb-borde": "#FFFFFF",
+      "fondo": "#183246",
+      "ruta": "#F7C21C",
+      "hito": "#FFFFFF",
       "boton": "#054D4B",
+      "tarjeta": "#054D4B",
+      "km": "#F7C21C",
+      "km-num": "#183246",
+      "hidra": "#5E992E",
       "standby": "#183246"
     },
     "filters": {
-      "sat": 0.88,
-      "hue": 0,
-      "bri": 1.08,
-      "con": 1.04,
-      "tinte": 0.62
+      "sat": 1.0,
+      "bri": 1.14,
+      "dark": 0,
+      "con": 1.02,
+      "tinte": 0.38
     }
   }
 };
-const COLOR_LABELS = {
-  fondo: "Fondo mapa / UI",
-  standby: "Fondo stand-by",
-  boton: "Fondo botones",
-  marca: "21K (marca)",
-  km: "Círculos km",
-  "km-num": "Números km",
-  ruta: "Recorrido",
-  hito: "Puntos de interés",
-  acento: "Acento UI",
-  tinta: "Texto",
-  "tinta-suave": "Texto suave",
-  hidra: "Hidratación",
-  tarjeta: "Tarjetas / popups"
-};
+const COLOR_SECTIONS = [
+  {
+    title: "Header (arriba del mapa)",
+    keys: {
+      header: "Fondo de arriba",
+      tinta: "Texto principal",
+      "tinta-suave": "Texto suave / stats",
+      marca: "21K (marca)",
+      acento: "Subtítulo"
+    }
+  },
+  {
+    title: "Stand-by",
+    keys: {
+      "sb-grad-1": "Degradé inicio",
+      "sb-grad-2": "Degradé medio",
+      "sb-grad-3": "Degradé final",
+      "sb-texto": "Color de letras",
+      "sb-borde": "Borde de letras"
+    }
+  },
+  {
+    title: "Mapa y controles",
+    keys: {
+      fondo: "Fondo detrás del mapa",
+      ruta: "Línea del recorrido",
+      hito: "Relleno corazones",
+      boton: "Fondo botones",
+      tarjeta: "Tarjetas / popups"
+    }
+  }
+];
 const FILTER_META = {
-  sat: {label: "Saturación", min: 0, max: 2.5, step: 0.01},
-  hue: {label: "Hue rotate (°)", min: 0, max: 360, step: 1},
-  bri: {label: "Brillo mapa", min: 0.4, max: 1.8, step: 0.01},
-  con: {label: "Contraste", min: 0.4, max: 1.8, step: 0.01},
-  tinte: {label: "Opacidad degradé", min: 0, max: 1, step: 0.01}
+  tinte: {label: "Opacidad del degradé (mapa)", min: 0, max: 1, step: 0.01},
+  bri: {label: "Brillo del mapa", min: 0.4, max: 1.8, step: 0.01},
+  dark: {label: "Oscuridad", min: 0, max: 1, step: 0.01},
+  con: {label: "Claridad (contraste)", min: 0.4, max: 1.8, step: 0.01},
+  sat: {label: "Intensidad de color", min: 0, max: 2.5, step: 0.01}
 };
 let temaState = JSON.parse(JSON.stringify(TEMA_DEFAULT));
 let temaTab = "noche";
@@ -2716,18 +2757,21 @@ function cssTemaLive(){
   const d = temaState.dia, n = temaState.noche;
   const col = (modo, key) => modo.colors[key];
   const block = (modo) => `
-  --fondo:${col(modo,"fondo")};--tinta:${col(modo,"tinta")};--tinta-suave:${col(modo,"tinta-suave")};
+  --fondo:${col(modo,"fondo")};--header:${col(modo,"header") || col(modo,"fondo")};
+  --tinta:${col(modo,"tinta")};--tinta-suave:${col(modo,"tinta-suave")};
   --ruta:${col(modo,"ruta")};--km:${col(modo,"km")};--km-num:${col(modo,"km-num")};
   --hito:${col(modo,"hito")};--marca:${col(modo,"marca")};--acento:${col(modo,"acento")};
-  --hidra:${col(modo,"hidra")};--tarjeta:${col(modo,"tarjeta")};--boton:${col(modo,"boton")};--standby:${col(modo,"standby")};`;
+  --hidra:${col(modo,"hidra")};--tarjeta:${col(modo,"tarjeta")};--boton:${col(modo,"boton")};--standby:${col(modo,"standby")};
+  --sb-grad-1:${col(modo,"sb-grad-1")};--sb-grad-2:${col(modo,"sb-grad-2")};--sb-grad-3:${col(modo,"sb-grad-3")};
+  --sb-texto:${col(modo,"sb-texto")};--sb-borde:${col(modo,"sb-borde")};`;
   return `
 :root{
   ${block(d)}
-  --map-sat:${d.filters.sat};--map-hue:${d.filters.hue};--map-bri:${d.filters.bri};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.62};
+  --map-sat:${d.filters.sat ?? 1};--map-bri:${d.filters.bri};--map-dark:${d.filters.dark ?? 0};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.38};
 }
 body.noche{
   ${block(n)}
-  --map-sat:${n.filters.sat};--map-hue:${n.filters.hue};--map-bri:${n.filters.bri};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.62};
+  --map-sat:${n.filters.sat ?? 1};--map-bri:${n.filters.bri};--map-dark:${n.filters.dark ?? 0};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.38};
 }`;
 }
 function aplicarTemaLive(){
@@ -2755,24 +2799,36 @@ function renderPanelTema(){
   });
   const block = temaState[temaTab];
   colores.innerHTML = "";
-  for(const key of Object.keys(COLOR_LABELS)){
-    const val = block.colors[key];
-    const field = document.createElement("div");
-    field.className = "temaField";
-    field.innerHTML = `
-      <label>${COLOR_LABELS[key]}</label>
-      <div class="row">
-        <input type="color" data-color="${key}" value="${val.length===7?val:"#000000"}">
-        <input type="text" data-color-text="${key}" value="${val}" maxlength="20" spellcheck="false">
-      </div>`;
-    colores.appendChild(field);
+  for(const sec of COLOR_SECTIONS){
+    const wrap = document.createElement("div");
+    wrap.className = "temaSecInner";
+    const title = document.createElement("h5");
+    title.textContent = sec.title;
+    wrap.appendChild(title);
+    const grid = document.createElement("div");
+    grid.className = "temaGrid";
+    for(const key of Object.keys(sec.keys)){
+      const val = block.colors[key] || "#000000";
+      const field = document.createElement("div");
+      field.className = "temaField";
+      field.innerHTML = `
+        <label>${sec.keys[key]}</label>
+        <div class="row">
+          <input type="color" data-color="${key}" value="${val.length===7?val:"#000000"}">
+          <input type="text" data-color-text="${key}" value="${val}" maxlength="20" spellcheck="false">
+        </div>`;
+      grid.appendChild(field);
+    }
+    wrap.appendChild(grid);
+    colores.appendChild(wrap);
   }
   filtros.innerHTML = "";
-  const filterKeys = ["tinte", "sat", "bri", "con", "hue"];
+  const filterKeys = ["tinte", "bri", "dark", "con", "sat"];
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const val = block.filters[key] ?? (key === "tinte" ? 0.62 : 1);
+    const fallback = key === "tinte" ? 0.38 : key === "dark" ? 0 : 1;
+    const val = block.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
     field.innerHTML = `
