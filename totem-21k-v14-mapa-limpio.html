@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-multiply-fusion">
+<meta name="totem-version" content="2026-08-11-popup-mapa">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -946,10 +946,8 @@ path.trazaRuta{
 .pinIcono.activo .corazon path{stroke-width:1.8;}
 
 #btnInclinar{top:12px;z-index:1200;}
-#btnModo{top:62px;z-index:1200;}
-#btnTema{top:112px;z-index:1200;}
+#btnTema{top:62px;z-index:1200;}
 #btnInclinar,
-#btnModo,
 #btnTema{
   display:inline-flex;
   position:absolute;left:12px;
@@ -960,18 +958,15 @@ path.trazaRuta{
   color:var(--tinta);box-shadow:var(--sombra);
 }
 #btnInclinar .dot,
-#btnModo .dot,
 #btnTema .dot{
   width:8px;height:8px;border-radius:50%;
   background:var(--tinta-suave);
 }
 #btnInclinar.activo,
-#btnModo.noche-on,
 #btnTema.activo{
   border-color:var(--acento);color:var(--acento);
 }
 #btnInclinar.activo .dot,
-#btnModo.noche-on .dot,
 #btnTema.activo .dot{
   background:var(--acento);
   box-shadow:0 0 0 4px color-mix(in srgb, var(--acento) 25%, transparent);
@@ -1001,6 +996,16 @@ path.trazaRuta{
 #temaCard.tema-noche{
   background:#183246;color:#F3F2F1;
   border-left:4px solid #5E992E;
+}
+#temaCard.tema-unico{
+  background:#F3F2F1;color:#183246;
+  border-left:4px solid #EF981F;
+}
+#temaCard.tema-unico .temaHead{background:rgba(243,242,241,.94);}
+#temaCard.tema-unico .temaField input[type="text"]{background:#fff;color:#183246;}
+#temaCard.tema-unico .temaField input[type="range"]{accent-color:#EF981F;}
+#temaCard.tema-unico .temaAcciones .primario{
+  background:#EF981F;border-color:#EF981F;color:#1B2221;
 }
 .temaHead{
   position:sticky;top:0;z-index:2;
@@ -1170,135 +1175,60 @@ path.trazaRuta{
 }
 #zoomCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
 
-/* ---------- POPUP CARD (estilo recorrido 21K) ---------- */
-#popup{
-  position:absolute;inset:0;z-index:1000;
-  display:block;
-  background:transparent;
-  visibility:hidden;
-  pointer-events:none;
+/* header oculto: mapa a pantalla completa */
+header{display:none !important;}
+
+/* ---------- POPUP anclado al corazón (estilo ref AI) ---------- */
+.leaflet-popup.hito-popup{margin-bottom:14px;}
+.leaflet-popup.hito-popup .leaflet-popup-content-wrapper{
+  background:#fff;
+  color:#1B2221;
+  border-radius:2px;
+  border:1.5px solid rgba(27,34,33,.18);
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+  padding:0;
 }
-#popup.abierto{visibility:visible;pointer-events:auto;}
-#popup.abierto::before{
-  content:"";
-  position:absolute;inset:0;
-  background:transparent;
+.leaflet-popup.hito-popup .leaflet-popup-content{
+  margin:14px 16px 16px;
+  min-width:200px;
+  max-width:280px;
 }
-#popCard{
-  position:absolute;top:88px;left:18px;
-  width:min(370px, calc(100% - 36px));
-  max-height:calc(100% - 110px);
-  background:#F3F2F1;color:#183246;
-  border-radius:4px;
-  box-shadow:0 26px 60px rgba(0,0,0,.55);
-  overflow:hidden;
-  display:flex;flex-direction:column;
-  visibility:hidden;
+.leaflet-popup.hito-popup .leaflet-popup-tip-container{margin-top:-1px;}
+.leaflet-popup.hito-popup .leaflet-popup-tip{
+  background:#fff;
+  border:1.5px solid rgba(27,34,33,.18);
+  box-shadow:none;
 }
-#popup.abierto #popCard{visibility:visible;}
-#popCard.in{animation:popIn var(--pop-dur, var(--ani-dur)) var(--ease-quart) both;}
-@keyframes popIn{
-  0%{opacity:0;transform:translateX(-38px) scale(.97)}
-  100%{opacity:1;transform:none}
-}
-#popCard.out{animation:popOut .28s var(--ease-quad) both;}
-@keyframes popOut{
-  to{opacity:0;transform:translateX(-22px) scale(.98)}
-}
-.pop-strip{
-  height:5px;flex-shrink:0;
-  background:linear-gradient(90deg,#F7C21C,#E7671A,#DD3466);
-}
-.pop-media{
-  flex-shrink:0;
-  width:100%;
-  aspect-ratio:16/10;
-  background:#E4E1DB;
-  border-bottom:1px solid #DCDAD6;
-  position:relative;
-  overflow:hidden;
-}
-.pop-media img{
-  width:100%;height:100%;object-fit:cover;display:block;
-}
-.pop-media .ph{
-  position:absolute;inset:0;
-  display:grid;place-items:center;
-  padding:16px;
+.leaflet-popup.hito-popup a.leaflet-popup-close-button{
+  color:#1B2221;
+  font-size:20px;
+  top:6px;right:8px;
+  width:28px;height:28px;
+  padding:0;
   text-align:center;
-  font-family:'IBM Plex Mono',monospace;
-  font-size:11px;letter-spacing:.08em;line-height:1.45;
-  color:#8C97A1;text-transform:uppercase;
+  opacity:.55;
 }
-.pop-head{
-  padding:17px 18px 0;display:flex;gap:14px;align-items:flex-start;
-  position:relative;
+.leaflet-popup.hito-popup a.leaflet-popup-close-button:hover{opacity:1;}
+.hito-pop-title{
+  font-family:'Montserrat',sans-serif;
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  margin:0 28px 10px 0;
+  line-height:1.2;
+  color:#1B2221;
 }
-.pop-heading{padding-right:28px;min-width:0;}
-.pop-km{
-  flex-shrink:0;text-align:left;padding-right:13px;
-  border-right:2px solid #EF981F;min-width:60px;
+.hito-pop-body{
+  font-family:'Montserrat',sans-serif;
+  font-weight:500;
+  font-size:12.5px;
+  line-height:1.55;
+  color:#2a3030;
 }
-.pop-km.flip{animation:flipInX var(--pop-dur, var(--ani-dur-flip)) var(--ease-quad) both;}
-@keyframes flipInX{
-  0%{transform:perspective(400px) rotateX(90deg);opacity:0}
-  40%{transform:perspective(400px) rotateX(-10deg)}
-  70%{transform:perspective(400px) rotateX(10deg)}
-  100%{transform:perspective(400px) rotateX(0);opacity:1}
-}
-.pop-km .n{
-  font-family:'Archivo Black',Montserrat,sans-serif;
-  font-size:29px;line-height:.9;color:#EF981F;
-  font-variant-numeric:tabular-nums;
-}
-.pop-km .l{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-  color:#8C97A1;margin-top:4px;
-}
-.pop-idx{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:10px;letter-spacing:.18em;text-transform:uppercase;
-  color:#8C97A1;margin:0 0 6px;
-}
-.pop-title{
-  font-family:'Archivo Black',Montserrat,sans-serif;
-  font-size:clamp(18px,4.2vw,21px);line-height:1.03;margin:0;letter-spacing:-.01em;
-}
-.pop-body{
-  padding:12px 18px 18px;overflow-y:auto;overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;min-height:0;
-}
-.pop-addr{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:11px;line-height:1.5;color:#5C6874;
-  padding-bottom:11px;margin:0 0 12px;border-bottom:1px solid #DCDAD6;
-}
-.pop-text{
-  font-family:'Archivo',Montserrat,sans-serif;
-  font-size:13.5px;line-height:1.6;color:#37424D;margin:0 0 10px;
-}
-.pop-text:last-child{margin-bottom:0;}
-.pop-text b{color:#EF981F;}
-.pop-close{
-  position:absolute;top:14px;right:14px;width:28px;height:28px;
-  border:0;border-radius:50%;
-  background:rgba(24,50,70,.09);color:#183246;cursor:pointer;
-  font-size:16px;line-height:1;display:grid;place-items:center;padding:0;z-index:2;
-}
-#popCard .pop-close{top:12px;right:12px;background:rgba(243,242,241,.92);}
-.pop-close:active{background:#EF981F;}
-.stagger > *{
-  opacity:0;
-  animation:fadeInUp var(--ani-dur) var(--ease-quart) forwards;
-}
-@keyframes fadeInUp{
-  0%{opacity:0;transform:translateY(20px)}
-  100%{opacity:1;transform:none}
-}
-#popup.abierto ~ * .hint,
-#mapaWrap:has(+ #popup.abierto) .hint,
-body:has(#popup.abierto) .hint{opacity:0 !important;}
+.hito-pop-body p{margin:0 0 8px;}
+.hito-pop-body p:last-child{margin-bottom:0;}
+.hito-pop-body b{color:#E7671A;font-weight:700;}
 
 /* ---------- ATTRACT / STAND-BY ---------- */
 #attract{
@@ -1426,9 +1356,8 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
   #popCard.out{animation-name:popOutDown;}
   @keyframes popOutDown{to{opacity:0;transform:translateY(24px)}}
   body:has(#popup.abierto) .hint{display:none;}
-  body:has(#popup.abierto) #btnInclinar,
-  body:has(#popup.abierto) #btnModo,
-  body:has(#popup.abierto) #btnTema{opacity:.35;pointer-events:none;}
+  body:has(.leaflet-popup.hito-popup) #btnInclinar,
+  body:has(.leaflet-popup.hito-popup) #btnTema{opacity:.35;pointer-events:none;}
 
   .qrCard{
     margin:16px;
@@ -1495,7 +1424,7 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
 }
 </style>
 </head>
-<body class="noche">
+<body>
 
   <svg style="display: none;">
   <filter id="resaltar-verde">
@@ -1524,17 +1453,6 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
     <div class="cta">▶ Tocá la pantalla y conocé el recorrido antes de correrlo</div>
   </div>
 
-  <header>
-    <div class="titulo">
-      <h1><em>21K</em> Buenos Aires</h1>
-      <span class="sub">conocé el recorrido antes de correrlo</span>
-    </div>
-    <div class="stats">
-      <b>21,097 km</b> · el circuito más rápido de América<br>
-      Largada y llegada: <b>Av. F. Alcorta y Dorrego</b><br>
-      <b id="statHitos">9</b> hitos para descubrir
-    </div>
-  </header>
 
     <div id="mapaWrap">
     <div id="tiltStage">
@@ -1544,10 +1462,6 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
     <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar el mapa con el celular">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
-    </button>
-    <button id="btnModo" type="button" aria-pressed="true" title="Cambiar modo día / noche">
-      <span class="dot" aria-hidden="true"></span>
-      Modo día
     </button>
     <button id="btnTema" type="button" aria-pressed="false" title="Configurar colores y filtros">
       <span class="dot" aria-hidden="true"></span>
@@ -1563,13 +1477,9 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
   </div>
 
   <div id="temaPanel" aria-hidden="true">
-    <aside id="temaCard" class="tema-noche" role="dialog" aria-label="Configuración de colores">
+    <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
       <div class="temaHead">
         <h3>Configuración</h3>
-        <div class="temaTabs">
-          <button type="button" data-tab="dia">Día</button>
-          <button type="button" data-tab="noche" class="on">Noche</button>
-        </div>
         <button type="button" class="temaCerrar" id="temaCerrar" aria-label="Cerrar">×</button>
       </div>
       <div class="temaBody">
@@ -1602,29 +1512,6 @@ body:has(#popup.abierto) .hint{opacity:0 !important;}
     </div>
   </div>
 
-  <div id="popup" aria-hidden="true">
-    <aside id="popCard" role="dialog" aria-labelledby="popTitle">
-      <div class="pop-strip"></div>
-      <button type="button" class="pop-close" id="popClose" aria-label="Cerrar">✕</button>
-      <div class="pop-media" id="popMedia">
-        <div class="ph" id="popMediaPh">Foto del hito</div>
-      </div>
-      <div class="pop-head">
-        <div class="pop-km" id="popKm">
-          <div class="n" id="popKmN">—</div>
-          <div class="l">km</div>
-        </div>
-        <div class="pop-heading">
-          <p class="pop-idx" id="popIdx"></p>
-          <h2 class="pop-title" id="popTitle">—</h2>
-        </div>
-      </div>
-      <div class="pop-body">
-        <p class="pop-addr" id="popAddr"></p>
-        <div id="popText" class="stagger"></div>
-      </div>
-    </aside>
-  </div>
 
 </div>
 
@@ -1831,8 +1718,8 @@ const CFG = {
   animarMapa: true,
   cicloHuellasMs: 9000,
   pasoHuellaM: 240,        // metros entre pisadas
-  zoomHito: 15,
-  flyHitoMs: 0.9,          // mismo tempo que la card del popup
+  zoomHito: 15.25,
+  flyHitoMs: 0.55,          // mismo tempo que la card del popup
   flyBoundsMs: 1.4,        // duración del encuadre general
   /* Tiles online (CARTO sobre OpenStreetMap, con atribución).
      Para el tótem offline: bajar los tiles de la zona y cambiar
@@ -2045,8 +1932,16 @@ const CORAZON_SVG = `<svg class="corazon" viewBox="0 0 24 24" aria-hidden="true"
   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
 </svg>`;
 const marcadores = {};
+function popupHtml(h){
+  const slides = h.slides || [];
+  const body = slides.map(s => `<p>${s.txt}</p>`).join("") || `<p>${h.cat || ""}</p>`;
+  return `<div class="hito-pop">
+    <h3 class="hito-pop-title">${h.nombre}</h3>
+    <div class="hito-pop-body">${body}</div>
+  </div>`;
+}
 function renderHitos(){
-  HITOS.forEach((h,i)=>{
+  HITOS.forEach((h)=>{
     const pin = L.marker(h.geo, {
       keyboard:true,
       pane:"hitos",
@@ -2056,10 +1951,27 @@ function renderHitos(){
         html:`<div class="pinIcono" id="pin-${h.id}" style="width:28px;height:28px">${CORAZON_SVG}</div>`
       })
     }).addTo(map);
+    pin.bindPopup(popupHtml(h), {
+      className: "hito-popup",
+      maxWidth: 300,
+      minWidth: 210,
+      offset: L.point(0, -8),
+      autoPan: true,
+      autoPanPadding: [56, 56],
+      closeButton: true,
+      closeOnClick: true
+    });
     pin.on("click", ()=> volarYAbrir(h));
+    pin.on("popupclose", ()=>{
+      if(S.estado === "POPUP" && S.hito && S.hito.id === h.id){
+        S.estado = "MAPA";
+        S.hito = null;
+        marcarActivo(null);
+        pausarTiltPorPopup(false);
+      }
+    });
     marcadores[h.id] = pin;
   });
-  document.getElementById("statHitos").textContent = HITOS.length;
 }
 
 function marcarActivo(id){
@@ -2068,15 +1980,19 @@ function marcarActivo(id){
     if(pinEl) pinEl.classList.toggle("activo", h.id === id);
   });
 }
-/* tocás un hito: zoom al punto + popup al mismo tiempo */
+/* tocás un hito: mini zoom + cartel blanco anclado al corazón */
 function volarYAbrir(h){
   marcarActivo(h.id);
+  S.hito = h;
+  const pin = marcadores[h.id];
+  if(pin) pin.closePopup();
   const dur = CFG.flyHitoMs;
-  document.documentElement.style.setProperty("--pop-dur", dur + "s");
-  document.documentElement.style.setProperty("--ani-dur", dur + "s");
-  document.documentElement.style.setProperty("--ani-dur-flip", dur + "s");
+  const z = Math.min(map.getMaxZoom(), Math.max(map.getZoom() + 0.6, CFG.zoomHito));
   irA("POPUP", h);
-  map.flyTo(h.geo, CFG.zoomHito, {duration: dur, easeLinearity: 0.22});
+  map.flyTo(h.geo, z, {duration: dur, easeLinearity: 0.25});
+  const open = ()=>{ if(S.estado === "POPUP" && pin) pin.openPopup(); };
+  map.once("moveend", open);
+  setTimeout(open, dur * 1000 + 40);
   reiniciarInactividad();
 }
 
@@ -2108,7 +2024,7 @@ function animarTrazado(){
 const S = { estado:"ATTRACT", hito:null, slide:0,
             tInactividad:null, tSlides:null, tRotador:null };
 const $ = s => document.querySelector(s);
-const attract = $("#attract"), popup = $("#popup");
+const attract = $("#attract");
 const qrModal = document.getElementById("qrModal");
 function abrirQr(){ qrModal.classList.add("abierto"); reiniciarInactividad(); }
 function cerrarQr(){ qrModal.classList.remove("abierto"); }
@@ -2131,96 +2047,23 @@ function irA(estado, dato){
       map.invalidateSize(); ajustarZoomMin();
       animarTrazado();
     }
-    if(anterior === "POPUP"){ encuadrar(true); }
     pausarTiltPorPopup(false);
   }
   if(estado === "POPUP"){
     attract.classList.add("oculto"); pararRotador();
     pausarTiltPorPopup(true);
-    abrirPopup(dato);
+    S.hito = dato || S.hito;
   }
   reiniciarInactividad();
 }
 
 /* ============================================================
-   10. POPUP — card estilo recorrido 21K (sin botones de abajo)
+   10. POPUP — cartel blanco Leaflet anclado al corazón
    ============================================================ */
-function kmLabelDeHito(h){
-  const m = String(h.cat || "").match(/Km\s*([\d.,]+)/i);
-  if(m) return m[1].replace(".", ",");
-  const idx = HITOS.findIndex(x => x.id === h.id);
-  return idx >= 0 ? String(idx + 1) : "—";
-}
-function abrirPopup(h){
-  S.hito = h; S.slide = 0;
-  clearTimeout(S.tSlides);
-  const idx = HITOS.findIndex(x => x.id === h.id);
-  const card = document.getElementById("popCard");
-  const kmEl = document.getElementById("popKm");
-  document.getElementById("popKmN").textContent = kmLabelDeHito(h);
-  document.getElementById("popIdx").textContent =
-    `Hito ${String(idx + 1).padStart(2, "0")} de ${HITOS.length}`;
-  document.getElementById("popTitle").textContent = h.nombre;
-  document.getElementById("popAddr").textContent = h.cat || "";
-
-  const media = document.getElementById("popMedia");
-  const slides = h.slides || [];
-  const foto = slides[0] && slides[0].img;
-  media.innerHTML = "";
-  if(foto && /\.(jpe?g|png|webp|gif)(\?|$)/i.test(foto)){
-    const img = document.createElement("img");
-    img.src = foto;
-    img.alt = h.nombre;
-    media.appendChild(img);
-  }else{
-    const ph = document.createElement("div");
-    ph.className = "ph";
-    ph.id = "popMediaPh";
-    ph.textContent = foto || "Espacio para foto del hito";
-    media.appendChild(ph);
-  }
-
-  const box = document.getElementById("popText");
-  box.innerHTML = "";
-  slides.forEach((s, k) => {
-    const p = document.createElement("p");
-    p.className = "pop-text";
-    p.innerHTML = s.txt;
-    p.style.animationDelay = `${140 + k * 180}ms`;
-    box.appendChild(p);
-  });
-  marcarActivo(h.id);
-  popup.classList.add("abierto");
-  popup.setAttribute("aria-hidden", "false");
-  card.classList.remove("out");
-  kmEl.classList.remove("flip");
-  void kmEl.offsetWidth;
-  kmEl.classList.add("flip");
-  card.classList.remove("in");
-  void card.offsetWidth;
-  card.classList.add("in");
-}
 function cerrarPopupDom(){
-  const card = document.getElementById("popCard");
-  clearTimeout(S.tSlides);
-  if(!popup.classList.contains("abierto")) return;
-  card.classList.remove("in");
-  card.classList.add("out");
-  const fin = () => {
-    popup.classList.remove("abierto");
-    popup.setAttribute("aria-hidden", "true");
-    card.classList.remove("out");
-    card.removeEventListener("animationend", fin);
-  };
-  card.addEventListener("animationend", fin);
-  setTimeout(fin, 320);
+  map.closePopup();
+  S.hito = null;
 }
-document.getElementById("popClose").addEventListener("click", e=>{
-  e.stopPropagation();
-  irA("MAPA");
-});
-document.getElementById("popCard").addEventListener("pointerdown", e=> e.stopPropagation());
-popup.addEventListener("pointerdown", e=>{ if(e.target === popup) irA("MAPA"); });
 
 /* ============================================================
    11. ATTRACT + INACTIVIDAD + MODO + DEMO
@@ -2238,23 +2081,6 @@ function reiniciarInactividad(){
 ["pointerdown","pointermove","keydown"].forEach(ev=>
   document.addEventListener(ev, reiniciarInactividad, {passive:true}));
 
-function aplicarModo(noche){
-  /* OSM/Voyager claros + filtro CSS para noche */
-  document.body.classList.toggle("noche", !!noche);
-  const btn = document.getElementById("btnModo");
-  if(!btn) return;
-  btn.classList.toggle("noche-on", !!noche);
-  btn.setAttribute("aria-pressed", noche ? "true" : "false");
-  btn.innerHTML = noche
-    ? '<span class="dot" aria-hidden="true"></span> Modo día'
-    : '<span class="dot" aria-hidden="true"></span> Modo noche';
-  btn.title = noche ? "Pasar a modo día" : "Pasar a modo noche";
-}
-/*function aplicarModoPorHora(){
-  const h = new Date().getHours();
-  aplicarModo(h >= CFG.nocheDesde || h < CFG.nocheHasta);
-}
-setInterval(aplicarModoPorHora, 60000);*/
 
 document.addEventListener("contextmenu", e=> e.preventDefault());
 
@@ -2369,11 +2195,6 @@ btnUbicacion.addEventListener("click", e=>{
   reiniciarInactividad();
 });
 
-$("#btnModo").addEventListener("click", e=>{
-  e.stopPropagation();
-  aplicarModo(!document.body.classList.contains("noche"));
-  reiniciarInactividad();
-});
 $("#btnAnim").addEventListener("click", ()=>{
   CFG.animarMapa = !CFG.animarMapa;
   aplicarAnimacion();
@@ -2631,89 +2452,39 @@ window._map = map;   // acceso desde consola para depurar
 renderKms();
 renderHitos();
 aplicarAnimacion();
-//aplicarModoPorHora();
 initInclinacion();
-aplicarModo(true);
 /* el panel de tema se inicializa al final del archivo (después de
    declarar TEMA_*). irA(ATTRACT) también va ahí para no cortar el init. */
 
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v9";
+const TEMA_KEY = "totem21k-tema-v10";
 const TEMA_DEFAULT = {
-  "dia": {
-    "colors": {
-      "header": "#F3F2F1",
-      "tinta": "#183246",
-      "tinta-suave": "#5E605F",
-      "marca": "#EF981F",
-      "acento": "#EF981F",
-      "sb-grad-1": "#DD3466",
-      "sb-grad-2": "#E7671A",
-      "sb-grad-3": "#F7C21C",
-      "sb-texto": "#F7C21C",
-      "sb-borde": "#FFFFFF",
-      "fondo": "#F3F2F1",
-      "ruta": "#F7C21C",
-      "hito": "#FFFFFF",
-      "boton": "#FFFFFF",
-      "tarjeta": "#FFFFFF",
-      "km": "#183246",
-      "km-num": "#F7C21C",
-      "hidra": "#054D4B",
-      "standby": "#F3F2F1"
-    },
-    "filters": {
-      "sat": 0.55,
-      "bri": 1.02,
-      "dark": 0,
-      "con": 1.08,
-      "tinte": 0.88
-    }
+  "colors": {
+    "tinta": "#183246",
+    "marca": "#EF981F",
+    "acento": "#EF981F",
+    "sb-grad-1": "#DD3466",
+    "sb-grad-2": "#E7671A",
+    "sb-grad-3": "#F7C21C",
+    "sb-texto": "#F7C21C",
+    "sb-borde": "#FFFFFF",
+    "fondo": "#F3F2F1",
+    "ruta": "#F7C21C",
+    "hito": "#FFFFFF",
+    "boton": "#FFFFFF",
+    "tarjeta": "#FFFFFF"
   },
-  "noche": {
-    "colors": {
-      "header": "#183246",
-      "tinta": "#F3F2F1",
-      "tinta-suave": "#989791",
-      "marca": "#5E992E",
-      "acento": "#5E992E",
-      "sb-grad-1": "#DD3466",
-      "sb-grad-2": "#E7671A",
-      "sb-grad-3": "#F7C21C",
-      "sb-texto": "#F7C21C",
-      "sb-borde": "#FFFFFF",
-      "fondo": "#183246",
-      "ruta": "#F7C21C",
-      "hito": "#FFFFFF",
-      "boton": "#054D4B",
-      "tarjeta": "#054D4B",
-      "km": "#F7C21C",
-      "km-num": "#183246",
-      "hidra": "#5E992E",
-      "standby": "#183246"
-    },
-    "filters": {
-      "sat": 0.55,
-      "bri": 1.02,
-      "dark": 0,
-      "con": 1.08,
-      "tinte": 0.88
-    }
+  "filters": {
+    "sat": 0.55,
+    "bri": 1.02,
+    "dark": 0,
+    "con": 1.08,
+    "tinte": 0.88
   }
 };
 const COLOR_SECTIONS = [
-  {
-    title: "Header (arriba del mapa)",
-    keys: {
-      header: "Fondo de arriba",
-      tinta: "Texto principal",
-      "tinta-suave": "Texto suave / stats",
-      marca: "21K (marca)",
-      acento: "Subtítulo"
-    }
-  },
   {
     title: "Degradé (mapa + stand-by)",
     keys: {
@@ -2731,7 +2502,10 @@ const COLOR_SECTIONS = [
       ruta: "Línea del recorrido",
       hito: "Relleno corazones",
       boton: "Fondo botones",
-      tarjeta: "Tarjetas / popups"
+      tinta: "Texto / bordes UI",
+      marca: "Acento 21K",
+      acento: "Acento UI",
+      tarjeta: "Tarjetas"
     }
   }
 ];
@@ -2743,15 +2517,14 @@ const FILTER_META = {
   sat: {label: "Saturación del mapa", min: 0, max: 2.5, step: 0.01}
 };
 let temaState = JSON.parse(JSON.stringify(TEMA_DEFAULT));
-let temaTab = "noche";
 
 function deepMergeTema(base, patch){
   const out = JSON.parse(JSON.stringify(base));
-  for(const modo of ["dia", "noche"]){
-    if(!patch || !patch[modo]) continue;
-    if(patch[modo].colors) Object.assign(out[modo].colors, patch[modo].colors);
-    if(patch[modo].filters) Object.assign(out[modo].filters, patch[modo].filters);
-  }
+  if(!patch) return out;
+  // compat: si viene el formato viejo dia/noche, tomar dia o noche
+  const src = patch.colors ? patch : (patch.dia || patch.noche || {});
+  if(src.colors) Object.assign(out.colors, src.colors);
+  if(src.filters) Object.assign(out.filters, src.filters);
   return out;
 }
 function cargarTemaGuardado(){
@@ -2762,24 +2535,16 @@ function cargarTemaGuardado(){
   }catch(_){}
 }
 function cssTemaLive(){
-  const d = temaState.dia, n = temaState.noche;
-  const col = (modo, key) => modo.colors[key];
-  const block = (modo) => `
-  --fondo:${col(modo,"fondo")};--header:${col(modo,"header") || col(modo,"fondo")};
-  --tinta:${col(modo,"tinta")};--tinta-suave:${col(modo,"tinta-suave")};
-  --ruta:${col(modo,"ruta")};--km:${col(modo,"km")};--km-num:${col(modo,"km-num")};
-  --hito:${col(modo,"hito")};--marca:${col(modo,"marca")};--acento:${col(modo,"acento")};
-  --hidra:${col(modo,"hidra")};--tarjeta:${col(modo,"tarjeta")};--boton:${col(modo,"boton")};--standby:${col(modo,"standby")};
-  --sb-grad-1:${col(modo,"sb-grad-1")};--sb-grad-2:${col(modo,"sb-grad-2")};--sb-grad-3:${col(modo,"sb-grad-3")};
-  --sb-texto:${col(modo,"sb-texto")};--sb-borde:${col(modo,"sb-borde")};`;
+  const c = temaState.colors, f = temaState.filters;
   return `
 :root{
-  ${block(d)}
-  --map-sat:${d.filters.sat ?? 0.55};--map-bri:${d.filters.bri};--map-dark:${d.filters.dark ?? 0};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.88};
-}
-body.noche{
-  ${block(n)}
-  --map-sat:${n.filters.sat ?? 0.55};--map-bri:${n.filters.bri};--map-dark:${n.filters.dark ?? 0};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.88};
+  --fondo:${c.fondo};--header:${c.fondo};
+  --tinta:${c.tinta};--tinta-suave:${c.tinta};
+  --ruta:${c.ruta};--hito:${c.hito};--marca:${c.marca};--acento:${c.acento};
+  --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
+  --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
+  --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
+  --map-sat:${f.sat ?? 0.55};--map-bri:${f.bri};--map-dark:${f.dark ?? 0};--map-con:${f.con};--map-tinte-op:${f.tinte ?? 0.88};
 }`;
 }
 function aplicarTemaLive(){
@@ -2800,12 +2565,7 @@ function renderPanelTema(){
   const colores = document.getElementById("temaColores");
   const filtros = document.getElementById("temaFiltros");
   if(!card || !colores || !filtros) return;
-  card.classList.toggle("tema-dia", temaTab === "dia");
-  card.classList.toggle("tema-noche", temaTab === "noche");
-  document.querySelectorAll(".temaTabs button").forEach(b=>{
-    b.classList.toggle("on", b.dataset.tab === temaTab);
-  });
-  const block = temaState[temaTab];
+  card.classList.add("tema-unico");
   colores.innerHTML = "";
   for(const sec of COLOR_SECTIONS){
     const wrap = document.createElement("div");
@@ -2816,7 +2576,7 @@ function renderPanelTema(){
     const grid = document.createElement("div");
     grid.className = "temaGrid";
     for(const key of Object.keys(sec.keys)){
-      const val = block.colors[key] || "#000000";
+      const val = temaState.colors[key] || "#000000";
       const field = document.createElement("div");
       field.className = "temaField";
       field.innerHTML = `
@@ -2836,7 +2596,7 @@ function renderPanelTema(){
     const meta = FILTER_META[key];
     if(!meta) continue;
     const fallback = key === "tinte" ? 0.88 : key === "dark" ? 0 : key === "sat" ? 0.55 : 1;
-    const val = block.filters[key] ?? fallback;
+    const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
     field.innerHTML = `
@@ -2854,7 +2614,6 @@ function abrirPanelTema(si){
   btn.classList.toggle("activo", open);
   btn.setAttribute("aria-pressed", open ? "true" : "false");
   if(open){
-    temaTab = document.body.classList.contains("noche") ? "noche" : "dia";
     renderPanelTema();
     clearTimeout(S.tInactividad);
   }else{
@@ -2876,19 +2635,10 @@ function initPanelTema(){
   panel.addEventListener("pointerdown", e=>{
     if(e.target === panel) abrirPanelTema(false);
   });
-  document.querySelectorAll(".temaTabs button").forEach(b=>{
-    b.addEventListener("click", e=>{
-      e.stopPropagation();
-      temaTab = b.dataset.tab;
-      aplicarModo(temaTab === "noche");
-      renderPanelTema();
-      temaMsg(`Editando modo ${temaTab}`);
-    });
-  });
   document.getElementById("temaColores").addEventListener("input", e=>{
     const t = e.target;
     if(t.dataset.color){
-      temaState[temaTab].colors[t.dataset.color] = t.value;
+      temaState.colors[t.dataset.color] = t.value;
       const text = document.querySelector(`[data-color-text="${t.dataset.color}"]`);
       if(text) text.value = t.value;
       aplicarTemaLive();
@@ -2896,7 +2646,7 @@ function initPanelTema(){
     if(t.dataset.colorText){
       const v = t.value.trim();
       if(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v) || /^rgba?\(/.test(v)){
-        temaState[temaTab].colors[t.dataset.colorText] = v;
+        temaState.colors[t.dataset.colorText] = v;
         const pick = document.querySelector(`[data-color="${t.dataset.colorText}"]`);
         if(pick && /^#([0-9a-fA-F]{6})$/.test(v)) pick.value = v;
         aplicarTemaLive();
@@ -2908,7 +2658,7 @@ function initPanelTema(){
     if(!t.dataset.filter) return;
     const key = t.dataset.filter;
     const num = Number(t.value);
-    temaState[temaTab].filters[key] = num;
+    temaState.filters[key] = num;
     const lab = document.querySelector(`[data-fval="${key}"]`);
     if(lab) lab.textContent = String(num);
     aplicarTemaLive();
