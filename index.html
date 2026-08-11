@@ -862,10 +862,10 @@ path.trazaRuta{
 }
 #tiltStage #mapa{
   position:absolute;
-  /* sobredimensionado para que al rotar no se vean bordes */
-  inset:-14%;
-  width:128%;
-  height:128%;
+  /* sobredimensionado fuerte: al rotar no se ve el rectángulo */
+  inset:-22%;
+  width:144%;
+  height:144%;
   transform-origin:50% 55%;
   transform:translate3d(0,0,0) scale(1);
   background:var(--fondo);
@@ -875,7 +875,7 @@ path.trazaRuta{
     translate3d(var(--tilt-x, 0px), var(--tilt-y, 0px), 0)
     rotateX(var(--tilt-rx, 0deg))
     rotateY(var(--tilt-ry, 0deg))
-    scale(var(--tilt-scale, 1.12));
+    scale(var(--tilt-scale, 1.18));
   will-change:transform;
   box-shadow:none;
 }
@@ -2272,7 +2272,7 @@ const btnInclinar = document.getElementById("btnInclinar");
 const labelInclinar = () =>
   '<span class="dot" aria-hidden="true"></span> Inclinación';
 
-const TILT_BASE_SCALE = 1.14;
+const TILT_BASE_SCALE = 1.2;
 const tilt = {
   on: false,
   permiso: false,
@@ -2282,8 +2282,8 @@ const tilt = {
   cur: {rx:0, ry:0, x:0, y:0, scale:1},
   target: {rx:0, ry:0, x:0, y:0, scale:1},
   raf: 0,
-  maxDeg: 22,
-  maxShift: 14,
+  maxDeg: 11,   /* tope suave: no llega a mostrar el cuadrado */
+  maxShift: 8,
   gyroWatch: 0,
   pointers: new Map(),
   dragging: false
@@ -2320,9 +2320,9 @@ function setTiltFromAxes(nx, ny){
   tilt.target.rx = rx;
   tilt.target.ry = ry;
   tilt.target.x = clamp(nx, -1, 1) * tilt.maxShift;
-  tilt.target.y = clamp(-ny, -1, 1) * tilt.maxShift * 0.5;
-  /* más inclinación → más scale para tapar bordes */
-  tilt.target.scale = TILT_BASE_SCALE + mag * 0.22;
+  tilt.target.y = clamp(-ny, -1, 1) * tilt.maxShift * 0.45;
+  /* scale extra según inclinación para seguir tapando bordes */
+  tilt.target.scale = TILT_BASE_SCALE + mag * 0.16;
 }
 function loopTilt(){
   const t = 0.18;
