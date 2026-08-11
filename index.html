@@ -814,12 +814,14 @@ header{
 .leaflet-tile-pane{
   filter:
     saturate(var(--map-sat, 0.55))
+    hue-rotate(calc(var(--map-hue, 0) * 1deg))
     brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
     contrast(var(--map-con, 1.08));
 }
 body.noche .leaflet-tile-pane{
   filter:
     saturate(var(--map-sat, 0.55))
+    hue-rotate(calc(var(--map-hue, 0) * 1deg))
     brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
     contrast(var(--map-con, 1.08));
 }
@@ -2464,7 +2466,7 @@ initInclinacion();
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v12";
+const TEMA_KEY = "totem21k-tema-v13";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -2487,7 +2489,8 @@ const TEMA_DEFAULT = {
     "bri": 1.02,
     "dark": 0,
     "con": 1.08,
-    "sat": 0.55
+    "sat": 0.55,
+    "hue": 0
   }
 };
 const COLOR_SECTIONS = [
@@ -2529,7 +2532,8 @@ const FILTER_META = {
   bri: {label: "Brillo del mapa", min: 0.4, max: 1.8, step: 0.01},
   dark: {label: "Oscuridad del mapa", min: 0, max: 1, step: 0.01},
   con: {label: "Contraste del mapa", min: 0.4, max: 1.8, step: 0.01},
-  sat: {label: "Saturación del mapa", min: 0, max: 2.5, step: 0.01}
+  sat: {label: "Saturación del mapa", min: 0, max: 2.5, step: 0.01},
+  hue: {label: "Hue del mapa (°)", min: 0, max: 360, step: 1}
 };
 let temaState = JSON.parse(JSON.stringify(TEMA_DEFAULT));
 
@@ -2560,7 +2564,7 @@ function cssTemaLive(){
   --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
-  --map-sat:${f.sat ?? 0.55};--map-bri:${f.bri};--map-dark:${f.dark ?? 0};--map-con:${f.con};--map-tinte-op:${f.tinte ?? 0.88};
+  --map-sat:${f.sat ?? 0.55};--map-hue:${f.hue ?? 0};--map-bri:${f.bri};--map-dark:${f.dark ?? 0};--map-con:${f.con};--map-tinte-op:${f.tinte ?? 0.88};
   --map-blend:${blend};
 }`;
 }
@@ -2622,11 +2626,11 @@ function renderPanelTema(){
       ${BLEND_OPTIONS.map(o => `<option value="${o.value}"${o.value===blendVal?" selected":""}>${o.label}</option>`).join("")}
     </select>`;
   filtros.appendChild(blendField);
-  const filterKeys = ["tinte", "bri", "dark", "con", "sat"];
+  const filterKeys = ["tinte", "bri", "dark", "con", "sat", "hue"];
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "tinte" ? 0.88 : key === "dark" ? 0 : key === "sat" ? 0.55 : key === "bri" ? 1.02 : key === "con" ? 1.08 : 1;
+    const fallback = key === "tinte" ? 0.88 : key === "dark" || key === "hue" ? 0 : key === "sat" ? 0.55 : key === "bri" ? 1.02 : key === "con" ? 1.08 : 1;
     const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
