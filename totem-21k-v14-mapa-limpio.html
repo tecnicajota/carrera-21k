@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-filtros-mapa">
+<meta name="totem-version" content="2026-08-11-tema4-tilt-touch">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -813,16 +813,16 @@ header{
 /* mapa claro + degradé fusionado (multiply por defecto; editable en Colores) */
 .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.55))
-    hue-rotate(calc(var(--map-hue, 0) * 1deg))
-    brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
+    saturate(var(--map-sat, 2.5))
+    hue-rotate(calc(var(--map-hue, 339) * 1deg))
+    brightness(calc(var(--map-bri, 0.99) * (1 - var(--map-dark, 0.04) * 0.55)))
     contrast(var(--map-con, 1.08));
 }
 body.noche .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 0.55))
-    hue-rotate(calc(var(--map-hue, 0) * 1deg))
-    brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
+    saturate(var(--map-sat, 2.5))
+    hue-rotate(calc(var(--map-hue, 339) * 1deg))
+    brightness(calc(var(--map-bri, 0.99) * (1 - var(--map-dark, 0.04) * 0.55)))
     contrast(var(--map-con, 1.08));
 }
 
@@ -838,11 +838,11 @@ body.noche .leaflet-tile-pane{
   pointer-events:none;
   background:linear-gradient(
     135deg,
-    var(--sb-grad-1, #DD3466) 0%,
-    var(--sb-grad-2, #E7671A) 48%,
-    var(--sb-grad-3, #F7C21C) 100%
+    var(--sb-grad-1, #ff004c) 0%,
+    var(--sb-grad-2, #ff6200) 48%,
+    var(--sb-grad-3, #ffcd38) 100%
   );
-  opacity:var(--map-tinte-op, 0.88);
+  opacity:var(--map-tinte-op, 0.82);
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -854,34 +854,42 @@ path.trazaRuta{
 /* ---------- INCLINACIÓN ---------- */
 #tiltStage{
   position:absolute;inset:0;z-index:1;
-  perspective:900px;
+  perspective:1100px;
   perspective-origin:50% 55%;
   transform-style:preserve-3d;
   overflow:hidden;
   background:var(--fondo);
 }
 #tiltStage #mapa{
-  position:absolute;inset:0;
+  position:absolute;
+  /* sobredimensionado para que al rotar no se vean bordes */
+  inset:-14%;
+  width:128%;
+  height:128%;
   transform-origin:50% 55%;
   transform:translate3d(0,0,0) scale(1);
   background:var(--fondo);
 }
-/* scale visual (sin agrandar el layout de Leaflet) tapa los bordes
-   del rectángulo al rotar — evita el “cuadrado blanco”. */
 #mapaWrap.tilt-on #tiltStage #mapa{
   transform:
     translate3d(var(--tilt-x, 0px), var(--tilt-y, 0px), 0)
     rotateX(var(--tilt-rx, 0deg))
     rotateY(var(--tilt-ry, 0deg))
-    scale(var(--tilt-scale, 1.22));
+    scale(var(--tilt-scale, 1.12));
   will-change:transform;
   box-shadow:none;
 }
+#mapaWrap.tilt-on{
+  touch-action:none;
+  cursor:grab;
+}
+#mapaWrap.tilt-on:active{cursor:grabbing;}
 @media (prefers-reduced-motion: reduce){
   #btnInclinar{display:none !important;}
   #mapaWrap.tilt-on #tiltStage #mapa{
     transform:none !important;
   }
+  #mapaWrap.tilt-on{touch-action:auto;cursor:auto;}
 }
 #mapa.dibujando .huellaIcono{opacity:0;}
 
@@ -1337,26 +1345,35 @@ header{display:none !important;}
   .hidraIcono{width:16px;height:16px;font-size:9px;}
   .pinIcono .corazon{width:20px;height:20px;}
 
-  #popCard{
-    left:12px;right:12px;width:auto;
-    top:auto;
-    bottom:calc(12px + env(safe-area-inset-bottom, 0px));
-    max-height:min(72vh, 560px);
+  .leaflet-popup.hito-popup .leaflet-popup-content{
+    margin:12px 14px 14px;
+    min-width:150px;
+    max-width:min(72vw, 260px);
   }
-  .pop-media{aspect-ratio:16/9;max-height:28vh;}
-  .pop-head{padding:12px 14px 0;gap:10px;}
-  .pop-km .n{font-size:24px;}
-  .pop-title{font-size:clamp(16px,4.8vw,19px);}
-  .pop-body{padding:10px 14px 14px;}
-  .pop-text{font-size:13px;}
-  #popCard.in{animation-name:popInUp;}
-  @keyframes popInUp{
-    0%{opacity:0;transform:translateY(38px) scale(.98)}
-    100%{opacity:1;transform:none}
+  .hito-pop-title{font-size:12.5px;margin:0 24px 8px 0;}
+  .hito-pop-body{font-size:12px;line-height:1.5;}
+
+  #btnInclinar,
+  #btnTema{
+    left:max(10px, env(safe-area-inset-left, 0px));
+    padding:9px 12px;
+    font-size:11px;
+    min-height:40px;
+    max-width:calc(100vw - 80px);
   }
-  #popCard.out{animation-name:popOutDown;}
-  @keyframes popOutDown{to{opacity:0;transform:translateY(24px)}}
-  body:has(#popup.abierto) .hint{display:none;}
+  #btnInclinar{top:max(10px, env(safe-area-inset-top, 0px));}
+  #btnTema{top:calc(54px + env(safe-area-inset-top, 0px));}
+
+  #temaCard{
+    width:100%;
+    max-width:100%;
+    border-left-width:0;
+    border-top:4px solid #EF981F;
+  }
+  .temaGrid{grid-template-columns:1fr;}
+  .temaHead{padding:12px 14px 10px;}
+  .temaBody{padding:12px 14px calc(20px + env(safe-area-inset-bottom, 0px));}
+
   body:has(.leaflet-popup.hito-popup) #btnInclinar,
   body:has(.leaflet-popup.hito-popup) #btnTema{opacity:.35;pointer-events:none;}
 
@@ -1413,12 +1430,13 @@ header{display:none !important;}
   .stats{display:none;}
   .hint{display:none;}
   #zoomCtrl{bottom:calc(10px + env(safe-area-inset-bottom, 0px));}
-  #popCard{
-    left:auto;right:10px;width:min(52vw, 320px);
-    top:8px;bottom:8px;max-height:none;
+  .leaflet-popup.hito-popup .leaflet-popup-content{
+    max-width:min(48vw, 230px);
+    margin:10px 12px 12px;
   }
-  .pop-media{aspect-ratio:16/8;max-height:22vh;}
-  #popCard.in{animation-name:popIn;}
+  .hito-pop-title{font-size:12px;}
+  .hito-pop-body{font-size:11px;}
+  #btnInclinar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
   #attract .marca{display:none;}
   #attract h1{font-size:clamp(28px, 10vh, 48px);}
   #attract svg.miniruta{margin:10px 0 4px;}
@@ -1460,7 +1478,7 @@ header{display:none !important;}
       <div id="mapa"></div>
     </div>
     <div class="hint" hidden></div>
-    <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar el mapa con el celular">
+    <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar: arrastrá para orientar el mapa">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
     </button>
@@ -2245,14 +2263,16 @@ document.addEventListener("keydown", e=>{
 });*/
 
 /* ============================================================
-   INCLINACIÓN — mouse en desktop, giroscopio en el celular.
+   INCLINACIÓN — mouse/touch continuo + giroscopio en el celular.
+   Con inclinación ON: el dedo/mouse orienta el mapa de forma
+   continua (no solo vertical/horizontal).
    ============================================================ */
 const mapaWrapTilt = document.getElementById("mapaWrap");
-const mapaElTilt = document.getElementById("mapa");
 const btnInclinar = document.getElementById("btnInclinar");
 const labelInclinar = () =>
   '<span class="dot" aria-hidden="true"></span> Inclinación';
 
+const TILT_BASE_SCALE = 1.14;
 const tilt = {
   on: false,
   permiso: false,
@@ -2262,9 +2282,11 @@ const tilt = {
   cur: {rx:0, ry:0, x:0, y:0, scale:1},
   target: {rx:0, ry:0, x:0, y:0, scale:1},
   raf: 0,
-  maxDeg: 18,
-  maxShift: 10,
-  gyroWatch: 0
+  maxDeg: 22,
+  maxShift: 14,
+  gyroWatch: 0,
+  pointers: new Map(),
+  dragging: false
 };
 function esMobileTilt(){
   return window.matchMedia("(max-width:768px), (pointer:coarse)").matches;
@@ -2287,23 +2309,23 @@ function aplicarTiltVars(){
   mapaWrapTilt.style.setProperty("--tilt-scale", c.scale.toFixed(3));
 }
 function resetTiltTargets(){
-  tilt.target = {rx:0, ry:0, x:0, y:0, scale: tilt.on ? 1.22 : 1};
+  tilt.target = {rx:0, ry:0, x:0, y:0, scale: tilt.on ? TILT_BASE_SCALE : 1};
   tilt.baseBeta = null;
   tilt.baseGamma = null;
 }
 function setTiltFromAxes(nx, ny){
   const rx = clamp(-ny, -1, 1) * tilt.maxDeg;
   const ry = clamp(nx, -1, 1) * tilt.maxDeg;
-  const mag = Math.hypot(nx, ny);
+  const mag = Math.min(1, Math.hypot(nx, ny));
   tilt.target.rx = rx;
   tilt.target.ry = ry;
   tilt.target.x = clamp(nx, -1, 1) * tilt.maxShift;
-  tilt.target.y = clamp(-ny, -1, 1) * tilt.maxShift * 0.45;
-  /* más inclinación → un poco más de scale para tapar esquinas */
-  tilt.target.scale = 1.22 + mag * 0.1;
+  tilt.target.y = clamp(-ny, -1, 1) * tilt.maxShift * 0.5;
+  /* más inclinación → más scale para tapar bordes */
+  tilt.target.scale = TILT_BASE_SCALE + mag * 0.22;
 }
 function loopTilt(){
-  const t = 0.16;
+  const t = 0.18;
   tilt.cur.rx = lerp(tilt.cur.rx, tilt.target.rx, t);
   tilt.cur.ry = lerp(tilt.cur.ry, tilt.target.ry, t);
   tilt.cur.x  = lerp(tilt.cur.x,  tilt.target.x,  t);
@@ -2326,6 +2348,7 @@ function asegurarLoopTilt(){
 }
 function onOrientacion(e){
   if(!tilt.on || S.estado === "POPUP") return;
+  if(tilt.dragging) return; /* el dedo manda mientras arrastrás */
   const beta = e.beta, gamma = e.gamma;
   if(beta == null || gamma == null) return;
   tilt.gyroOk = true;
@@ -2335,30 +2358,63 @@ function onOrientacion(e){
   }
   const dBeta = beta - tilt.baseBeta;
   const dGamma = gamma - tilt.baseGamma;
-  /* Sensibilidad ~18° de teléfono → inclinación máxima */
-  const sens = 18;
+  const sens = 16;
   let nx = dGamma / sens;
   let ny = dBeta / sens;
-  const ang = anguloPantalla();
-  if(ang === 90){ nx = dBeta / sens; ny = -dGamma / sens; }
-  else if(ang === -90 || ang === 270){ nx = -dBeta / sens; ny = dGamma / sens; }
-  else if(ang === 180){ nx = -dGamma / sens; ny = -dBeta / sens; }
+  const ang = ((anguloPantalla() % 360) + 360) % 360;
+  /* remapeo continuo por cuadrantes (no solo 0/90) */
+  const rad = ang * Math.PI / 180;
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const rx = nx * cos - ny * sin;
+  const ry = nx * sin + ny * cos;
+  setTiltFromAxes(clamp(rx, -1, 1), clamp(ry, -1, 1));
+  asegurarLoopTilt();
+}
+function setTiltFromClientPoint(clientX, clientY){
+  const r = mapaWrapTilt.getBoundingClientRect();
+  if(!r.width || !r.height) return;
+  const nx = ((clientX - r.left) / r.width - 0.5) * 2;
+  const ny = ((clientY - r.top) / r.height - 0.5) * 2;
   setTiltFromAxes(clamp(nx, -1, 1), clamp(ny, -1, 1));
   asegurarLoopTilt();
 }
-function onMouseTilt(e){
+function onPointerTiltDown(e){
   if(!tilt.on || S.estado === "POPUP") return;
-  if(esMobileTilt()) return;
-  if(e.pointerType && e.pointerType !== "mouse") return;
-  const r = mapaWrapTilt.getBoundingClientRect();
-  const nx = ((e.clientX - r.left) / r.width - 0.5) * 2;
-  const ny = ((e.clientY - r.top) / r.height - 0.5) * 2;
-  setTiltFromAxes(clamp(nx, -1, 1), clamp(ny, -1, 1));
-  asegurarLoopTilt();
+  if(e.target.closest("button, a, .leaflet-popup, .leaflet-control, #temaPanel, #zoomCtrl")) return;
+  tilt.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(tilt.pointers.size === 1){
+    tilt.dragging = true;
+    try{ mapaWrapTilt.setPointerCapture(e.pointerId); }catch(_){}
+    setTiltFromClientPoint(e.clientX, e.clientY);
+  }
+}
+function onPointerTiltMove(e){
+  if(!tilt.on || S.estado === "POPUP") return;
+  if(!tilt.pointers.has(e.pointerId)) return;
+  tilt.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(tilt.pointers.size >= 2){
+    /* dos dedos: promedio = orientación intermedia continua */
+    let sx=0, sy=0, n=0;
+    tilt.pointers.forEach(p=>{ sx+=p.x; sy+=p.y; n++; });
+    setTiltFromClientPoint(sx/n, sy/n);
+  }else{
+    setTiltFromClientPoint(e.clientX, e.clientY);
+  }
+}
+function onPointerTiltUp(e){
+  tilt.pointers.delete(e.pointerId);
+  if(tilt.pointers.size === 0){
+    tilt.dragging = false;
+    /* en desktop el mouse puede volver al centro; en touch dejamos el ángulo */
+    if(!esMobileTilt() && e.pointerType === "mouse"){
+      resetTiltTargets();
+      tilt.target.scale = TILT_BASE_SCALE;
+      asegurarLoopTilt();
+    }
+  }
 }
 async function pedirPermisoOrientacion(){
   try{
-    /* iOS 13+: hay que pedir permiso en un gesto del usuario */
     if(typeof DeviceMotionEvent !== "undefined" &&
        typeof DeviceMotionEvent.requestPermission === "function"){
       try{ await DeviceMotionEvent.requestPermission(); }catch(_){}
@@ -2380,21 +2436,30 @@ function avisarGyroSiFalla(){
   clearTimeout(tilt.gyroWatch);
   tilt.gyroWatch = setTimeout(()=>{
     if(!tilt.on || tilt.gyroOk || !esMobileTilt()) return;
-    btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Sin giroscopio';
+    btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Arrastrá el mapa';
     setTimeout(()=>{ if(tilt.on) btnInclinar.innerHTML = labelInclinar(); }, 2800);
   }, 1600);
+}
+function setMapDragEnabled(si){
+  try{
+    if(si){ map.dragging.enable(); map.touchZoom.enable(); }
+    else { map.dragging.disable(); /* pinch sigue para zoom si hace falta */ }
+  }catch(_){}
 }
 function activarInclinacion(si){
   tilt.on = !!si;
   tilt.gyroOk = false;
+  tilt.pointers.clear();
+  tilt.dragging = false;
   mapaWrapTilt.classList.toggle("tilt-on", tilt.on);
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
   btnInclinar.innerHTML = labelInclinar();
+  setMapDragEnabled(!tilt.on);
   if(tilt.on){
     resetTiltTargets();
-    tilt.target.scale = 1.22;
-    tilt.cur.scale = 1.22;
+    tilt.target.scale = TILT_BASE_SCALE;
+    tilt.cur.scale = TILT_BASE_SCALE;
     aplicarTiltVars();
     asegurarLoopTilt();
     if(esMobileTilt()) avisarGyroSiFalla();
@@ -2412,10 +2477,12 @@ async function toggleInclinacion(){
   }
   const ok = await pedirPermisoOrientacion();
   if(!ok){
-    btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Sin permiso';
-    setTimeout(()=>{ btnInclinar.innerHTML = labelInclinar(); }, 2200);
-    /* En desktop igual se puede usar con el mouse */
-    if(!esMobileTilt()) activarInclinacion(true);
+    /* Igual se puede orientar con touch/mouse */
+    activarInclinacion(true);
+    if(esMobileTilt()){
+      btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Arrastrá';
+      setTimeout(()=>{ if(tilt.on) btnInclinar.innerHTML = labelInclinar(); }, 2200);
+    }
     return;
   }
   activarInclinacion(true);
@@ -2439,17 +2506,27 @@ function initInclinacion(){
   });
   window.addEventListener("deviceorientation", onOrientacion, {passive:true});
   window.addEventListener("deviceorientationabsolute", onOrientacion, {passive:true});
-  mapaWrapTilt.addEventListener("pointermove", onMouseTilt, {passive:true});
-  mapaWrapTilt.addEventListener("pointerleave", ()=>{
+  mapaWrapTilt.addEventListener("pointerdown", onPointerTiltDown, {passive:true});
+  mapaWrapTilt.addEventListener("pointermove", onPointerTiltMove, {passive:true});
+  mapaWrapTilt.addEventListener("pointerup", onPointerTiltUp, {passive:true});
+  mapaWrapTilt.addEventListener("pointercancel", onPointerTiltUp, {passive:true});
+  mapaWrapTilt.addEventListener("pointerleave", e=>{
     if(!tilt.on || esMobileTilt()) return;
+    if(e.pointerType && e.pointerType !== "mouse") return;
     resetTiltTargets();
-    tilt.target.scale = 1.22;
+    tilt.target.scale = TILT_BASE_SCALE;
     asegurarLoopTilt();
   });
   window.addEventListener("orientationchange", ()=>{
     tilt.baseBeta = null;
     tilt.baseGamma = null;
   });
+  if(screen.orientation && screen.orientation.addEventListener){
+    screen.orientation.addEventListener("change", ()=>{
+      tilt.baseBeta = null;
+      tilt.baseGamma = null;
+    });
+  }
 }
 
 /* ============================================================
@@ -2466,17 +2543,17 @@ initInclinacion();
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v13";
+const TEMA_KEY = "totem21k-tema-v14";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
     "marca": "#EF981F",
     "acento": "#EF981F",
-    "sb-grad-1": "#DD3466",
-    "sb-grad-2": "#E7671A",
-    "sb-grad-3": "#F7C21C",
-    "sb-texto": "#F7C21C",
-    "sb-borde": "#FFFFFF",
+    "sb-grad-1": "#ff004c",
+    "sb-grad-2": "#ff6200",
+    "sb-grad-3": "#ffcd38",
+    "sb-texto": "#ffffff",
+    "sb-borde": "#ffffff",
     "fondo": "#F3F2F1",
     "ruta": "#F7C21C",
     "hito": "#FFFFFF",
@@ -2485,12 +2562,12 @@ const TEMA_DEFAULT = {
   },
   "filters": {
     "blend": "multiply",
-    "tinte": 0.88,
-    "bri": 1.02,
-    "dark": 0,
+    "tinte": 0.82,
+    "bri": 0.99,
+    "dark": 0.04,
     "con": 1.08,
-    "sat": 0.55,
-    "hue": 0
+    "sat": 2.5,
+    "hue": 339
   }
 };
 const COLOR_SECTIONS = [
@@ -2564,7 +2641,7 @@ function cssTemaLive(){
   --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
-  --map-sat:${f.sat ?? 0.55};--map-hue:${f.hue ?? 0};--map-bri:${f.bri};--map-dark:${f.dark ?? 0};--map-con:${f.con};--map-tinte-op:${f.tinte ?? 0.88};
+  --map-sat:${f.sat ?? 2.5};--map-hue:${f.hue ?? 339};--map-bri:${f.bri ?? 0.99};--map-dark:${f.dark ?? 0.04};--map-con:${f.con ?? 1.08};--map-tinte-op:${f.tinte ?? 0.82};
   --map-blend:${blend};
 }`;
 }
@@ -2630,7 +2707,7 @@ function renderPanelTema(){
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "tinte" ? 0.88 : key === "dark" || key === "hue" ? 0 : key === "sat" ? 0.55 : key === "bri" ? 1.02 : key === "con" ? 1.08 : 1;
+    const fallback = key === "tinte" ? 0.82 : key === "dark" ? 0.04 : key === "hue" ? 339 : key === "sat" ? 2.5 : key === "bri" ? 0.99 : key === "con" ? 1.08 : 1;
     const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
