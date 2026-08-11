@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-popup-sync">
+<meta name="totem-version" content="2026-08-11-zoom-clean">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -872,25 +872,6 @@ path.trazaRuta{
   58%{opacity:0;}
   100%{opacity:0;}
 }
-
-/* etiquetas de avenidas / calles del circuito */
-.calleLabel{
-  font-family:'Montserrat',sans-serif;
-  font-weight:700;
-  font-size:11px;
-  letter-spacing:.02em;
-  color:var(--tinta);
-  white-space:nowrap;
-  pointer-events:none;
-  transform:translate(-50%, -50%);
-  text-shadow:
-    0 0 3px var(--fondo),
-    0 1px 2px var(--fondo),
-    1px 0 2px var(--fondo),
-    -1px 0 2px var(--fondo);
-  opacity:.92;
-}
-body.noche .calleLabel{opacity:.88;}
 
 /* marcadores de km */
 .kmIcono{
@@ -1809,8 +1790,8 @@ const CFG = {
   /* Positron: mapa minimalista (avenidas y barrios, sin íconos).
      Si estos tiles no cargan en la red del tótem, el respaldo
      OSM entra solo. */
-  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
-  tilesRespaldo: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+  tilesRespaldo: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
@@ -1894,8 +1875,6 @@ map.createPane("huellas");
 map.getPane("huellas").style.zIndex = 450;
 map.createPane("kms");
 map.getPane("kms").style.zIndex = 550;
-map.createPane("calles");
-map.getPane("calles").style.zIndex = 460;
 map.createPane("hitos");
 map.getPane("hitos").style.zIndex = 650;
 
@@ -2024,120 +2003,21 @@ function renderHitos(){
   document.getElementById("statHitos").textContent = HITOS.length;
 }
 
-/* Etiquetas: solo avenidas / calles importantes cerca del recorrido */
-const capaCalles = L.layerGroup().addTo(map);
-const RANGO_HW = {motorway:0, trunk:1, primary:2, secondary:3, tertiary:4};
-function muestrasRuta(pasoM){
-  const pts = [];
-  for(let m = 0; m < LARGO_TOTAL; m += pasoM){
-    pts.push(puntoEn(m).latlng);
-  }
-  return pts;
-}
-function cercaDeRuta(lat, lng, muestras, maxM){
-  let min = Infinity;
-  for(const p of muestras){
-    const d = haversine(p, [lat, lng]);
-    if(d < min) min = d;
-    if(min <= maxM) return true;
-  }
-  return false;
-}
-function nombreCortoCalle(name){
-  return String(name || "")
-    .replace(/^Avenida\s+/i, "Av. ")
-    .replace(/^Avenida\s+del?\s+/i, "Av. ")
-    .trim();
-}
-async function cargarEtiquetasCalles(){
-  const b = bounds.pad(0.06);
-  const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
-  const query = `[out:json][timeout:45];
-(
-  way["highway"~"^(motorway|trunk|primary|secondary)$"]["name"](${bbox});
-  way["highway"="tertiary"]["name"~"^(Avenida|Av\\.|Diagonal|Paseo)"](${bbox});
-);
-out center tags;`;
-  const endpoints = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter"
-  ];
-  let elements = null;
-  for(const endpoint of endpoints){
-    try{
-      const res = await fetch(endpoint, {
-        method: "POST",
-        body: "data=" + encodeURIComponent(query),
-        headers: {"Content-Type": "application/x-www-form-urlencoded"}
-      });
-      if(!res.ok) continue;
-      const data = await res.json();
-      elements = data.elements || [];
-      break;
-    }catch(_){}
-  }
-  if(!elements || !elements.length) return;
-  const muestras = muestrasRuta(180);
-  const vistos = new Map();
-  for(const el of elements){
-    if(!el.center || !el.tags || !el.tags.name) continue;
-    const hw = el.tags.highway;
-    const rank = RANGO_HW[hw];
-    if(rank == null) continue;
-    const lat = el.center.lat, lng = el.center.lon;
-    if(!cercaDeRuta(lat, lng, muestras, 110)) continue;
-    const key = el.tags.name.toLowerCase();
-    const prev = vistos.get(key);
-    if(prev && prev.rank <= rank) continue;
-    vistos.set(key, {rank, lat, lng, name: nombreCortoCalle(el.tags.name)});
-  }
-  const lista = [...vistos.values()].sort((a,b)=> a.rank - b.rank).slice(0, 36);
-  capaCalles.clearLayers();
-  lista.forEach(c=>{
-    capaCalles.addLayer(L.marker([c.lat, c.lng], {
-      interactive:false, keyboard:false, pane:"calles",
-      icon: L.divIcon({
-        className: "",
-        html: `<div class="calleLabel">${c.name}</div>`,
-        iconSize: [1, 1],
-        iconAnchor: [0, 0]
-      })
-    }));
-  });
-}
-cargarEtiquetasCalles();
-
 function marcarActivo(id){
   HITOS.forEach(h=>{
     const pinEl = document.getElementById("pin-" + h.id);
     if(pinEl) pinEl.classList.toggle("activo", h.id === id);
   });
 }
-/* tocás un hito: la cámara VUELA al lugar (zoom progresivo) */
-/* tocás un hito: vuelo + popup juntos, misma duración */
-function destinoVuelo(h){
-  const z = CFG.zoomHito;
-  const pt = map.project(L.latLng(h.geo), z);
-  const size = map.getSize();
-  if(window.innerWidth < 768){
-    /* hoja inferior: el punto queda arriba del card */
-    pt.y += size.y * 0.2;
-  }else{
-    /* card a la izquierda: el punto queda más al centro-derecha */
-    pt.x -= size.x * 0.14;
-  }
-  return { latlng: map.unproject(pt, z), zoom: z };
-}
+/* tocás un hito: zoom al punto + popup al mismo tiempo */
 function volarYAbrir(h){
   marcarActivo(h.id);
   const dur = CFG.flyHitoMs;
   document.documentElement.style.setProperty("--pop-dur", dur + "s");
   document.documentElement.style.setProperty("--ani-dur", dur + "s");
   document.documentElement.style.setProperty("--ani-dur-flip", dur + "s");
-  /* popup y cámara arrancan juntos */
   irA("POPUP", h);
-  const dest = destinoVuelo(h);
-  map.flyTo(dest.latlng, dest.zoom, {duration: dur, easeLinearity: 0.22});
+  map.flyTo(h.geo, CFG.zoomHito, {duration: dur, easeLinearity: 0.22});
   reiniciarInactividad();
 }
 
