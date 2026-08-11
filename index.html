@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-tilt-gyro">
+<meta name="totem-version" content="2026-08-11-geo">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -902,6 +902,34 @@ path.trazaRuta{
   box-shadow:0 0 0 4px color-mix(in srgb, var(--acento) 25%, transparent);
 }
 
+#zoomCtrl button#btnUbicacion.activo{
+  border-color:#2F80ED;color:#2F80ED;
+}
+#zoomCtrl button#btnUbicacion.buscando{
+  opacity:.7;
+}
+.yoIcono{
+  width:22px;height:22px;margin-left:-11px;margin-top:-11px;
+  position:relative;
+}
+.yoIcono .yoPunto{
+  position:absolute;inset:5px;
+  border-radius:50%;
+  background:#2F80ED;
+  border:2.5px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+.yoIcono .yoHalo{
+  position:absolute;inset:0;
+  border-radius:50%;
+  border:2px solid #2F80ED;
+  animation:yoPulse 2s ease-out infinite;
+}
+@keyframes yoPulse{
+  0%{transform:scale(.55);opacity:.85;}
+  100%{transform:scale(2.1);opacity:0;}
+}
+
 .leaflet-container{font-family:'Montserrat',sans-serif;}
 .leaflet-control-attribution{
   background:color-mix(in srgb, var(--tarjeta) 80%, transparent) !important;
@@ -1313,6 +1341,7 @@ path.trazaRuta{
     </button>
     <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
     <div id="zoomCtrl">
+      <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Mi ubicación" title="Mostrar mi ubicación">◎</button>
       <button id="zMas" aria-label="Acercar">＋</button>
       <button id="zMenos" aria-label="Alejar">−</button>
       <button id="zReset" aria-label="Ver todo">⌂</button>
@@ -1960,6 +1989,107 @@ document.getElementById("zMenos").addEventListener("pointerdown", e=>{
   map.setZoom(map.getZoom() - 0.35, {animate: true});
 });
 document.getElementById("zReset").addEventListener("pointerdown", e=>{ e.stopPropagation(); encuadrar(true); });
+
+/* ---------- GEOLOCALIZACIÓN ---------- */
+const btnUbicacion = document.getElementById("btnUbicacion");
+const yo = {
+  watchId: null,
+  marker: null,
+  accuracy: null,
+  firstFix: true
+};
+const yoIcon = L.divIcon({
+  className: "",
+  html: '<div class="yoIcono"><span class="yoHalo"></span><span class="yoPunto"></span></div>',
+  iconSize: [22, 22],
+  iconAnchor: [11, 11]
+});
+function limpiarUbicacion(){
+  if(yo.watchId != null && navigator.geolocation){
+    navigator.geolocation.clearWatch(yo.watchId);
+  }
+  yo.watchId = null;
+  if(yo.marker){ map.removeLayer(yo.marker); yo.marker = null; }
+  if(yo.accuracy){ map.removeLayer(yo.accuracy); yo.accuracy = null; }
+  yo.firstFix = true;
+  btnUbicacion.classList.remove("activo", "buscando");
+  btnUbicacion.setAttribute("aria-pressed", "false");
+  btnUbicacion.textContent = "◎";
+}
+function pintarUbicacion(pos){
+  const latlng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+  const acc = Math.max(pos.coords.accuracy || 30, 20);
+  if(!yo.marker){
+    yo.marker = L.marker(latlng, {icon: yoIcon, zIndexOffset: 1200, interactive: false}).addTo(map);
+  }else{
+    yo.marker.setLatLng(latlng);
+  }
+  if(!yo.accuracy){
+    yo.accuracy = L.circle(latlng, {
+      radius: acc,
+      color: "#2F80ED",
+      weight: 1,
+      opacity: 0.45,
+      fillColor: "#2F80ED",
+      fillOpacity: 0.12,
+      interactive: false
+    }).addTo(map);
+  }else{
+    yo.accuracy.setLatLng(latlng);
+    yo.accuracy.setRadius(acc);
+  }
+  btnUbicacion.classList.remove("buscando");
+  btnUbicacion.classList.add("activo");
+  btnUbicacion.setAttribute("aria-pressed", "true");
+  if(yo.firstFix){
+    yo.firstFix = false;
+    const dentro = map.options.maxBounds
+      ? map.options.maxBounds.pad(0.02).contains(latlng)
+      : bounds.pad(0.25).contains(latlng);
+    if(dentro){
+      map.flyTo(latlng, Math.max(map.getZoom(), 15), {duration: 1.1, easeLinearity: 0.25});
+    }else{
+      btnUbicacion.title = "Estás fuera del área del circuito";
+      setTimeout(()=>{ btnUbicacion.title = "Mostrar mi ubicación"; }, 3200);
+    }
+  }
+}
+function errorUbicacion(err){
+  limpiarUbicacion();
+  const msg =
+    err && err.code === 1 ? "Sin permiso" :
+    err && err.code === 2 ? "Sin señal" :
+    err && err.code === 3 ? "Timeout" : "Error GPS";
+  btnUbicacion.textContent = "!";
+  btnUbicacion.title = msg;
+  setTimeout(()=>{
+    btnUbicacion.textContent = "◎";
+    btnUbicacion.title = "Mostrar mi ubicación";
+  }, 2400);
+}
+function toggleUbicacion(){
+  if(!navigator.geolocation){
+    errorUbicacion({code: 2});
+    return;
+  }
+  if(yo.watchId != null){
+    limpiarUbicacion();
+    return;
+  }
+  btnUbicacion.classList.add("buscando");
+  btnUbicacion.textContent = "…";
+  yo.firstFix = true;
+  yo.watchId = navigator.geolocation.watchPosition(pintarUbicacion, errorUbicacion, {
+    enableHighAccuracy: true,
+    maximumAge: 4000,
+    timeout: 15000
+  });
+}
+btnUbicacion.addEventListener("click", e=>{
+  e.stopPropagation();
+  toggleUbicacion();
+  reiniciarInactividad();
+});
 
 $("#btnModo").addEventListener("click", ()=> aplicarModo(!document.body.classList.contains("noche")));
 $("#btnAnim").addEventListener("click", ()=>{
