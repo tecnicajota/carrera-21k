@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-zoom-clean">
+<meta name="totem-version" content="2026-08-11-mapa-degrade">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -796,21 +796,39 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* mapa Voyager — filtros vía variables (editables en el panel) */
+/* mapa claro con nombres; el tinte degradé va en pane propio */
 .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 1.22))
-    hue-rotate(calc(var(--map-hue, 6) * 1deg))
-    brightness(var(--map-bri, 1.03))
-    contrast(var(--map-con, 1.06));
+    saturate(var(--map-sat, 0.9))
+    hue-rotate(calc(var(--map-hue, 0) * 1deg))
+    brightness(var(--map-bri, 1.06))
+    contrast(var(--map-con, 1.05));
 }
+/* sin invert: el mapa se mantiene blanco también en modo noche UI */
 body.noche .leaflet-tile-pane{
   filter:
-    invert(var(--map-inv, 1))
-    hue-rotate(calc(var(--map-hue, 180) * 1deg))
-    brightness(var(--map-bri, 1.1))
-    contrast(var(--map-con, 0.94))
-    saturate(var(--map-sat, 1.18));
+    saturate(var(--map-sat, 0.9))
+    hue-rotate(calc(var(--map-hue, 0) * 1deg))
+    brightness(var(--map-bri, 1.06))
+    contrast(var(--map-con, 1.05));
+}
+
+/* degradé marca encima de los tiles, debajo de ruta/hitos */
+.mapa-tinte{
+  position:absolute;
+  left:0;top:0;
+  pointer-events:none;
+  background-image:url("filtro-mapa-degrade.png");
+  background-size:cover;
+  background-position:center;
+  mix-blend-mode:multiply;
+  opacity:var(--map-tinte-op, 0.62);
+}
+@supports not (mix-blend-mode: multiply){
+  .mapa-tinte{
+    background:linear-gradient(135deg, #DD3466 0%, #E7671A 45%, #F7C21C 100%);
+    opacity:0.45;
+  }
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -899,14 +917,14 @@ path.trazaRuta{
   position:absolute;left:50%;top:50%;
   width:16px;height:16px;margin:-8px 0 0 -8px;
   border-radius:50%;
-  background:var(--hito);border:3px solid var(--tarjeta);
+  background:var(--hito);border:3px solid #183246;
   box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 .pinIcono .halo{
   position:absolute;left:50%;top:50%;
   width:16px;height:16px;margin:-8px 0 0 -8px;
   border-radius:50%;
-  border:3px solid var(--hito);
+  border:3px solid #fff;
   animation:halo 2.8s ease-out infinite;
   animation-delay:var(--delay,0s);
 }
@@ -1790,8 +1808,8 @@ const CFG = {
   /* Positron: mapa minimalista (avenidas y barrios, sin íconos).
      Si estos tiles no cargan en la red del tótem, el respaldo
      OSM entra solo. */
-  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-  tilesRespaldo: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  tilesDia: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+  tilesRespaldo: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
@@ -1877,6 +1895,33 @@ map.createPane("kms");
 map.getPane("kms").style.zIndex = 550;
 map.createPane("hitos");
 map.getPane("hitos").style.zIndex = 650;
+/* tinte degradé: encima de tiles, debajo de la ruta */
+map.createPane("tinte");
+map.getPane("tinte").style.zIndex = 350;
+map.getPane("tinte").style.pointerEvents = "none";
+
+const TinteDegrade = L.Layer.extend({
+  onAdd(map){
+    this._map = map;
+    this._el = L.DomUtil.create("div", "mapa-tinte", map.getPane("tinte"));
+    map.on("move zoom viewreset zoomanim resize", this._update, this);
+    this._update();
+  },
+  onRemove(map){
+    map.off("move zoom viewreset zoomanim resize", this._update, this);
+    if(this._el){ L.DomUtil.remove(this._el); this._el = null; }
+  },
+  _update(){
+    const map = this._map;
+    if(!map || !this._el) return;
+    const topLeft = map.containerPointToLayerPoint([0, 0]);
+    const size = map.getSize();
+    L.DomUtil.setPosition(this._el, topLeft);
+    this._el.style.width = size.x + "px";
+    this._el.style.height = size.y + "px";
+  }
+});
+map.addLayer(new TinteDegrade());
 
 function padMapa(){
   const w = window.innerWidth, h = window.innerHeight;
@@ -2575,17 +2620,17 @@ irA("ATTRACT");
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v2";
+const TEMA_KEY = "totem21k-tema-v3";
 const TEMA_DEFAULT = {
   "dia": {
     "colors": {
       "fondo": "#F3F2F1",
       "tinta": "#183246",
       "tinta-suave": "#5E605F",
-      "ruta": "#183246",
+      "ruta": "#F7C21C",
       "km": "#183246",
       "km-num": "#F7C21C",
-      "hito": "#EF981F",
+      "hito": "#FFFFFF",
       "marca": "#EF981F",
       "acento": "#EF981F",
       "hidra": "#054D4B",
@@ -2594,11 +2639,11 @@ const TEMA_DEFAULT = {
       "standby": "#F3F2F1"
     },
     "filters": {
-      "sat": 1.24,
-      "hue": 5,
-      "bri": 0.8,
-      "con": 1.58,
-      "inv": 0
+      "sat": 0.88,
+      "hue": 0,
+      "bri": 1.08,
+      "con": 1.04,
+      "tinte": 0.62
     }
   },
   "noche": {
@@ -2606,10 +2651,10 @@ const TEMA_DEFAULT = {
       "fondo": "#183246",
       "tinta": "#F3F2F1",
       "tinta-suave": "#989791",
-      "ruta": "#054D4B",
+      "ruta": "#F7C21C",
       "km": "#F7C21C",
       "km-num": "#183246",
-      "hito": "#E7671A",
+      "hito": "#FFFFFF",
       "marca": "#5E992E",
       "acento": "#5E992E",
       "hidra": "#5E992E",
@@ -2618,11 +2663,11 @@ const TEMA_DEFAULT = {
       "standby": "#183246"
     },
     "filters": {
-      "sat": 0.98,
-      "hue": 204,
-      "bri": 1.21,
-      "con": 0.95,
-      "inv": 1
+      "sat": 0.88,
+      "hue": 0,
+      "bri": 1.08,
+      "con": 1.04,
+      "tinte": 0.62
     }
   }
 };
@@ -2644,9 +2689,9 @@ const COLOR_LABELS = {
 const FILTER_META = {
   sat: {label: "Saturación", min: 0, max: 2.5, step: 0.01},
   hue: {label: "Hue rotate (°)", min: 0, max: 360, step: 1},
-  bri: {label: "Brillo", min: 0.4, max: 1.8, step: 0.01},
+  bri: {label: "Brillo mapa", min: 0.4, max: 1.8, step: 0.01},
   con: {label: "Contraste", min: 0.4, max: 1.8, step: 0.01},
-  inv: {label: "Invert (noche)", min: 0, max: 1, step: 0.01}
+  tinte: {label: "Opacidad degradé", min: 0, max: 1, step: 0.01}
 };
 let temaState = JSON.parse(JSON.stringify(TEMA_DEFAULT));
 let temaTab = "noche";
@@ -2678,11 +2723,11 @@ function cssTemaLive(){
   return `
 :root{
   ${block(d)}
-  --map-sat:${d.filters.sat};--map-hue:${d.filters.hue};--map-bri:${d.filters.bri};--map-con:${d.filters.con};--map-inv:${d.filters.inv};
+  --map-sat:${d.filters.sat};--map-hue:${d.filters.hue};--map-bri:${d.filters.bri};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.62};
 }
 body.noche{
   ${block(n)}
-  --map-sat:${n.filters.sat};--map-hue:${n.filters.hue};--map-bri:${n.filters.bri};--map-con:${n.filters.con};--map-inv:${n.filters.inv};
+  --map-sat:${n.filters.sat};--map-hue:${n.filters.hue};--map-bri:${n.filters.bri};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.62};
 }`;
 }
 function aplicarTemaLive(){
@@ -2723,12 +2768,11 @@ function renderPanelTema(){
     colores.appendChild(field);
   }
   filtros.innerHTML = "";
-  const filterKeys = temaTab === "noche"
-    ? ["inv", "hue", "bri", "con", "sat"]
-    : ["sat", "hue", "bri", "con"];
+  const filterKeys = ["tinte", "sat", "bri", "con", "hue"];
   for(const key of filterKeys){
     const meta = FILTER_META[key];
-    const val = block.filters[key];
+    if(!meta) continue;
+    const val = block.filters[key] ?? (key === "tinte" ? 0.62 : 1);
     const field = document.createElement("div");
     field.className = "temaField";
     field.innerHTML = `
