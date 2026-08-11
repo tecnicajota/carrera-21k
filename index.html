@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-tema-panel">
+<meta name="totem-version" content="2026-08-11-colores-split">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -716,11 +716,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --fondo:var(--ba-papel);
   --tinta:var(--ba-azul);
   --tinta-suave:var(--ba-gris);
-  --ruta:var(--ba-heart-1);     /* recorrido + km */
+  --ruta:var(--ba-heart-1);     /* solo la traza */
+  --km:var(--ba-heart-1);       /* círculos de km */
+  --km-num:var(--ba-azul);      /* números dentro del km */
   --hito:var(--ba-heart-3);     /* puntos de interés */
-  --acento:var(--ba-naranja);   /* acentos UI día */
+  --marca:var(--ba-naranja);    /* el “21K” */
+  --acento:var(--ba-naranja);   /* acentos UI varios */
   --hidra:var(--ba-verde);
   --tarjeta:#FFFFFF;
+  --boton:#FFFFFF;              /* fondo de botones */
   --linea:rgba(24,50,70,.22);
   --sombra:0 12px 40px rgba(24,50,70,.18);
 }
@@ -729,10 +733,14 @@ body.noche{
   --tinta:var(--ba-papel);
   --tinta-suave:var(--ba-gris-claro);
   --ruta:var(--ba-heart-1);
+  --km:var(--ba-heart-1);
+  --km-num:var(--ba-azul);
   --hito:var(--ba-heart-3);
-  --acento:var(--ba-fluo);      /* acentos UI noche */
+  --marca:var(--ba-fluo);
+  --acento:var(--ba-fluo);
   --hidra:var(--ba-fluo);
   --tarjeta:var(--ba-verde);
+  --boton:var(--ba-verde);
   --linea:rgba(243,242,241,.22);
   --sombra:0 12px 50px rgba(0,0,0,.55);
 }
@@ -764,7 +772,7 @@ header{
   font-family:'Montserrat',sans-serif;font-weight:900;
   font-size:clamp(22px,3.2vw,36px);line-height:1;text-transform:uppercase;
 }
-.titulo h1 em{font-style:normal;color:var(--acento);}
+.titulo h1 em{font-style:normal;color:var(--marca);}
 .titulo .sub{
   font-family:'Montserrat',sans-serif;font-weight:600;
   font-size:clamp(16px,2vw,22px);color:var(--acento);
@@ -860,7 +868,7 @@ path.trazaRuta{
 /* marcadores de km */
 .kmIcono{
   width:30px;height:30px;border-radius:50%;
-  background:var(--ruta);color:var(--fondo);
+  background:var(--km);color:var(--km-num);
   display:grid;place-items:center;
   font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;
   border:2px solid var(--fondo);
@@ -911,7 +919,7 @@ path.trazaRuta{
   position:absolute;left:12px;z-index:900;
   align-items:center;gap:8px;
   padding:10px 14px;border-radius:99px;min-height:44px;
-  background:var(--tarjeta);border:2.5px solid var(--tinta);
+  background:var(--boton);border:2.5px solid var(--tinta);
   font-size:12px;font-weight:600;letter-spacing:.04em;
   color:var(--tinta);box-shadow:var(--sombra);
 }
@@ -1070,7 +1078,7 @@ path.trazaRuta{
   position:absolute;right:16px;top:16px;z-index:900;
   display:inline-flex;align-items:center;gap:10px;
   padding:14px 22px;border-radius:99px;min-height:56px;
-  background:var(--tarjeta);border:3px solid var(--tinta);
+  background:var(--boton);border:3px solid var(--tinta);
   font-size:clamp(13px,1.6vw,16px);font-weight:600;letter-spacing:.04em;
   color:var(--tinta);box-shadow:var(--sombra);
 }
@@ -1131,7 +1139,7 @@ path.trazaRuta{
 }
 #zoomCtrl button{
   width:60px;height:60px;border-radius:50%;
-  background:var(--tarjeta);border:3px solid var(--tinta);
+  background:var(--boton);border:3px solid var(--tinta);
   font-size:23px;font-weight:600;color:var(--tinta);
   box-shadow:var(--sombra);
   display:grid;place-items:center;
@@ -1236,7 +1244,7 @@ path.trazaRuta{
   font-family:'Montserrat',sans-serif;font-weight:900;
   font-size:clamp(52px,11vw,120px);line-height:.95;text-transform:uppercase;
 }
-#attract h1 em{font-style:normal;color:var(--acento);}
+#attract h1 em{font-style:normal;color:var(--marca);}
 #attract .rotador{
   font-family:'Montserrat',sans-serif;font-weight:600;
   font-size:clamp(24px,4vw,40px);color:var(--acento);
@@ -2526,10 +2534,14 @@ const TEMA_DEFAULT = {
       tinta: "#183246",
       "tinta-suave": "#5E605F",
       ruta: "#F7C21C",
+      km: "#F7C21C",
+      "km-num": "#183246",
       hito: "#DD3466",
+      marca: "#EF981F",
       acento: "#EF981F",
       hidra: "#054D4B",
-      tarjeta: "#FFFFFF"
+      tarjeta: "#FFFFFF",
+      boton: "#FFFFFF"
     },
     filters: { sat: 1.22, hue: 6, bri: 1.03, con: 1.06, inv: 0 }
   },
@@ -2539,23 +2551,31 @@ const TEMA_DEFAULT = {
       tinta: "#F3F2F1",
       "tinta-suave": "#989791",
       ruta: "#F7C21C",
+      km: "#F7C21C",
+      "km-num": "#183246",
       hito: "#DD3466",
+      marca: "#5E992E",
       acento: "#5E992E",
       hidra: "#5E992E",
-      tarjeta: "#054D4B"
+      tarjeta: "#054D4B",
+      boton: "#054D4B"
     },
     filters: { sat: 1.18, hue: 180, bri: 1.1, con: 0.94, inv: 1 }
   }
 };
 const COLOR_LABELS = {
   fondo: "Fondo",
-  tinta: "Texto",
-  "tinta-suave": "Texto suave",
-  ruta: "Recorrido / km",
+  boton: "Fondo botones",
+  marca: "21K (marca)",
+  km: "Círculos km",
+  "km-num": "Números km",
+  ruta: "Recorrido",
   hito: "Puntos de interés",
   acento: "Acento UI",
+  tinta: "Texto",
+  "tinta-suave": "Texto suave",
   hidra: "Hidratación",
-  tarjeta: "Tarjetas"
+  tarjeta: "Tarjetas / popups"
 };
 const FILTER_META = {
   sat: {label: "Saturación", min: 0, max: 2.5, step: 0.01},
@@ -2586,17 +2606,18 @@ function cargarTemaGuardado(){
 function cssTemaLive(){
   const d = temaState.dia, n = temaState.noche;
   const col = (modo, key) => modo.colors[key];
+  const block = (modo) => `
+  --fondo:${col(modo,"fondo")};--tinta:${col(modo,"tinta")};--tinta-suave:${col(modo,"tinta-suave")};
+  --ruta:${col(modo,"ruta")};--km:${col(modo,"km")};--km-num:${col(modo,"km-num")};
+  --hito:${col(modo,"hito")};--marca:${col(modo,"marca")};--acento:${col(modo,"acento")};
+  --hidra:${col(modo,"hidra")};--tarjeta:${col(modo,"tarjeta")};--boton:${col(modo,"boton")};`;
   return `
 :root{
-  --fondo:${col(d,"fondo")};--tinta:${col(d,"tinta")};--tinta-suave:${col(d,"tinta-suave")};
-  --ruta:${col(d,"ruta")};--hito:${col(d,"hito")};--acento:${col(d,"acento")};
-  --hidra:${col(d,"hidra")};--tarjeta:${col(d,"tarjeta")};
+  ${block(d)}
   --map-sat:${d.filters.sat};--map-hue:${d.filters.hue};--map-bri:${d.filters.bri};--map-con:${d.filters.con};--map-inv:${d.filters.inv};
 }
 body.noche{
-  --fondo:${col(n,"fondo")};--tinta:${col(n,"tinta")};--tinta-suave:${col(n,"tinta-suave")};
-  --ruta:${col(n,"ruta")};--hito:${col(n,"hito")};--acento:${col(n,"acento")};
-  --hidra:${col(n,"hidra")};--tarjeta:${col(n,"tarjeta")};
+  ${block(n)}
   --map-sat:${n.filters.sat};--map-hue:${n.filters.hue};--map-bri:${n.filters.bri};--map-con:${n.filters.con};--map-inv:${n.filters.inv};
 }`;
 }
