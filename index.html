@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-tema-pantallas">
+<meta name="totem-version" content="2026-08-11-fix-colores">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -941,14 +941,14 @@ path.trazaRuta{
 .pinIcono.activo .corazon{transform:scale(1.18);}
 .pinIcono.activo .corazon path{stroke-width:1.8;}
 
-#btnInclinar{top:12px;}
-#btnModo{top:62px;}
-#btnTema{top:112px;}
+#btnInclinar{top:12px;z-index:1200;}
+#btnModo{top:62px;z-index:1200;}
+#btnTema{top:112px;z-index:1200;}
 #btnInclinar,
 #btnModo,
 #btnTema{
   display:inline-flex;
-  position:absolute;left:12px;z-index:900;
+  position:absolute;left:12px;
   align-items:center;gap:8px;
   padding:10px 14px;border-radius:99px;min-height:44px;
   background:var(--boton);border:2.5px solid var(--tinta);
@@ -2107,6 +2107,11 @@ const S = { estado:"ATTRACT", hito:null, slide:0,
             tInactividad:null, tSlides:null, tRotador:null };
 const $ = s => document.querySelector(s);
 const attract = $("#attract"), popup = $("#popup");
+const qrModal = document.getElementById("qrModal");
+function abrirQr(){ qrModal.classList.add("abierto"); reiniciarInactividad(); }
+function cerrarQr(){ qrModal.classList.remove("abierto"); }
+document.getElementById("btnQr").addEventListener("pointerdown", e=>{ e.stopPropagation(); abrirQr(); });
+qrModal.addEventListener("pointerdown", cerrarQr);
 
 function irA(estado, dato){
   const anterior = S.estado;
@@ -2627,7 +2632,8 @@ aplicarAnimacion();
 //aplicarModoPorHora();
 initInclinacion();
 aplicarModo(true);
-irA("ATTRACT");
+/* el panel de tema se inicializa al final del archivo (después de
+   declarar TEMA_*). irA(ATTRACT) también va ahí para no cortar el init. */
 
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
@@ -2953,6 +2959,7 @@ function initPanelTema(){
   });
 }
 initPanelTema();
+irA("ATTRACT");
 
 /* ============================================================
    NOTAS PARA EL TÓTEM OFFLINE
