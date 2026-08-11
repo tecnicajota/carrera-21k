@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-voyager-css-grad">
+<meta name="totem-version" content="2026-08-11-multiply-fusion">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -810,21 +810,27 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* mapa estándar (Voyager); el tinte degradé va en pane propio */
+/* mapa claro (como la ref AI) + degradé fusionado con multiply */
 .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 1))
-    brightness(calc(var(--map-bri, 1) * (1 - var(--map-dark, 0) * 0.55)))
-    contrast(var(--map-con, 1));
+    saturate(var(--map-sat, 0.55))
+    brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
+    contrast(var(--map-con, 1.08));
 }
 body.noche .leaflet-tile-pane{
   filter:
-    saturate(var(--map-sat, 1))
-    brightness(calc(var(--map-bri, 1) * (1 - var(--map-dark, 0) * 0.55)))
-    contrast(var(--map-con, 1));
+    saturate(var(--map-sat, 0.55))
+    brightness(calc(var(--map-bri, 1.02) * (1 - var(--map-dark, 0) * 0.55)))
+    contrast(var(--map-con, 1.08));
 }
 
-/* mismo degradé CSS que el stand-by (sin PNG), semi-transparente sobre el mapa */
+/* degradé CSS unido al mapa (multiply = calles toman el color del filtro) */
+.leaflet-tinte-pane{
+  z-index:350;
+  pointer-events:none;
+  mix-blend-mode:multiply;
+  isolation:auto;
+}
 .mapa-tinte{
   position:absolute;
   left:0;top:0;
@@ -835,7 +841,10 @@ body.noche .leaflet-tile-pane{
     var(--sb-grad-2, #E7671A) 48%,
     var(--sb-grad-3, #F7C21C) 100%
   );
-  opacity:var(--map-tinte-op, 0.5);
+  opacity:var(--map-tinte-op, 0.88);
+}
+@supports not (mix-blend-mode: multiply){
+  .leaflet-tinte-pane{opacity:0.55;}
 }
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
@@ -1828,10 +1837,10 @@ const CFG = {
   /* Tiles online (CARTO sobre OpenStreetMap, con atribución).
      Para el tótem offline: bajar los tiles de la zona y cambiar
      estas URLs por http://localhost:8000/{z}/{x}/{y}.png */
-  /* Voyager: mapa color estándar con calles y barrios.
-     Respaldo: OSM clásico si Voyager no carga. */
-  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-  tilesRespaldo: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  /* Mapa claro con nombres (estilo ref AI); el degradé se fusiona con multiply.
+     Respaldo: Voyager si light_all no carga. */
+  tilesDia: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+  tilesRespaldo: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
@@ -1917,10 +1926,12 @@ map.createPane("kms");
 map.getPane("kms").style.zIndex = 550;
 map.createPane("hitos");
 map.getPane("hitos").style.zIndex = 650;
-/* tinte degradé: encima de tiles, debajo de la ruta */
+/* tinte degradé: encima de tiles, debajo de la ruta; multiply une colores al mapa */
 map.createPane("tinte");
+map.getPane("tinte").classList.add("leaflet-tinte-pane");
 map.getPane("tinte").style.zIndex = 350;
 map.getPane("tinte").style.pointerEvents = "none";
+map.getPane("tinte").style.mixBlendMode = "multiply";
 
 const TinteDegrade = L.Layer.extend({
   onAdd(map){
@@ -2629,7 +2640,7 @@ aplicarModo(true);
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v8";
+const TEMA_KEY = "totem21k-tema-v9";
 const TEMA_DEFAULT = {
   "dia": {
     "colors": {
@@ -2654,11 +2665,11 @@ const TEMA_DEFAULT = {
       "standby": "#F3F2F1"
     },
     "filters": {
-      "sat": 1,
-      "bri": 1,
+      "sat": 0.55,
+      "bri": 1.02,
       "dark": 0,
-      "con": 1.05,
-      "tinte": 0.5
+      "con": 1.08,
+      "tinte": 0.88
     }
   },
   "noche": {
@@ -2684,11 +2695,11 @@ const TEMA_DEFAULT = {
       "standby": "#183246"
     },
     "filters": {
-      "sat": 1,
-      "bri": 1,
+      "sat": 0.55,
+      "bri": 1.02,
       "dark": 0,
-      "con": 1.05,
-      "tinte": 0.5
+      "con": 1.08,
+      "tinte": 0.88
     }
   }
 };
@@ -2725,7 +2736,7 @@ const COLOR_SECTIONS = [
   }
 ];
 const FILTER_META = {
-  tinte: {label: "Intensidad del degradé", min: 0, max: 1, step: 0.01},
+  tinte: {label: "Fusión del degradé", min: 0, max: 1, step: 0.01},
   bri: {label: "Brillo del mapa", min: 0.4, max: 1.8, step: 0.01},
   dark: {label: "Oscuridad del mapa", min: 0, max: 1, step: 0.01},
   con: {label: "Contraste del mapa", min: 0.4, max: 1.8, step: 0.01},
@@ -2764,11 +2775,11 @@ function cssTemaLive(){
   return `
 :root{
   ${block(d)}
-  --map-sat:${d.filters.sat ?? 1};--map-bri:${d.filters.bri};--map-dark:${d.filters.dark ?? 0};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.5};
+  --map-sat:${d.filters.sat ?? 0.55};--map-bri:${d.filters.bri};--map-dark:${d.filters.dark ?? 0};--map-con:${d.filters.con};--map-tinte-op:${d.filters.tinte ?? 0.88};
 }
 body.noche{
   ${block(n)}
-  --map-sat:${n.filters.sat ?? 1};--map-bri:${n.filters.bri};--map-dark:${n.filters.dark ?? 0};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.5};
+  --map-sat:${n.filters.sat ?? 0.55};--map-bri:${n.filters.bri};--map-dark:${n.filters.dark ?? 0};--map-con:${n.filters.con};--map-tinte-op:${n.filters.tinte ?? 0.88};
 }`;
 }
 function aplicarTemaLive(){
@@ -2824,7 +2835,7 @@ function renderPanelTema(){
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "tinte" ? 0.5 : key === "dark" ? 0 : 1;
+    const fallback = key === "tinte" ? 0.88 : key === "dark" ? 0 : key === "sat" ? 0.55 : 1;
     const val = block.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
