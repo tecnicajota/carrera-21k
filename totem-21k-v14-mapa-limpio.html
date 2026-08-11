@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-11-geo">
+<meta name="totem-version" content="2026-08-11-noche">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -700,25 +700,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
    ============================================================ */
 
 :root{
-  --fondo:#ECE9E0;
-  --tinta:#2B2B33;
-  --tinta-suave:#5C5C68;
-  --ruta:#4B3F94;
-  --acento:#4B3F94;
-  --hidra:#2E8FA3;
-  --tarjeta:#F6F4EC;
-  --linea:rgba(43,43,51,.25);
-  --sombra:0 12px 50px rgba(43,43,51,.25);
+  /* Paleta noche 21K */
+  --fondo:#183246;
+  --tinta:#F2F6F4;
+  --tinta-suave:#9BB5B0;
+  --ruta:#F7C21C;       /* recorrido + km */
+  --hito:#DD3466;       /* puntos de interés */
+  --acento:#5E992E;     /* acentos UI */
+  --hidra:#5E992E;
+  --tarjeta:#054D4B;
+  --linea:rgba(242,246,244,.22);
+  --sombra:0 12px 50px rgba(0,0,0,.55);
 }
 body.noche{
-  --fondo:#1E2028;
-  --tinta:#F0EEE4;
-  --tinta-suave:#A8A8B4;
-  --ruta:#9D8FE8;
-  --acento:#9D8FE8;
-  --hidra:#5BC1D6;
-  --tarjeta:#2A2C38;
-  --linea:rgba(240,238,228,.22);
+  /* misma paleta (modo noche fijo) */
+  --fondo:#183246;
+  --tinta:#F2F6F4;
+  --tinta-suave:#9BB5B0;
+  --ruta:#F7C21C;
+  --hito:#DD3466;
+  --acento:#5E992E;
+  --hidra:#5E992E;
+  --tarjeta:#054D4B;
+  --linea:rgba(242,246,244,.22);
   --sombra:0 12px 50px rgba(0,0,0,.55);
 }
 
@@ -765,21 +769,26 @@ header{
 #mapaWrap{flex:1;position:relative;overflow:hidden;}
 #mapa{position:absolute;inset:0;background:var(--fondo);}
 
-/* tinte sutil para integrar los tiles a la paleta */
+/* tiles oscuros + tinte hacia la paleta (#183246 / #054D4B / #5E992E) */
 .leaflet-tile-pane{
-    filter:
-        saturate(0.9)
-        hue-rotate(20deg)
-        brightness(0.88)
-        contrast(1.1);
+  filter:
+    saturate(0.75)
+    hue-rotate(-8deg)
+    brightness(0.92)
+    contrast(1.08);
 }
 body.noche .leaflet-tile-pane{
-      filter:invert(1) hue-rotate(180deg);}
+  filter:
+    saturate(0.7)
+    hue-rotate(-12deg)
+    brightness(0.95)
+    contrast(1.1);
+}
 
 /* la ruta y el flujo animado (Leaflet dibuja polylines como SVG) */
 path.trazaRuta{
   stroke:var(--ruta);
-  filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
 }
 
 /* ---------- INCLINACIÓN ---------- */
@@ -789,14 +798,13 @@ path.trazaRuta{
   perspective-origin:50% 55%;
   transform-style:preserve-3d;
   overflow:hidden;
-  /* tono cercano a los tiles: evita flash crema en los bordes */
-  background:#c9c4b8;
+  background:var(--fondo);
 }
 #tiltStage #mapa{
   position:absolute;inset:0;
   transform-origin:50% 55%;
   transform:translate3d(0,0,0) scale(1);
-  background:#c9c4b8;
+  background:var(--fondo);
 }
 /* scale visual (sin agrandar el layout de Leaflet) tapa los bordes
    del rectángulo al rotar — evita el “cuadrado blanco”. */
@@ -863,14 +871,14 @@ path.trazaRuta{
   position:absolute;left:50%;top:50%;
   width:16px;height:16px;margin:-8px 0 0 -8px;
   border-radius:50%;
-  background:var(--acento);border:3px solid var(--tarjeta);
-  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  background:var(--hito);border:3px solid var(--tarjeta);
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 .pinIcono .halo{
   position:absolute;left:50%;top:50%;
   width:16px;height:16px;margin:-8px 0 0 -8px;
   border-radius:50%;
-  border:3px solid var(--acento);
+  border:3px solid var(--hito);
   animation:halo 2.8s ease-out infinite;
   animation-delay:var(--delay,0s);
 }
@@ -879,7 +887,7 @@ path.trazaRuta{
   55%{transform:scale(2.4);opacity:0;}
   100%{transform:scale(2.4);opacity:0;}
 }
-.pinIcono.activo .punto{background:var(--tinta);}
+.pinIcono.activo .punto{background:#fff;border-color:var(--hito);}
 
 #btnInclinar{
   display:inline-flex;
@@ -903,7 +911,7 @@ path.trazaRuta{
 }
 
 #zoomCtrl button#btnUbicacion.activo{
-  border-color:#2F80ED;color:#2F80ED;
+  border-color:#fff;color:#fff;
 }
 #zoomCtrl button#btnUbicacion.buscando{
   opacity:.7;
@@ -915,14 +923,14 @@ path.trazaRuta{
 .yoIcono .yoPunto{
   position:absolute;inset:5px;
   border-radius:50%;
-  background:#2F80ED;
-  border:2.5px solid #fff;
-  box-shadow:0 1px 4px rgba(0,0,0,.35);
+  background:#fff;
+  border:2.5px solid var(--fondo);
+  box-shadow:0 1px 4px rgba(0,0,0,.45);
 }
 .yoIcono .yoHalo{
   position:absolute;inset:0;
   border-radius:50%;
-  border:2px solid #2F80ED;
+  border:2px solid #fff;
   animation:yoPulse 2s ease-out infinite;
 }
 @keyframes yoPulse{
@@ -1287,7 +1295,7 @@ path.trazaRuta{
 }
 </style>
 </head>
-<body>
+<body class="noche">
 
   <svg style="display: none;">
   <filter id="resaltar-verde">
@@ -1334,7 +1342,7 @@ path.trazaRuta{
     <div id="tiltStage">
       <div id="mapa"></div>
     </div>
-    <div class="hint">👆 <b>Tocá los puntos violetas</b> y descubrí qué esconde el recorrido · pellizcá para hacer zoom</div>
+    <div class="hint">👆 <b>Tocá los puntos magenta</b> y descubrí qué esconde el recorrido · pellizcá para hacer zoom</div>
     <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar el mapa con el celular">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
@@ -1594,8 +1602,8 @@ const CFG = {
   /* Positron: mapa minimalista (avenidas y barrios, sin íconos).
      Si estos tiles no cargan en la red del tótem, el respaldo
      OSM entra solo. */
-  tilesDia: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-  tilesRespaldo: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  tilesDia: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+  tilesRespaldo: "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
@@ -2027,10 +2035,10 @@ function pintarUbicacion(pos){
   if(!yo.accuracy){
     yo.accuracy = L.circle(latlng, {
       radius: acc,
-      color: "#2F80ED",
+      color: "#ffffff",
       weight: 1,
-      opacity: 0.45,
-      fillColor: "#2F80ED",
+      opacity: 0.55,
+      fillColor: "#ffffff",
       fillOpacity: 0.12,
       interactive: false
     }).addTo(map);
@@ -2351,6 +2359,7 @@ renderHitos();
 aplicarAnimacion();
 //aplicarModoPorHora();
 initInclinacion();
+aplicarModo(true);
 irA("ATTRACT");
 
 /* ============================================================
