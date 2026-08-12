@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-23">
+<meta name="totem-version" content="2026-08-12-v17-build-24">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,9 +54,9 @@
   --tarjeta:#FFFFFF;
   --boton:#FFFFFF;
   --standby:var(--ba-papel);
-  --sb-grad-1:#ffccd5;
-  --sb-grad-2:#ffd4c2;
-  --sb-grad-3:#fff0bf;
+  --sb-grad-1:#9b2677;
+  --sb-grad-2:#c53737;
+  --sb-grad-3:#dfa63f;
   --sb-texto:#ffffff;
   --sb-borde:#FFFFFF;
   --linea:rgba(24,50,70,.22);
@@ -82,9 +82,9 @@ body.noche{
   --tarjeta:var(--ba-verde);
   --boton:var(--ba-verde);
   --standby:var(--ba-azul);
-  --sb-grad-1:#ffccd5;
-  --sb-grad-2:#ffd4c2;
-  --sb-grad-3:#fff0bf;
+  --sb-grad-1:#9b2677;
+  --sb-grad-2:#c53737;
+  --sb-grad-3:#dfa63f;
   --sb-texto:#ffffff;
   --sb-borde:#FFFFFF;
   --linea:rgba(243,242,241,.22);
@@ -834,9 +834,9 @@ header{display:none !important;}
   padding:4vmin;
   opacity:1;transition:opacity .5s ease, background .4s ease;
   background:
-    radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--sb-grad-3, #fff0bf) 85%, transparent) 0%, transparent 55%),
-    radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--sb-grad-1, #ffccd5) 75%, transparent) 0%, transparent 50%),
-    linear-gradient(135deg, var(--sb-grad-1, #ffccd5) 0%, var(--sb-grad-2, #ffd4c2) 38%, var(--sb-grad-3, #fff0bf) 100%);
+    radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--sb-grad-3, #dfa63f) 85%, transparent) 0%, transparent 55%),
+    radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--sb-grad-1, #9b2677) 75%, transparent) 0%, transparent 50%),
+    linear-gradient(135deg, var(--sb-grad-1, #9b2677) 0%, var(--sb-grad-2, #c53737) 38%, var(--sb-grad-3, #dfa63f) 100%);
   font-family:'Inter',system-ui,sans-serif;
   color:var(--sb-texto, #fff);
 }
@@ -1287,7 +1287,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 23</div>
+  <div id="buildTag" aria-hidden="true">v17 · 24</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -3162,15 +3162,15 @@ function aplicarSensInclinacion(){
   tilt.sensGyro = 46 - t * 34;  /* 46° → 12° */
   tilt.deadGyro = 7.5 - t * 4.5; /* 7.5° → 3° */
 }
-const TEMA_KEY = "totem21k-tema-v20";
+const TEMA_KEY = "totem21k-tema-v21";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
     "marca": "#EF981F",
     "acento": "#EF981F",
-    "sb-grad-1": "#ffccd5",
-    "sb-grad-2": "#ffd4c2",
-    "sb-grad-3": "#fff0bf",
+    "sb-grad-1": "#9b2677",
+    "sb-grad-2": "#c53737",
+    "sb-grad-3": "#dfa63f",
     "sb-texto": "#ffffff",
     "sb-borde": "#ffffff",
     "map-grad-1": "#ff004c",
@@ -3268,15 +3268,15 @@ function deepMergeTema(base, patch){
 function cargarTemaGuardado(){
   try{
     const rawV19 = localStorage.getItem(TEMA_KEY);
-    const rawOld = localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
+    const rawOld = localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
     if(rawV19){
       temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV19));
       return;
     }
     if(!rawOld) return;
     temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawOld));
-    /* migración: stand-by nuevo (BA linda) usa pasteles del modelo */
-    ["sb-grad-1","sb-grad-2","sb-grad-3","sb-texto","sb-borde"].forEach(k=>{
+    /* migración: solo degradé stand-by más oscuro (ref PDF) */
+    ["sb-grad-1","sb-grad-2","sb-grad-3"].forEach(k=>{
       temaState.colors[k] = TEMA_DEFAULT.colors[k];
     });
   }catch(_){}
