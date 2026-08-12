@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-18">
+<meta name="totem-version" content="2026-08-12-v17-build-19">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -617,27 +617,49 @@ path.trazaRuta{
   font-size:18px;line-height:1;
 }
 
+#zoomCtrl button#btnUbicacion{
+  font-size:0;
+  color:var(--tinta);
+}
+#zoomCtrl button#btnUbicacion svg{
+  width:26px;height:26px;
+  display:block;
+  pointer-events:none;
+}
 #zoomCtrl button#btnUbicacion.activo{
-  border-color:#fff;color:#fff;
+  border-color:var(--acento, #EF981F);
+  color:var(--acento, #EF981F);
+  background:var(--boton);
+}
+#zoomCtrl button#btnUbicacion.activo svg{
+  color:inherit;
 }
 #zoomCtrl button#btnUbicacion.buscando{
-  opacity:.7;
+  opacity:.75;
+}
+#zoomCtrl button#btnUbicacion.buscando svg{
+  animation:ubiSpin 0.9s linear infinite;
+}
+@keyframes ubiSpin{
+  to{ transform:rotate(360deg); }
 }
 .yoIcono{
-  width:22px;height:22px;margin-left:-11px;margin-top:-11px;
+  width:22px;height:22px;
   position:relative;
+  pointer-events:none;
 }
 .yoIcono .yoPunto{
   position:absolute;inset:5px;
   border-radius:50%;
   background:#fff;
-  border:2.5px solid var(--fondo);
+  border:2.5px solid rgba(27,34,33,.55);
   box-shadow:0 1px 4px rgba(0,0,0,.45);
 }
 .yoIcono .yoHalo{
   position:absolute;inset:0;
   border-radius:50%;
   border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(27,34,33,.2);
   animation:yoPulse 2s ease-out infinite;
 }
 @keyframes yoPulse{
@@ -946,6 +968,9 @@ header{display:none !important;}
     font-size:18px;
     border-width:2px;
   }
+  #zoomCtrl button#btnUbicacion svg{
+    width:22px;height:22px;
+  }
 
   .kmIcono{width:24px;height:24px;font-size:11px;}
   .hidraIcono{width:16px;height:16px;font-size:9px;}
@@ -1231,14 +1256,20 @@ header{display:none !important;}
       Inclinación
     </button>
     <div id="zoomCtrl">
-      <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Mi ubicación" title="Mostrar mi ubicación">◎</button>
+      <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Centrar en mi ubicación" title="Centrar y rastrear mi ubicación">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
+          <circle cx="12" cy="12" r="7.2" stroke="currentColor" stroke-width="2.2"/>
+          <path d="M12 2.5v2.8M12 18.7v2.8M2.5 12h2.8M18.7 12h2.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
       <button id="zMas" aria-label="Acercar">＋</button>
       <button id="zMenos" aria-label="Alejar">−</button>
       <button id="zReset" aria-label="Ver todo">⌂</button>
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 18</div>
+  <div id="buildTag" aria-hidden="true">v17 · 19</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2679,6 +2710,7 @@ function irA(estado, dato){
   S.estado = estado;
   if(estado === "ATTRACT"){
     cerrarPopupDom(); marcarActivo(null);
+    if(typeof limpiarUbicacion === "function") limpiarUbicacion();
     setPopupBlur(false);
     attract.classList.remove("oculto");
     encuadrar(false);
@@ -2760,33 +2792,121 @@ document.getElementById("zReset").addEventListener("pointerdown", e=>{
   encuadrar(true);
 });
 
-/* geoloc */
+/* geoloc — punto blanco + seguir ubicación */
 const btnUbicacion = document.getElementById("btnUbicacion");
-let watchId = null;
+const yo = {
+  watchId: null,
+  firstFix: true,
+  follow: false,
+  lastLl: null
+};
 function yoIconEl(){
   const el = document.createElement("div");
-  el.style.cssText = "width:18px;height:18px;border-radius:50%;background:#2b8aee;border:3px solid #fff;box-shadow:0 0 0 4px rgba(43,138,238,.28);pointer-events:none;";
+  el.className = "yoIcono";
+  el.innerHTML = '<span class="yoHalo"></span><span class="yoPunto"></span>';
   return el;
+}
+function limpiarUbicacion(){
+  if(yo.watchId != null && navigator.geolocation){
+    try{ navigator.geolocation.clearWatch(yo.watchId); }catch(_){}
+  }
+  yo.watchId = null;
+  yo.firstFix = true;
+  yo.follow = false;
+  yo.lastLl = null;
+  if(yoMarker){ try{ yoMarker.remove(); }catch(_){} yoMarker = null; }
+  btnUbicacion.classList.remove("activo", "buscando");
+  btnUbicacion.setAttribute("aria-pressed", "false");
+  btnUbicacion.title = "Centrar y rastrear mi ubicación";
+}
+function llDentroCircuito(ll){
+  try{
+    const b = map.getMaxBounds && map.getMaxBounds();
+    if(b) return b.contains(ll);
+  }catch(_){}
+  try{
+    const [[minLng,minLat],[maxLng,maxLat]] = BOUNDS_MAX;
+    return ll[0] >= minLng && ll[0] <= maxLng && ll[1] >= minLat && ll[1] <= maxLat;
+  }catch(_){ return true; }
+}
+function pintarUbicacion(pos){
+  if(!map) return;
+  const ll = [pos.coords.longitude, pos.coords.latitude];
+  yo.lastLl = ll;
+  if(!yoMarker){
+    yoMarker = new maplibregl.Marker({ element: yoIconEl(), anchor: "center" })
+      .setLngLat(ll)
+      .addTo(map);
+  }else{
+    yoMarker.setLngLat(ll);
+  }
+  btnUbicacion.classList.remove("buscando");
+  btnUbicacion.classList.add("activo");
+  btnUbicacion.setAttribute("aria-pressed", "true");
+  btnUbicacion.title = "Rastreando · tocá para detener";
+
+  if(yo.firstFix){
+    yo.firstFix = false;
+    if(llDentroCircuito(ll)){
+      map.flyTo({
+        center: ll,
+        zoom: Math.max(map.getZoom(), 15),
+        duration: 1100,
+        essential: true
+      });
+    }else{
+      btnUbicacion.title = "Estás fuera del área del circuito";
+      setTimeout(()=>{
+        if(yo.watchId != null) btnUbicacion.title = "Rastreando · tocá para detener";
+      }, 3200);
+    }
+    return;
+  }
+  /* mientras rastrea: ir centrando suave */
+  if(yo.follow && S.estado !== "POPUP"){
+    map.easeTo({
+      center: ll,
+      duration: 700,
+      essential: true
+    });
+  }
+}
+function errorUbicacion(err){
+  limpiarUbicacion();
+  const msg =
+    err && err.code === 1 ? "Sin permiso de ubicación" :
+    err && err.code === 2 ? "Sin señal GPS" :
+    err && err.code === 3 ? "Timeout GPS" : "Error GPS";
+  btnUbicacion.title = msg;
+  setTimeout(()=>{
+    if(yo.watchId == null) btnUbicacion.title = "Centrar y rastrear mi ubicación";
+  }, 2800);
+}
+function toggleUbicacion(){
+  if(!navigator.geolocation){
+    errorUbicacion({ code: 2 });
+    return;
+  }
+  if(yo.watchId != null){
+    limpiarUbicacion();
+    return;
+  }
+  yo.firstFix = true;
+  yo.follow = true;
+  btnUbicacion.classList.add("buscando");
+  btnUbicacion.classList.add("activo");
+  btnUbicacion.setAttribute("aria-pressed", "true");
+  btnUbicacion.title = "Buscando ubicación…";
+  yo.watchId = navigator.geolocation.watchPosition(pintarUbicacion, errorUbicacion, {
+    enableHighAccuracy: true,
+    maximumAge: 2500,
+    timeout: 15000
+  });
 }
 btnUbicacion.addEventListener("pointerdown", e=>{
   e.stopPropagation();
-  if(watchId != null){
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-    if(yoMarker){ yoMarker.remove(); yoMarker = null; }
-    btnUbicacion.classList.remove("activo");
-    btnUbicacion.setAttribute("aria-pressed", "false");
-    return;
-  }
-  if(!navigator.geolocation) return;
-  btnUbicacion.classList.add("activo");
-  btnUbicacion.setAttribute("aria-pressed", "true");
-  watchId = navigator.geolocation.watchPosition(pos=>{
-    const ll = [pos.coords.longitude, pos.coords.latitude];
-    if(!yoMarker){
-      yoMarker = new maplibregl.Marker({ element: yoIconEl(), anchor: "center" }).setLngLat(ll).addTo(map);
-    }else yoMarker.setLngLat(ll);
-  }, ()=>{}, { enableHighAccuracy:true, maximumAge:4000 });
+  toggleUbicacion();
+  if(typeof reiniciarInactividad === "function") reiniciarInactividad();
 });
 
 /* edición ruta (simplificada) */
