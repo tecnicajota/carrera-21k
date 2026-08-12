@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-14">
+<meta name="totem-version" content="2026-08-12-v17-build-15">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1214,7 +1214,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 14</div>
+  <div id="buildTag" aria-hidden="true">v17 · 15</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2741,6 +2741,10 @@ function initMap(){
     styleLoaded = true;
     try{ aplanarEstiloLiberty(); }catch(e){ console.warn(e); }
     try{ agregarExtrusion(); }catch(e){ console.warn(e); }
+    try{
+      const calles = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.calles) || "medio";
+      aplicarModoCalles(calles);
+    }catch(e){ console.warn(e); }
     agregarRuta();
     map.resize();
     asegurarTinteDentroDelMapa();
@@ -2780,7 +2784,42 @@ function initMap(){
 initMap();
 initInclinacion();
 
-function aplicarModoCalles(modo){ /* MapLibre: estilo vectorial fijo liberty por ahora */ }
+function aplicarModoCalles(modo){
+  /* completo = todos · medio/simple = solo principales · solo/nada = sin nombres */
+  if(!map) return;
+  let style;
+  try{ style = map.getStyle(); }catch(_){ return; }
+  if(!style || !style.layers) return;
+  const m = (modo === "simple") ? "medio"
+    : (modo === "nada") ? "solo"
+    : (modo || "completo");
+  for(const layer of style.layers){
+    if(layer.type !== "symbol") continue;
+    const id = layer.id;
+    const sl = layer["source-layer"] || "";
+    const isCalle = sl === "transportation_name"
+      || /highway-name|highway-shield|road_shield/i.test(id);
+    if(!isCalle) continue;
+    let vis = "visible";
+    if(m === "solo"){
+      vis = "none";
+    }else if(m === "medio"){
+      const esMenor = /minor|path/i.test(id);
+      const esMayor = /major|shield/i.test(id);
+      vis = esMenor ? "none" : (esMayor ? "visible" : "none");
+    }
+    try{ map.setLayoutProperty(id, "visibility", vis); }catch(_){}
+  }
+  aplicarModoCalles._actual = m;
+}
+function aplicarSensInclinacion(){
+  if(typeof tilt === "undefined") return;
+  const s = Number(temaState?.filters?.tiltSens ?? 5);
+  const t = Math.max(0, Math.min(1, (s - 1) / 9));
+  /* 1 = suave (hace falta inclinar más) · 10 = muy sensible */
+  tilt.sensGyro = 46 - t * 34;  /* 46° → 12° */
+  tilt.deadGyro = 7.5 - t * 4.5; /* 7.5° → 3° */
+}
 const TEMA_KEY = "totem21k-tema-v19";
 const TEMA_DEFAULT = {
   "colors": {
@@ -2810,13 +2849,14 @@ const TEMA_DEFAULT = {
     "sat": 2.5,
     "hue": 339,
     "rutaGrosor": 3.75,
+    "tiltSens": 5,
     "calles": "medio"
   }
 };
 const CALLES_OPTIONS = [
   {value: "completo", label: "Mapa completo", hint: "Todos los nombres"},
-  {value: "medio", label: "Mapa medio", hint: "Solo importantes"},
-  {value: "solo", label: "Mapa solo", hint: "Sin nombres"}
+  {value: "medio", label: "Mapa simple", hint: "Solo principales"},
+  {value: "solo", label: "Mapa nada", hint: "Sin nombres"}
 ];
 const STANDBY_COLORS = {
   "sb-grad-1": "Degradé inicio",
@@ -2859,6 +2899,7 @@ const BLEND_OPTIONS = [
 ];
 const FILTER_META = {
   rutaGrosor: {label: "Grosor del recorrido", min: 1, max: 10, step: 0.25},
+  tiltSens: {label: "Sensibilidad inclinación", min: 1, max: 10, step: 1},
   tinte: {label: "Opacidad del degradé", min: 0, max: 1, step: 0.01},
   bri: {label: "Brillo del mapa", min: 0.4, max: 1.8, step: 0.01},
   dark: {label: "Oscuridad del mapa", min: 0, max: 1, step: 0.01},
@@ -2933,6 +2974,7 @@ function aplicarTemaLive(){
   aplicarGrosorRuta();
   const calles = (temaState.filters && temaState.filters.calles) || "completo";
   if(typeof aplicarModoCalles === "function") aplicarModoCalles(calles);
+  if(typeof aplicarSensInclinacion === "function") aplicarSensInclinacion();
 }
 function temaMsg(txt){
   const m = document.getElementById("temaMsg");
@@ -3000,16 +3042,25 @@ function renderPanelTema(){
       ${BLEND_OPTIONS.map(o => `<option value="${o.value}"${o.value===blendVal?" selected":""}>${o.label}</option>`).join("")}
     </select>`;
   filtros.appendChild(blendField);
-  const filterKeys = ["rutaGrosor", "tinte", "bri", "dark", "con", "sat", "hue"];
+  const filterKeys = ["rutaGrosor", "tiltSens", "tinte", "bri", "dark", "con", "sat", "hue"];
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "rutaGrosor" ? 2.5 : key === "tinte" ? 0.82 : key === "dark" ? 0.04 : key === "hue" ? 339 : key === "sat" ? 2.5 : key === "bri" ? 0.99 : key === "con" ? 1.08 : 1;
+    const fallback = key === "rutaGrosor" ? 2.5
+      : key === "tiltSens" ? 5
+      : key === "tinte" ? 0.82
+      : key === "dark" ? 0.04
+      : key === "hue" ? 339
+      : key === "sat" ? 2.5
+      : key === "bri" ? 0.99
+      : key === "con" ? 1.08
+      : 1;
     const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
+    const hint = key === "tiltSens" ? ` <small style="font-weight:600;opacity:.65">(1 suave · 10 fuerte)</small>` : "";
     field.innerHTML = `
-      <label>${meta.label} <span class="temaVal" data-fval="${key}">${val}</span></label>
+      <label>${meta.label}${hint} <span class="temaVal" data-fval="${key}">${val}</span></label>
       <input type="range" data-filter="${key}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${val}">`;
     filtros.appendChild(field);
   }
