@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-12-sin-rotar-standby">
+<meta name="totem-version" content="2026-08-12-colores-standby-tilt-pan">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -913,17 +913,17 @@ path.trazaRuta{
   will-change:transform;
   box-shadow:none;
 }
+/* inclinación no bloquea pan/zoom: el mapa se arrastra normal;
+   el tilt va por giroscopio (móvil) o hover del mouse (desktop) */
 #mapaWrap.tilt-on{
-  touch-action:none;
-  cursor:grab;
+  touch-action:auto;
+  cursor:auto;
 }
-#mapaWrap.tilt-on:active{cursor:grabbing;}
 @media (prefers-reduced-motion: reduce){
   #btnInclinar{display:none !important;}
   #mapaWrap.tilt-on #tiltStage #mapa{
     transform:none !important;
   }
-  #mapaWrap.tilt-on{touch-action:auto;cursor:auto;}
 }
 #mapa.dibujando .huellaIcono{opacity:0;}
 
@@ -1094,17 +1094,20 @@ path.trazaRuta{
 }
 
 #btnInclinar{top:12px;z-index:900;}
-#btnTema{top:62px;z-index:900;}
+/* Colores fuera de mapaWrap y por encima del stand-by (#attract z=1100) */
+#btnTema{
+  position:absolute;left:12px;top:62px;z-index:1250;
+}
 #btnInclinar,
 #btnTema{
   display:inline-flex;
-  position:absolute;left:12px;
   align-items:center;gap:8px;
   padding:10px 14px;border-radius:99px;min-height:44px;
   background:var(--boton);border:2.5px solid var(--tinta);
   font-size:12px;font-weight:600;letter-spacing:.04em;
   color:var(--tinta);box-shadow:var(--sombra);
 }
+#btnInclinar{position:absolute;left:12px;}
 #btnInclinar .dot,
 #btnTema .dot{
   width:8px;height:8px;border-radius:50%;
@@ -1635,19 +1638,19 @@ header{display:none !important;}
     <div class="cta">▶ Tocá la pantalla y conocé el recorrido antes de correrlo</div>
   </div>
 
+  <button id="btnTema" type="button" aria-pressed="false" title="Configurar colores y filtros">
+    <span class="dot" aria-hidden="true"></span>
+    Colores
+  </button>
 
     <div id="mapaWrap">
     <div id="tiltStage">
       <div id="mapa"></div>
     </div>
     <div class="hint" hidden></div>
-    <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar: arrastrá para orientar el mapa">
+    <button id="btnInclinar" type="button" aria-pressed="false" title="Inclinar: mové el celu o el mouse (sin arrastrar)">
       <span class="dot" aria-hidden="true"></span>
       Inclinación
-    </button>
-    <button id="btnTema" type="button" aria-pressed="false" title="Configurar colores y filtros">
-      <span class="dot" aria-hidden="true"></span>
-      Colores
     </button>
     <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
     <div id="zoomCtrl">
@@ -2344,7 +2347,12 @@ function cerrarPopupDom(){
    (los hitos son un misterio hasta tocarlos) */
 function iniciarRotador(){}
 function pararRotador(){}
-attract.addEventListener("pointerdown", ()=> irA("MAPA"));
+attract.addEventListener("pointerdown", e=>{
+  /* no salir del stand-by si tocan Colores o el panel está abierto */
+  if(e.target.closest("#btnTema, #temaPanel")) return;
+  if(document.getElementById("temaPanel")?.classList.contains("abierto")) return;
+  irA("MAPA");
+});
 
 function reiniciarInactividad(){
   clearTimeout(S.tInactividad);
@@ -2510,9 +2518,8 @@ document.addEventListener("keydown", e=>{
 });*/
 
 /* ============================================================
-   INCLINACIÓN — mouse/touch continuo + giroscopio en el celular.
-   Con inclinación ON: el dedo/mouse orienta el mapa de forma
-   continua (no solo vertical/horizontal).
+   INCLINACIÓN — giroscopio (móvil) + hover mouse (desktop).
+   El pan/zoom del mapa siempre quedan libres (no captura pointer).
    ============================================================ */
 const mapaWrapTilt = document.getElementById("mapaWrap");
 const btnInclinar = document.getElementById("btnInclinar");
@@ -2531,9 +2538,7 @@ const tilt = {
   raf: 0,
   maxDeg: 12,   /* tope suave: el bleed extra cubre el cuadrado */
   maxShift: 10,
-  gyroWatch: 0,
-  pointers: new Map(),
-  dragging: false
+  gyroWatch: 0
 };
 function esMobileTilt(){
   return window.matchMedia("(max-width:768px), (pointer:coarse)").matches;
@@ -2595,7 +2600,6 @@ function asegurarLoopTilt(){
 }
 function onOrientacion(e){
   if(!tilt.on || S.estado === "POPUP") return;
-  if(tilt.dragging) return; /* el dedo manda mientras arrastrás */
   const beta = e.beta, gamma = e.gamma;
   if(beta == null || gamma == null) return;
   tilt.gyroOk = true;
@@ -2625,40 +2629,13 @@ function setTiltFromClientPoint(clientX, clientY){
   setTiltFromAxes(clamp(nx, -1, 1), clamp(ny, -1, 1));
   asegurarLoopTilt();
 }
-function onPointerTiltDown(e){
+/* Desktop: hover sin botón = inclinación. Touch/drag = pan del mapa. */
+function onPointerTiltHover(e){
   if(!tilt.on || S.estado === "POPUP") return;
+  if(e.pointerType === "touch" || e.pointerType === "pen") return;
+  if(e.buttons !== 0) return;
   if(e.target.closest("button, a, .leaflet-popup, .leaflet-control, #temaPanel, #zoomCtrl")) return;
-  tilt.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  if(tilt.pointers.size === 1){
-    tilt.dragging = true;
-    try{ mapaWrapTilt.setPointerCapture(e.pointerId); }catch(_){}
-    setTiltFromClientPoint(e.clientX, e.clientY);
-  }
-}
-function onPointerTiltMove(e){
-  if(!tilt.on || S.estado === "POPUP") return;
-  if(!tilt.pointers.has(e.pointerId)) return;
-  tilt.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  if(tilt.pointers.size >= 2){
-    /* dos dedos: promedio = orientación intermedia continua */
-    let sx=0, sy=0, n=0;
-    tilt.pointers.forEach(p=>{ sx+=p.x; sy+=p.y; n++; });
-    setTiltFromClientPoint(sx/n, sy/n);
-  }else{
-    setTiltFromClientPoint(e.clientX, e.clientY);
-  }
-}
-function onPointerTiltUp(e){
-  tilt.pointers.delete(e.pointerId);
-  if(tilt.pointers.size === 0){
-    tilt.dragging = false;
-    /* en desktop el mouse puede volver al centro; en touch dejamos el ángulo */
-    if(!esMobileTilt() && e.pointerType === "mouse"){
-      resetTiltTargets();
-      tilt.target.scale = TILT_BASE_SCALE;
-      asegurarLoopTilt();
-    }
-  }
+  setTiltFromClientPoint(e.clientX, e.clientY);
 }
 async function pedirPermisoOrientacion(){
   try{
@@ -2683,26 +2660,19 @@ function avisarGyroSiFalla(){
   clearTimeout(tilt.gyroWatch);
   tilt.gyroWatch = setTimeout(()=>{
     if(!tilt.on || tilt.gyroOk || !esMobileTilt()) return;
-    btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Arrastrá el mapa';
+    btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Mové el celu';
     setTimeout(()=>{ if(tilt.on) btnInclinar.innerHTML = labelInclinar(); }, 2800);
   }, 1600);
-}
-function setMapDragEnabled(si){
-  try{
-    if(si){ map.dragging.enable(); map.touchZoom.enable(); }
-    else { map.dragging.disable(); /* pinch sigue para zoom si hace falta */ }
-  }catch(_){}
 }
 function activarInclinacion(si){
   tilt.on = !!si;
   tilt.gyroOk = false;
-  tilt.pointers.clear();
-  tilt.dragging = false;
   mapaWrapTilt.classList.toggle("tilt-on", tilt.on);
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
   btnInclinar.innerHTML = labelInclinar();
-  setMapDragEnabled(!tilt.on);
+  /* pan/zoom siempre habilitados */
+  try{ map.dragging.enable(); map.touchZoom.enable(); }catch(_){}
   if(tilt.on){
     resetTiltTargets();
     tilt.target.scale = TILT_BASE_SCALE;
@@ -2724,16 +2694,7 @@ async function toggleInclinacion(){
     activarInclinacion(false);
     return;
   }
-  const ok = await pedirPermisoOrientacion();
-  if(!ok){
-    /* Igual se puede orientar con touch/mouse */
-    activarInclinacion(true);
-    if(esMobileTilt()){
-      btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Arrastrá';
-      setTimeout(()=>{ if(tilt.on) btnInclinar.innerHTML = labelInclinar(); }, 2200);
-    }
-    return;
-  }
+  await pedirPermisoOrientacion();
   activarInclinacion(true);
 }
 function pausarTiltPorPopup(pausar){
@@ -2755,10 +2716,7 @@ function initInclinacion(){
   });
   window.addEventListener("deviceorientation", onOrientacion, {passive:true});
   window.addEventListener("deviceorientationabsolute", onOrientacion, {passive:true});
-  mapaWrapTilt.addEventListener("pointerdown", onPointerTiltDown, {passive:true});
-  mapaWrapTilt.addEventListener("pointermove", onPointerTiltMove, {passive:true});
-  mapaWrapTilt.addEventListener("pointerup", onPointerTiltUp, {passive:true});
-  mapaWrapTilt.addEventListener("pointercancel", onPointerTiltUp, {passive:true});
+  mapaWrapTilt.addEventListener("pointermove", onPointerTiltHover, {passive:true});
   mapaWrapTilt.addEventListener("pointerleave", e=>{
     if(!tilt.on || esMobileTilt()) return;
     if(e.pointerType && e.pointerType !== "mouse") return;
