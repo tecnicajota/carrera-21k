@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-12">
+<meta name="totem-version" content="2026-08-12-v17-build-13">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1214,7 +1214,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 12</div>
+  <div id="buildTag" aria-hidden="true">v17 · 13</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2182,9 +2182,10 @@ const tilt = {
   maxDeg: 10,
   maxShift: 8,
   maxPitchCam: 65,   /* pitch MapLibre según mouse/gyro — arranca en 0 */
-  maxBearingCam: 22, /* giro suave izq/der con el mouse */
+  maxBearingCam: 22,
   gyroWatch: 0,
-  inputLockHasta: 0  /* tras activar: calibrar plano, ignorar ghost-touch */
+  inputLockHasta: 0,
+  sensGyro: 11     /* ° de inclinación del celu → eje normalizado */
 };
 function esMobileTilt(){
   return window.matchMedia("(max-width:768px), (pointer:coarse)").matches;
@@ -2202,7 +2203,6 @@ function anguloPantalla(){
 function clampTilt(v,a,b){ return Math.max(a, Math.min(b, v)); }
 function lerpTilt(a,b,t){ return a + (b-a)*t; }
 function aplicarTiltVars(){
-  /* la inclinación visible es la cámara MapLibre (pitch/bearing), no CSS */
   mapaWrapTilt.style.setProperty("--tilt-rx", "0deg");
   mapaWrapTilt.style.setProperty("--tilt-ry", "0deg");
   mapaWrapTilt.style.setProperty("--tilt-x", "0px");
@@ -2213,16 +2213,18 @@ function aplanarCamaraTilt(){
   tilt.cur = {rx:0, ry:0, x:0, y:0};
   aplicarTiltVars();
   if(map && !respaldoRaster){
-    try{ map.jumpTo({ pitch: 0, bearing: 0 }); }catch(_){}
+    try{
+      map.setPitch(0);
+      map.setBearing(0);
+    }catch(_){}
   }
 }
 function aplicarCamaraDesdeTilt(){
   if(!map || respaldoRaster) return;
   if(!tilt.on || tilt.paused || S.estado === "POPUP") return;
   if(tiltInputBloqueado()){
-    /* mantener plano mientras calibra */
     if(map.getPitch() > 0.2 || Math.abs(map.getBearing()) > 0.2){
-      map.jumpTo({ pitch: 0, bearing: 0 });
+      try{ map.setPitch(0); map.setBearing(0); }catch(_){}
     }
     return;
   }
@@ -2233,8 +2235,11 @@ function aplicarCamaraDesdeTilt(){
   const bearing = clampTilt(nx, -1, 1) * tilt.maxBearingCam;
   const dp = Math.abs(map.getPitch() - pitch);
   const db = Math.abs(((map.getBearing() - bearing + 540) % 360) - 180);
-  if(dp < 0.12 && db < 0.12) return;
-  map.jumpTo({ pitch, bearing });
+  if(dp < 0.08 && db < 0.08) return;
+  try{
+    map.setPitch(pitch);
+    map.setBearing(bearing);
+  }catch(_){}
 }
 function resetTiltTargets(){
   tilt.target = {rx:0, ry:0, x:0, y:0};
@@ -2247,23 +2252,27 @@ function setTiltFromAxes(nx, ny){
   tilt.target.ry = clampTilt(nx, -1, 1) * tilt.maxDeg;
   tilt.target.x = clampTilt(nx, -1, 1) * tilt.maxShift;
   tilt.target.y = clampTilt(-ny, -1, 1) * tilt.maxShift * 0.45;
+  asegurarLoopTilt();
 }
 function loopTilt(){
-  const t = 0.18;
+  const t = esMobileTilt() ? 0.28 : 0.18;
   tilt.cur.rx = lerpTilt(tilt.cur.rx, tilt.target.rx, t);
   tilt.cur.ry = lerpTilt(tilt.cur.ry, tilt.target.ry, t);
   tilt.cur.x  = lerpTilt(tilt.cur.x,  tilt.target.x,  t);
   tilt.cur.y  = lerpTilt(tilt.cur.y,  tilt.target.y,  t);
   aplicarTiltVars();
   aplicarCamaraDesdeTilt();
-  const quiet =
-    Math.abs(tilt.cur.rx - tilt.target.rx) < 0.03 &&
-    Math.abs(tilt.cur.ry - tilt.target.ry) < 0.03 &&
-    !tilt.on;
-  if(quiet && Math.abs(tilt.cur.rx) < 0.03 && Math.abs(tilt.cur.ry) < 0.03){
-    tilt.raf = 0;
-    aplicarTiltVars();
-    return;
+  /* con inclinación ON el loop sigue vivo (gyro puede llegar en cualquier momento) */
+  if(!tilt.on){
+    const quiet =
+      Math.abs(tilt.cur.rx - tilt.target.rx) < 0.03 &&
+      Math.abs(tilt.cur.ry - tilt.target.ry) < 0.03 &&
+      Math.abs(tilt.cur.rx) < 0.03 && Math.abs(tilt.cur.ry) < 0.03;
+    if(quiet){
+      tilt.raf = 0;
+      aplicarTiltVars();
+      return;
+    }
   }
   tilt.raf = requestAnimationFrame(loopTilt);
 }
@@ -2275,20 +2284,20 @@ function onOrientacion(e){
   const beta = e.beta, gamma = e.gamma;
   if(beta == null || gamma == null) return;
   tilt.gyroOk = true;
-  /* durante el lock: recalibrar base a la pose actual → al soltar arranca plano */
+  /* calibración: la pose al activar = mapa plano (como el centro del mouse en desktop) */
   if(tiltInputBloqueado()){
     tilt.baseBeta = beta;
     tilt.baseGamma = gamma;
     return;
   }
-  if(tilt.baseBeta == null){
+  if(tilt.baseBeta == null || tilt.baseGamma == null){
     tilt.baseBeta = beta;
     tilt.baseGamma = gamma;
-    return; /* primer sample = cero, sin salto */
+    return;
   }
   const dBeta = beta - tilt.baseBeta;
   const dGamma = gamma - tilt.baseGamma;
-  const sens = 16;
+  const sens = tilt.sensGyro;
   let nx = dGamma / sens;
   let ny = dBeta / sens;
   const ang = ((anguloPantalla() % 360) + 360) % 360;
@@ -2297,7 +2306,6 @@ function onOrientacion(e){
   const rx = nx * cos - ny * sin;
   const ry = nx * sin + ny * cos;
   setTiltFromAxes(clampTilt(rx, -1, 1), clampTilt(ry, -1, 1));
-  asegurarLoopTilt();
 }
 function setTiltFromClientPoint(clientX, clientY){
   if(tiltInputBloqueado()) return;
@@ -2306,11 +2314,10 @@ function setTiltFromClientPoint(clientX, clientY){
   const nx = ((clientX - r.left) / r.width - 0.5) * 2;
   const ny = ((clientY - r.top) / r.height - 0.5) * 2;
   setTiltFromAxes(clampTilt(nx, -1, 1), clampTilt(ny, -1, 1));
-  asegurarLoopTilt();
 }
 function onPointerTiltHover(e){
   if(!tilt.on || tilt.paused || S.estado === "POPUP") return;
-  /* celular: solo giroscopio (el touch del botón no debe inclinar) */
+  /* celular: solo giroscopio (igual que el mouse en desktop) */
   if(esMobileTilt()) return;
   if(e.pointerType === "touch" || e.pointerType === "pen") return;
   if(e.buttons !== 0) return;
@@ -2366,12 +2373,16 @@ function activarInclinacion(si){
   if(tilt.on){
     limitesMapaActivos(true);
     resetTiltTargets();
-    /* lock: en celu el toque del botón no debe inclinar; se calibra el gyro en pose actual */
-    tilt.inputLockHasta = performance.now() + (esMobileTilt() ? 900 : 350);
+    /* corto: calibra pose actual = plano; sin pitch fijo (como desktop) */
+    tilt.inputLockHasta = performance.now() + (esMobileTilt() ? 500 : 280);
     aplanarCamaraTilt();
     modo3D = true;
+    try{ actualizarExtrusion(); }catch(_){}
     asegurarLoopTilt();
-    if(esMobileTilt()) avisarGyroSiFalla();
+    if(esMobileTilt()){
+      avisarGyroSiFalla();
+      toast3d("mové el celu para inclinar el 3D");
+    }
   }else{
     clearTimeout(tilt.gyroWatch);
     tilt.inputLockHasta = 0;
@@ -2390,8 +2401,41 @@ async function toggleInclinacion(){
     activarInclinacion(false);
     return;
   }
+  /* permiso en el mismo gesto del tap (iOS) */
   await pedirPermisoOrientacion();
   activarInclinacion(true);
+}
+function initInclinacion(){
+  if(!btnInclinar) return;
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    btnInclinar.style.display = "none";
+    return;
+  }
+  btnInclinar.innerHTML = labelInclinar();
+  btnInclinar.addEventListener("click", e=>{
+    e.stopPropagation();
+    toggleInclinacion();
+    reiniciarInactividad();
+  });
+  /* solo deviceorientation (absolute pelea la calibración en mobile) */
+  window.addEventListener("deviceorientation", onOrientacion, {passive:true});
+  mapaWrapTilt.addEventListener("pointermove", onPointerTiltHover, {passive:true});
+  mapaWrapTilt.addEventListener("pointerleave", e=>{
+    if(!tilt.on || esMobileTilt()) return;
+    if(e.pointerType && e.pointerType !== "mouse") return;
+    resetTiltTargets();
+    asegurarLoopTilt();
+  });
+  window.addEventListener("orientationchange", ()=>{
+    tilt.baseBeta = null;
+    tilt.baseGamma = null;
+  });
+  if(screen.orientation && screen.orientation.addEventListener){
+    screen.orientation.addEventListener("change", ()=>{
+      tilt.baseBeta = null;
+      tilt.baseGamma = null;
+    });
+  }
 }
 function pausarTiltPorPopup(pausar){
   if(!tilt.on) return;
@@ -2425,45 +2469,14 @@ function resetCamaraPlana(){
   modo3D = false;
   map.easeTo({ pitch: 0, bearing: 0, duration: 800, essential: true });
 }
-function initInclinacion(){
-  if(!btnInclinar) return;
-  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-    btnInclinar.style.display = "none";
-    return;
-  }
-  btnInclinar.innerHTML = labelInclinar();
-  btnInclinar.addEventListener("click", e=>{
-    e.stopPropagation();
-    toggleInclinacion();
-    reiniciarInactividad();
-  });
-  window.addEventListener("deviceorientation", onOrientacion, {passive:true});
-  window.addEventListener("deviceorientationabsolute", onOrientacion, {passive:true});
-  mapaWrapTilt.addEventListener("pointermove", onPointerTiltHover, {passive:true});
-  mapaWrapTilt.addEventListener("pointerleave", e=>{
-    if(!tilt.on || esMobileTilt()) return;
-    if(e.pointerType && e.pointerType !== "mouse") return;
-    resetTiltTargets();
-    asegurarLoopTilt();
-  });
-  window.addEventListener("orientationchange", ()=>{
-    tilt.baseBeta = null;
-    tilt.baseGamma = null;
-  });
-  if(screen.orientation && screen.orientation.addEventListener){
-    screen.orientation.addEventListener("change", ()=>{
-      tilt.baseBeta = null;
-      tilt.baseGamma = null;
-    });
-  }
-}
 
-/* alias legacy: edificios por pitch de gesto; el botón es Inclinación CSS */
+/* alias: no forzar pitch fijo; la inclinación la maneja mouse/gyro */
 function setModo3D(si){
   if(respaldoRaster || !map) return;
   modo3D = !!si;
-  if(modo3D) map.easeTo({ pitch: 68, duration: 1200, essential: true });
-  else map.easeTo({ pitch: 0, bearing: 0, duration: 900, essential: true });
+  if(!modo3D){
+    map.easeTo({ pitch: 0, bearing: 0, duration: 900, essential: true });
+  }
 }
 
 /* ---------- estado / UI ---------- */
