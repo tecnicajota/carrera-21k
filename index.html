@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-22">
+<meta name="totem-version" content="2026-08-12-v17-build-23">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -469,22 +469,26 @@ path.trazaRuta{
 /* Colores fuera de mapaWrap y por encima del stand-by (#attract z=1100) */
 #btnTema{
   position:absolute;left:12px;top:62px;z-index:1250;
+  /* temporal: oculto para presentación (el panel sigue disponible en código) */
+  display:none !important;
 }
 #btnInclinar,
 #btnTema{
   display:inline-flex;
-  align-items:center;gap:8px;
-  padding:10px 14px;border-radius:99px;min-height:44px;
+  align-items:center;justify-content:center;gap:0;
+  padding:0;
+  width:42px;height:42px;min-height:0;
+  border-radius:50%;
   background:var(--boton);border:2.5px solid var(--tinta);
-  font-size:12px;font-weight:600;letter-spacing:.04em;
+  font-size:0;font-weight:600;letter-spacing:0;
   color:var(--tinta);box-shadow:var(--sombra);
 }
 #btnInclinar{position:absolute;left:12px;}
-#btnInclinar .dot,
-#btnTema .dot{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--tinta-suave);
+#btnInclinar .ico-inclinar{
+  width:20px;height:20px;display:block;pointer-events:none;
 }
+#btnInclinar .dot,
+#btnTema .dot{display:none;}
 #btnInclinar.activo,
 #btnTema.activo{
   border-color:var(--acento);color:var(--acento);
@@ -692,16 +696,19 @@ path.trazaRuta{
   right:max(16px, env(safe-area-inset-right, 0px));
   bottom:max(16px, env(safe-area-inset-bottom, 0px));
   z-index:900;
-  display:flex;flex-direction:column;gap:10px;
+  display:flex;flex-direction:column;gap:8px;
 }
 #zoomCtrl button{
-  width:60px;height:60px;border-radius:50%;
-  background:var(--boton);border:3px solid var(--tinta);
-  font-size:23px;font-weight:600;color:var(--tinta);
+  width:42px;height:42px;border-radius:50%;
+  background:var(--boton);border:2.5px solid var(--tinta);
+  font-size:18px;font-weight:600;color:var(--tinta);
   box-shadow:var(--sombra);
   display:grid;place-items:center;
 }
 #zoomCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
+#zoomCtrl button#btnUbicacion svg{
+  width:18px;height:18px;
+}
 
 /* header oculto: mapa a pantalla completa */
 header{display:none !important;}
@@ -966,15 +973,15 @@ header{display:none !important;}
   #zoomCtrl{
     right:max(10px, env(safe-area-inset-right, 0px));
     bottom:calc(14px + env(safe-area-inset-bottom, 0px));
-    gap:8px;
+    gap:6px;
   }
   #zoomCtrl button{
-    width:44px;height:44px;
-    font-size:18px;
+    width:36px;height:36px;
+    font-size:15px;
     border-width:2px;
   }
   #zoomCtrl button#btnUbicacion svg{
-    width:22px;height:22px;
+    width:16px;height:16px;
   }
 
   .kmIcono{width:24px;height:24px;font-size:11px;}
@@ -1009,12 +1016,13 @@ header{display:none !important;}
   #btnInclinar,
   #btnTema{
     left:max(10px, env(safe-area-inset-left, 0px));
-    padding:9px 12px;
-    font-size:11px;
-    min-height:40px;
-    max-width:min(46vw, 180px);
+    width:36px;height:36px;
+    padding:0;
+    min-height:0;
+    max-width:none;
   }
   #btnInclinar{top:max(10px, env(safe-area-inset-top, 0px));}
+  #btnInclinar .ico-inclinar{width:17px;height:17px;}
   #btnTema{top:calc(54px + env(safe-area-inset-top, 0px));}
 
   /* panel colores: hoja desde abajo en celu */
@@ -1075,7 +1083,8 @@ header{display:none !important;}
   .titulo .sub{display:none;}
   .stats{font-size:10px;line-height:1.45;}
   .hint{font-size:10px;padding:7px 10px;}
-  #btnInclinar, #btnTema{max-width:min(52vw, 160px); font-size:10.5px;}
+  #btnInclinar, #btnTema{width:34px;height:34px;padding:0;min-height:0;font-size:0;max-width:none;}
+  #btnInclinar .ico-inclinar{width:16px;height:16px;}
   .maplibregl-popup.hito-popup .maplibregl-popup-content,
   .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
     width:min(86vw, 260px);
@@ -1095,7 +1104,8 @@ header{display:none !important;}
     bottom:calc(8px + env(safe-area-inset-bottom, 0px));
     gap:6px;
   }
-  #zoomCtrl button{width:38px;height:38px;font-size:16px;}
+  #zoomCtrl button{width:34px;height:34px;font-size:14px;}
+  #zoomCtrl button#btnUbicacion svg{width:15px;height:15px;}
   .maplibregl-popup.hito-popup .maplibregl-popup-content,
   .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
     max-width:min(48vw, 230px);
@@ -1105,7 +1115,8 @@ header{display:none !important;}
   .hito-pop-title{font-size:12px;}
   .hito-pop-body{font-size:11px;max-height:min(42vh, 140px);}
   .hito-pop-foto{max-height:72px;object-fit:cover;}
-  #btnInclinar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
+  #btnInclinar, #btnTema{width:34px;height:34px;padding:0;min-height:0;font-size:0;}
+  #btnInclinar .ico-inclinar{width:16px;height:16px;}
   #btnTema{top:calc(46px + env(safe-area-inset-top, 0px));}
   #temaCard{max-height:min(94dvh, 100%);}
   #attract .lockup{font-size:clamp(2.6rem, 16vh, 5.5rem);}
@@ -1256,9 +1267,11 @@ header{display:none !important;}
     </div>
     <div id="toast3d" class="toast-3d" role="status" aria-live="polite"></div>
     <div class="hint" hidden></div>
-    <button id="btnInclinar" type="button" aria-pressed="false" title="3D desde arriba: incliná con el mouse o el celu">
-      <span class="dot" aria-hidden="true"></span>
-      Inclinación
+    <button id="btnInclinar" type="button" aria-pressed="false" aria-label="Inclinación" title="Inclinación">
+      <svg class="ico-inclinar" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="8" y="3.2" width="8" height="17.6" rx="1.7" stroke="currentColor" stroke-width="2" transform="rotate(-20 12 12)"/>
+        <path d="M3.6 9.2c-1.1 1.3-1.7 2.8-1.7 4.4M20.4 9.2c1.1 1.3 1.7 2.8 1.7 4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
     </button>
     <div id="zoomCtrl">
       <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Centrar en mi ubicación" title="Centrar y rastrear mi ubicación">
@@ -1274,7 +1287,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 22</div>
+  <div id="buildTag" aria-hidden="true">v17 · 23</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2349,8 +2362,12 @@ function renderKms(){ /* desactivado como en v14 */ }
 /* ---------- INCLINACIÓN — mouse (desktop) + giroscopio (móvil), como v14 ---------- */
 const mapaWrapTilt = document.getElementById("mapaWrap");
 const btnInclinar = document.getElementById("btnInclinar");
-const labelInclinar = () =>
-  '<span class="dot" aria-hidden="true"></span> Inclinación';
+const ICO_INCLINAR = `<svg class="ico-inclinar" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <rect x="8" y="3.2" width="8" height="17.6" rx="1.7" stroke="currentColor" stroke-width="2" transform="rotate(-20 12 12)"/>
+  <path d="M3.6 9.2c-1.1 1.3-1.7 2.8-1.7 4.4M20.4 9.2c1.1 1.3 1.7 2.8 1.7 4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+</svg>`;
+const labelInclinar = () => ICO_INCLINAR;
+const titleInclinar = () => "Inclinación";
 
 const tilt = {
   on: false,
@@ -2618,8 +2635,8 @@ function avisarGyroSiFalla(){
   clearTimeout(tilt.gyroWatch);
   tilt.gyroWatch = setTimeout(()=>{
     if(!tilt.on || tilt.gyroOk || !esMobileTilt()) return;
-    btnInclinar.innerHTML = '<span class="dot" aria-hidden="true"></span> Mové el celu';
-    setTimeout(()=>{ if(tilt.on) btnInclinar.innerHTML = labelInclinar(); }, 2800);
+    btnInclinar.title = "Mové el celu";
+    setTimeout(()=>{ if(tilt.on) btnInclinar.title = titleInclinar(); }, 2800);
   }, 1600);
 }
 function limitesMapaActivos(si){
@@ -2641,6 +2658,8 @@ function activarInclinacion(si){
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
   btnInclinar.innerHTML = labelInclinar();
+  btnInclinar.title = titleInclinar();
+  btnInclinar.setAttribute("aria-label", titleInclinar());
   if(tilt.on){
     limitesMapaActivos(true);
     resetTiltTargets();
