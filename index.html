@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-16">
+<meta name="totem-version" content="2026-08-12-v17-build-18">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,7 +97,13 @@ body.noche{
   -webkit-tap-highlight-color:transparent;
 }
 img{-webkit-user-drag:none;}
-html,body{height:100%;height:100dvh;overflow:hidden;touch-action:manipulation;}
+html,body{
+  width:100%;max-width:100%;
+  height:100%;height:100dvh;
+  overflow:hidden;overscroll-behavior:none;
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
+}
 body{
   background:var(--fondo);color:var(--tinta);
   font-family:'Montserrat',sans-serif;
@@ -251,10 +257,16 @@ path.trazaRuta{
 }
 .maplibregl-canvas-container, .maplibregl-canvas{outline:none;}
 .maplibregl-ctrl-attrib{font-size:10px;}
+.maplibregl-ctrl-bottom-right{
+  right:max(6px, env(safe-area-inset-right, 0px));
+  bottom:max(4px, env(safe-area-inset-bottom, 0px));
+}
 #btnInclinar.activo{outline:2px solid var(--marca,#EF981F);}
 .toast-3d{
   position:absolute;left:50%;bottom:72px;transform:translateX(-50%);
   z-index:40;pointer-events:none;
+  max-width:min(88vw, 360px);
+  text-align:center;
   background:rgba(27,34,33,.88);color:#fff;font:600 12px/1.3 Archivo,sans-serif;
   padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .35s;
 }
@@ -652,50 +664,12 @@ path.trazaRuta{
 .hint b{color:var(--acento);}
 @keyframes latir{0%,100%{opacity:1;}50%{opacity:.6;}}
 
-/* botón "descargar el mapa" (arriba a la derecha del mapa) */
-#btnQr{
-  position:absolute;right:16px;top:16px;z-index:900;
-  display:inline-flex;align-items:center;gap:10px;
-  padding:14px 22px;border-radius:99px;min-height:56px;
-  background:var(--boton);border:3px solid var(--tinta);
-  font-size:clamp(13px,1.6vw,16px);font-weight:600;letter-spacing:.04em;
-  color:var(--tinta);box-shadow:var(--sombra);
-}
-#btnQr:active{transform:scale(.95);background:var(--acento);color:var(--tarjeta);}
-
-/* modal con el QR grande */
-#qrModal{
-  position:absolute;inset:0;z-index:1050;
-  display:grid;place-items:center;
-  background:color-mix(in srgb, var(--fondo) 55%, transparent);
-  backdrop-filter:blur(4px);
-  opacity:0;pointer-events:none;transition:opacity .25s ease;
-}
-#qrModal.abierto{opacity:1;pointer-events:auto;}
-.qrCard{
-  background:var(--tarjeta);border:5px solid var(--acento);
-  border-radius:28px;box-shadow:var(--sombra);
-  padding:34px 40px 28px;text-align:center;
-  transform:scale(.85);transition:transform .3s cubic-bezier(.2,.9,.3,1.1);
-}
-#qrModal.abierto .qrCard{transform:scale(1);}
-.qrCard h3{
-  font-family:'Montserrat',sans-serif;font-weight:900;font-size:clamp(20px,3vw,30px);
-  text-transform:uppercase;line-height:1.05;margin-bottom:6px;
-}
-.qrCard .sub{
-  font-family:'Montserrat',sans-serif;font-weight:600;
-  font-size:clamp(17px,2.2vw,24px);color:var(--acento);margin-bottom:20px;
-}
-.qrCard img{
-  width:min(52vmin,320px);aspect-ratio:1/1;display:block;margin:0 auto 18px;
-  image-rendering:pixelated;
-  background:#fff;border:10px solid #fff;border-radius:8px;
-}
-.qrCard .cerrar{font-size:12px;letter-spacing:.14em;color:var(--tinta-suave);text-transform:uppercase;}
 
 #zoomCtrl{
-  position:absolute;right:16px;bottom:16px;z-index:900;
+  position:absolute;
+  right:max(16px, env(safe-area-inset-right, 0px));
+  bottom:max(16px, env(safe-area-inset-bottom, 0px));
+  z-index:900;
   display:flex;flex-direction:column;gap:10px;
 }
 #zoomCtrl button{
@@ -962,12 +936,9 @@ header{display:none !important;}
     line-height:1.35;
   }
 
-  /* Ya estás en el celu: el QR del tótem no aporta */
-  #btnQr{display:none;}
-
   #zoomCtrl{
-    right:10px;
-    bottom:calc(58px + env(safe-area-inset-bottom, 0px));
+    right:max(10px, env(safe-area-inset-right, 0px));
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
     gap:8px;
   }
   #zoomCtrl button{
@@ -983,13 +954,27 @@ header{display:none !important;}
   .pinIcono .heart{--size:26px;}
   .pinIcono.activo .heart{--size:32px;}
 
-  .maplibregl-popup.hito-popup .maplibregl-popup-content{
-    margin:12px 14px 14px;
-    min-width:150px;
-    max-width:min(72vw, 260px);
+  .maplibregl-popup.hito-popup{
+    max-width:min(86vw, 300px);
   }
-  .hito-pop-title{font-size:12.5px;margin:0 24px 8px 0;}
-  .hito-pop-body{font-size:12px;line-height:1.5;}
+  .maplibregl-popup.hito-popup .maplibregl-popup-content,
+  .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
+    margin:10px 12px 12px;
+    min-width:0;
+    width:min(78vw, 280px);
+    max-width:min(78vw, 280px);
+    box-sizing:border-box;
+  }
+  .hito-pop-title{font-size:12.5px;margin:0 28px 8px 0;}
+  .hito-pop-dir{font-size:10.5px;}
+  .hito-pop-body{
+    font-size:12px;line-height:1.5;
+    max-height:min(32vh, 180px);
+  }
+  .hito-pop-foto{margin-bottom:8px;}
+  .maplibregl-popup.hito-popup button.maplibregl-popup-close-button{
+    width:36px;height:36px;top:2px;right:2px;font-size:22px;
+  }
 
   #btnInclinar,
   #btnTema{
@@ -997,34 +982,53 @@ header{display:none !important;}
     padding:9px 12px;
     font-size:11px;
     min-height:40px;
-    max-width:calc(100vw - 80px);
+    max-width:min(46vw, 180px);
   }
   #btnInclinar{top:max(10px, env(safe-area-inset-top, 0px));}
   #btnTema{top:calc(54px + env(safe-area-inset-top, 0px));}
 
+  /* panel colores: hoja desde abajo en celu */
+  #temaPanel{
+    place-items:end stretch;
+    justify-content:stretch;
+    background:rgba(27,34,33,.28);
+  }
   #temaCard{
     width:100%;
     max-width:100%;
+    height:auto;
+    max-height:min(88dvh, 100%);
+    border-radius:18px 18px 0 0;
     border-left-width:0;
     border-top:4px solid #EF981F;
   }
   .temaGrid{grid-template-columns:1fr;}
-  .temaHead{padding:12px 14px 10px;}
+  .temaHead{
+    padding:calc(12px + env(safe-area-inset-top, 0px)) 14px 10px;
+  }
   .temaBody{padding:12px 14px calc(20px + env(safe-area-inset-bottom, 0px));}
+  .temaAcciones{flex-wrap:wrap;}
+  .temaAcciones button{flex:1 1 42%; min-width:120px;}
 
   body:has(.maplibregl-popup.hito-popup) #btnInclinar,
   body:has(.maplibregl-popup.hito-popup) #btnTema{opacity:.35;pointer-events:none;}
 
-  .qrCard{
-    margin:16px;
-    padding:22px 18px 18px;
-    border-radius:20px;
-    border-width:3px;
-    max-width:calc(100vw - 32px);
+  .toast-3d{
+    left:12px;right:12px;width:auto;max-width:none;
+    transform:none;
+    bottom:calc(88px + env(safe-area-inset-bottom, 0px));
   }
-  .qrCard img{
-    width:min(58vw, 220px);
-    border-width:6px;
+
+  .maplibregl-ctrl-attrib{
+    font-size:9px;
+    max-width:42vw;
+    line-height:1.25;
+  }
+  #buildTag{
+    left:max(8px, env(safe-area-inset-left, 0px));
+    right:auto;
+    bottom:max(8px, env(safe-area-inset-bottom, 0px));
+    font-size:10px;
   }
 
   #attract{
@@ -1041,6 +1045,13 @@ header{display:none !important;}
   .titulo .sub{display:none;}
   .stats{font-size:10px;line-height:1.45;}
   .hint{font-size:10px;padding:7px 10px;}
+  #btnInclinar, #btnTema{max-width:min(52vw, 160px); font-size:10.5px;}
+  .maplibregl-popup.hito-popup .maplibregl-popup-content,
+  .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
+    width:min(86vw, 260px);
+    max-width:min(86vw, 260px);
+  }
+  .hito-pop-body{max-height:min(28vh, 150px);}
 }
 
 /* Landscape en celu / ventana baja */
@@ -1049,16 +1060,27 @@ header{display:none !important;}
   .titulo .sub,
   .stats{display:none;}
   .hint{display:none;}
-  #zoomCtrl{bottom:calc(10px + env(safe-area-inset-bottom, 0px));}
-  .maplibregl-popup.hito-popup .maplibregl-popup-content{
+  #zoomCtrl{
+    right:max(8px, env(safe-area-inset-right, 0px));
+    bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+    gap:6px;
+  }
+  #zoomCtrl button{width:38px;height:38px;font-size:16px;}
+  .maplibregl-popup.hito-popup .maplibregl-popup-content,
+  .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
     max-width:min(48vw, 230px);
-    margin:10px 12px 12px;
+    width:min(48vw, 230px);
+    margin:8px 10px 10px;
   }
   .hito-pop-title{font-size:12px;}
-  .hito-pop-body{font-size:11px;}
+  .hito-pop-body{font-size:11px;max-height:min(42vh, 140px);}
+  .hito-pop-foto{max-height:72px;object-fit:cover;}
   #btnInclinar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
+  #btnTema{top:calc(46px + env(safe-area-inset-top, 0px));}
+  #temaCard{max-height:min(94dvh, 100%);}
   #attract .lockup{font-size:clamp(2.6rem, 16vh, 5.5rem);}
   #attract .tagline{margin-top:2vmin;font-size:clamp(1rem, 3.8vh, 1.35rem);}
+  .toast-3d{bottom:calc(56px + env(safe-area-inset-bottom, 0px));}
 }
 
 
@@ -1119,15 +1141,18 @@ header{display:none !important;}
 /* el degradé se queda igual con popup abierto */
 #mapa .maplibregl-canvas-container{z-index:0;}
 #mapa .maplibregl-marker{
-  z-index:5 !important;
+  z-index:800 !important;
   filter:none !important;
 }
-#mapa .maplibregl-popup{z-index:6 !important;}
+#mapa .maplibregl-popup{z-index:850 !important;}
 .maplibregl-marker .pinIcono{
   width:36px;height:36px;
 }
 #buildTag{
-  position:fixed; right:10px; bottom:8px; z-index:9999;
+  position:fixed;
+  right:max(10px, env(safe-area-inset-right, 0px));
+  bottom:max(8px, env(safe-area-inset-bottom, 0px));
+  z-index:9999;
   font:700 11px/1 "IBM Plex Mono",monospace;
   color:rgba(27,34,33,.55); background:rgba(255,255,255,.72);
   padding:4px 7px; border-radius:4px; pointer-events:none;
@@ -1205,7 +1230,6 @@ header{display:none !important;}
       <span class="dot" aria-hidden="true"></span>
       Inclinación
     </button>
-    <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
     <div id="zoomCtrl">
       <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Mi ubicación" title="Mostrar mi ubicación">◎</button>
       <button id="zMas" aria-label="Acercar">＋</button>
@@ -1214,7 +1238,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 16</div>
+  <div id="buildTag" aria-hidden="true">v17 · 18</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1245,15 +1269,6 @@ header{display:none !important;}
         <input type="file" id="temaFile" accept="application/json,.json" hidden>
       </div>
     </aside>
-  </div>
-
-  <div id="qrModal">
-    <div class="qrCard">
-      <h3>Llevate el recorrido</h3>
-      <div class="sub">escaneá el código con tu teléfono</div>
-      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAGaAQAAAAAefbjOAAADIklEQVR4nO2czW3jMBBG36wE+EgBKSClUJ0ZKWk7kEpRAQtQxwAUvj2QtJ3csllISTQ+2LLlBw9hen6+GdnEh2/zr48z4JBDDjnkkEMO/UzI6q1vRwMwm5mNbAZre8N4iHkO7Q9FSVICoJMmwK6pk16sx0Y6SZLeQvuZ59B+UF8f1wHibxDrYMS09ZqfMwZdhpV2tLN5Dh0OmQ2dYL3IrgmArcWK//xJDn1NqH/3XLCZ5qGjhIg4bb1YjzLPocOgoJI9MA9wdw/MdpGNgKT8HtrPPIf2huZWYdh1uRTvYON6ETEBsJVS4yjzHNo7ajxI2TVgZDQPXXsxvNW6v/iaHPoMRKkqYwJNgKYgSakre0BTyEipk6aQa5U6ffE1OfQZqPmItcsWBRYXK3Uocdp6IwCwmVgvsr3Nc2h3qPoIQi4+ouSYxUcEiahcHAW4jzgRJC0X2RgysPal4CAutTS169Kjic41yxNA5Us36CD+blsgCsS6mebhDxByiR/a2zyHdodK1JCUq+IQy5EEdCV+1LOpvdmjxmmg9aISNWCzJkVUZaLK20ea59AeUPvZB7XuZqju4b4jqP3Q2gB1H/GjoaZH3FrdMdFCRwJum4GYfEecAWo+gq6UoJQtEHLVqiaAmNpZrz5/PPSQRZbnMXU3FULVM0zlhGeWJ4Ji2qyUFC8DwNrXBuj8XP0GhIyNx5jn0N56RO1lrU+yKICQe5W5qgkgJDSb1xpngB5U7CZFZFrjq0kRU1MmPI/4+dBNoWpZ5Nu+Rm1pUDujviNOA81mVjfD0mP2nEtuQVwuRa14bIZ9jzU59Ck9IsGD4qBWa9wnJbz6PAl0m6ESQMYIiToGsRoivBpxKs0wzyxPA92v6Sp9jSjJrmrN8fJaOsw8h45RsVs1kakZxV3ZvolYHjVOA631ok692KWkl3VsRrnmne4jzgG9v4LHYnrCSha5GMzDHwRbL3j16fxTQiGjae3rkZYeG8vMROtwfL81OfRxqPU5NZVhma0lmq3CsLHdfZs1OfQvEA8JZP32b+klN+HS5yPOA5n/M5lDDjnkkEMOOfSP0F/QFEYRBc6KUwAAAABJRU5ErkJggg==" alt="QR del recorrido 21K">
-      <div class="cerrar">tocá en cualquier lado para volver</div>
-    </div>
   </div>
 
 
@@ -1622,23 +1637,22 @@ function refrescarCapasSobreMapa(){
   ajustarZoomMin();
 }
 function reancorarMarkers(){
-  /* tras zoom/pan: reafirma lng/lat (misma geo que v14) */
+  /* tras zoom/pan: reafirma lng/lat de corazones (huellas van en capa canvas) */
   if(!map) return;
   Object.entries(marcadores).forEach(([id, m])=>{
     const h = HITOS.find(x => x.id === id);
     if(h && m) try{ m.setLngLat(aLngLat(geoHito(h))); }catch(_){}
   });
-  huellaMarkers.forEach(h=>{
-    if(h && h.marker && h.latlng) try{ h.marker.setLngLat(aLngLat(h.latlng)); }catch(_){}
-  });
 }
 
 function padMapa(){
   const w = window.innerWidth || 800;
-  if(w < 420) return 40;
-  if(w < 768) return 52;
-  if(w < 1100) return 64;
-  return 84;
+  const h = window.innerHeight || 600;
+  /* deja aire para botones (izq/arriba) y zoom (der/abajo) */
+  if(w < 420) return { top: 56, bottom: Math.max(72, Math.round(h * 0.08)), left: 18, right: 58 };
+  if(w < 768) return { top: 64, bottom: Math.max(80, Math.round(h * 0.07)), left: 22, right: 64 };
+  if(w < 1100) return { top: 48, bottom: 56, left: 40, right: 72 };
+  return { top: 56, bottom: 64, left: 56, right: 84 };
 }
 function boundsRutaLngLat(){
   let minLng=Infinity, minLat=Infinity, maxLng=-Infinity, maxLat=-Infinity;
@@ -1656,7 +1670,7 @@ function padBounds(b, f){
 const BOUNDS_PAD = 0.58;
 const BOUNDS_RUTA = boundsRutaLngLat();
 const BOUNDS_MAX = padBounds(BOUNDS_RUTA, BOUNDS_PAD);
-let huellaMarkers = [];
+let huellaMarkers = []; /* legacy; huellas van en capa canvas */
 
 function grosorRuta(){
   try{
@@ -1758,6 +1772,7 @@ function agregarExtrusion(){
     else map.addLayer(layer);
     extrudeReady = true;
     actualizarExtrusion();
+    asegurarOrdenCapasRecorrido();
   }catch(err){
     console.warn("No se pudo agregar extrusión 3D", err);
     extrudeReady = false;
@@ -1819,7 +1834,22 @@ function activarRespaldoRaster(msg){
 }
 
 /* ---------- ruta ---------- */
+function slotAntesDeEdificios(){
+  if(map.getLayer("edificios-3d")) return "edificios-3d";
+  return primerSymbolLayerId();
+}
+function asegurarOrdenCapasRecorrido(){
+  /* abajo → arriba: ruta → huellas → edificios 3D → (corazones HTML encima del canvas) */
+  if(!map) return;
+  const before = slotAntesDeEdificios();
+  try{
+    if(map.getLayer("huellas") && before) map.moveLayer("huellas", before);
+    if(map.getLayer("ruta-linea") && map.getLayer("huellas")) map.moveLayer("ruta-linea", "huellas");
+    else if(map.getLayer("ruta-linea") && before) map.moveLayer("ruta-linea", before);
+  }catch(_){}
+}
 function agregarRuta(){
+  if(map.getSource("ruta")) return;
   map.addSource("ruta", {
     type: "geojson",
     lineMetrics: true,
@@ -1828,6 +1858,7 @@ function agregarRuta(){
       geometry: { type: "LineString", coordinates: RUTA_LNGLAT }
     }
   });
+  const before = slotAntesDeEdificios();
   map.addLayer({
     id: "ruta-linea",
     source: "ruta",
@@ -1838,7 +1869,8 @@ function agregarRuta(){
       "line-width": grosorRuta(),
       "line-opacity": 1
     }
-  });
+  }, before || undefined);
+  asegurarOrdenCapasRecorrido();
 }
 function refrescarRutaGeoJSON(){
   const src = map.getSource("ruta");
@@ -2132,36 +2164,132 @@ function onMapClickCerrarPopup(e){
   salirDePopup();
 }
 
-/* ---------- huellas (igual que v14: ola pisada sobre la traza) ---------- */
+/* ---------- huellas (capa canvas: detrás de edificios y de corazones HTML) ---------- */
+let huellaRaf = 0;
+function colorRutaHuella(){
+  try{
+    return getComputedStyle(document.documentElement).getPropertyValue("--ruta").trim() || "#F7C21C";
+  }catch(_){ return "#F7C21C"; }
+}
+function svgHuellaDataUrl(flip, color){
+  const espejo = flip ? " scale(-1,1)" : "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-9 -14 18 28" width="36" height="50">
+    <g transform="translate(0,0)${espejo}">
+      <path fill="${color}" d="M -1,-13 C 4,-13 6.5,-9.5 6.3,-5.5 C 6.1,-2.5 5.2,0.5 4.6,3.5 C 4.2,6.5 4.4,8 4,10 C 3.6,12.4 1.8,13.4 0,13.4 C -1.8,13.4 -3.4,12.4 -3.8,10 C -4.2,8 -4,6.5 -4.4,3.5 C -5,0.5 -6.3,-2.5 -6.6,-5.5 C -6.9,-9.8 -5,-13 -1,-13 Z"/>
+      <path fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.7" stroke-linecap="round" d="M -5.2,-7 H 5 M -5.4,-3 H 5.4 M -4.6,1 H 4.2 M -4,5 H 3.8 M -3,9.5 H 3"/>
+    </g>
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+function loadHuellaImage(id, url){
+  return new Promise(resolve=>{
+    if(map.hasImage(id)){ resolve(); return; }
+    const img = new Image();
+    img.onload = ()=>{
+      try{ if(!map.hasImage(id)) map.addImage(id, img, { pixelRatio: 2 }); }catch(_){}
+      resolve();
+    };
+    img.onerror = ()=> resolve();
+    img.src = url;
+  });
+}
+async function asegurarIconosHuella(forzar){
+  if(!map) return;
+  const col = colorRutaHuella();
+  if(forzar){
+    try{ if(map.hasImage("huella")) map.removeImage("huella"); }catch(_){}
+    try{ if(map.hasImage("huella-flip")) map.removeImage("huella-flip"); }catch(_){}
+  }
+  await loadHuellaImage("huella", svgHuellaDataUrl(false, col));
+  await loadHuellaImage("huella-flip", svgHuellaDataUrl(true, col));
+}
+function pararAnimHuellas(){
+  if(huellaRaf){ cancelAnimationFrame(huellaRaf); huellaRaf = 0; }
+}
+function tickHuellaOpacidad(){
+  if(!map || !map.getLayer("huellas")){ huellaRaf = 0; return; }
+  if(document.getElementById("mapa")?.classList.contains("dibujando")){
+    huellaRaf = requestAnimationFrame(tickHuellaOpacidad);
+    return;
+  }
+  const T = CFG.cicloHuellasMs || 9000;
+  const t = (performance.now() % T) / T;
+  try{
+    map.setPaintProperty("huellas", "icon-opacity", [
+      "interpolate", ["linear"],
+      ["%", ["+", ["get", "phase"], t], 1],
+      0, 0,
+      0.06, 0.85,
+      0.42, 0.85,
+      0.58, 0,
+      1, 0
+    ]);
+  }catch(_){}
+  huellaRaf = requestAnimationFrame(tickHuellaOpacidad);
+}
 function limpiarHuellas(){
-  huellaMarkers.forEach(m=>{ try{ m.marker.remove(); }catch(_){} });
+  pararAnimHuellas();
+  if(map && map.getLayer("huellas")){
+    try{ map.removeLayer("huellas"); }catch(_){}
+  }
+  if(map && map.getSource("huellas")){
+    try{ map.removeSource("huellas"); }catch(_){}
+  }
   huellaMarkers = [];
 }
-function generarHuellas(){
+async function generarHuellas(){
   limpiarHuellas();
-  if(!CFG.animarMapa) return;
+  if(!CFG.animarMapa || !map) return;
   if(!LARGO_TOTAL || LARGO_TOTAL < 1) recalcularDistancias();
   if(!LARGO_TOTAL || LARGO_TOTAL < 1) return;
-  const T = CFG.cicloHuellasMs;
+  await asegurarIconosHuella();
+  const feats = [];
   let i = 0;
   for(let m = 0; m < LARGO_TOTAL; m += CFG.pasoHuellaM, i++){
     const {latlng, rumbo} = puntoEn(m);
     const lado = (i % 2 === 0) ? 1 : -1;
-    const delay = (-T + (m / LARGO_TOTAL) * T).toFixed(0);
-    const espejo = lado === 1 ? "" : " scaleX(-1)";
-    /* root lo mueve MapLibre; el svg adentro anima opacity (pisada) */
-    const root = document.createElement("div");
-    root.style.cssText = "width:10px;height:14px;pointer-events:none;";
-    root.innerHTML = `<div class="huellaIcono"><svg viewBox="-9 -14 18 28" width="10" height="14"
-      style="--ciclo:${T}ms;--delay:${delay}ms;transform:rotate(${rumbo.toFixed(0)}deg) translateX(${9*lado}px)${espejo}">
-      <path class="suela" d="M -1,-13 C 4,-13 6.5,-9.5 6.3,-5.5 C 6.1,-2.5 5.2,0.5 4.6,3.5 C 4.2,6.5 4.4,8 4,10 C 3.6,12.4 1.8,13.4 0,13.4 C -1.8,13.4 -3.4,12.4 -3.8,10 C -4.2,8 -4,6.5 -4.4,3.5 C -5,0.5 -6.3,-2.5 -6.6,-5.5 C -6.9,-9.8 -5,-13 -1,-13 Z"/>
-      <path class="surcos" d="M -5.2,-7 H 5 M -5.4,-3 H 5.4 M -4.6,1 H 4.2 M -4,5 H 3.8 M -3,9.5 H 3"/>
-    </svg></div>`;
-    const marker = new maplibregl.Marker({ element: root, anchor: "center" })
-      .setLngLat(aLngLat(latlng))
-      .addTo(map);
-    huellaMarkers.push({ marker, latlng });
+    feats.push({
+      type: "Feature",
+      properties: {
+        rumbo: rumbo,
+        phase: m / LARGO_TOTAL,
+        flip: lado === -1 ? 1 : 0
+      },
+      geometry: { type: "Point", coordinates: aLngLat(latlng) }
+    });
   }
+  map.addSource("huellas", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: feats }
+  });
+  const beforeId = map.getLayer("edificios-3d") ? "edificios-3d" : primerSymbolLayerId();
+  map.addLayer({
+    id: "huellas",
+    type: "symbol",
+    source: "huellas",
+    layout: {
+      "icon-image": ["case", ["==", ["get", "flip"], 1], "huella-flip", "huella"],
+      "icon-size": 0.38,
+      "icon-rotate": ["get", "rumbo"],
+      "icon-offset": [
+        "case",
+        ["==", ["get", "flip"], 1],
+        ["literal", [-5, 0]],
+        ["literal", [5, 0]]
+      ],
+      "icon-rotation-alignment": "map",
+      "icon-pitch-alignment": "map",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true
+    },
+    paint: { "icon-opacity": 0 }
+  }, beforeId || undefined);
+  asegurarOrdenCapasRecorrido();
+  if(document.getElementById("mapa")?.classList.contains("dibujando")){
+    try{ map.setLayoutProperty("huellas", "visibility", "none"); }catch(_){}
+  }
+  pararAnimHuellas();
+  huellaRaf = requestAnimationFrame(tickHuellaOpacidad);
 }
 function aplicarAnimacion(){
   if(CFG.animarMapa) generarHuellas();
@@ -2346,14 +2474,14 @@ function onPointerTiltHover(e){
   if(esMobileTilt()) return;
   if(e.pointerType === "touch" || e.pointerType === "pen") return;
   if(e.buttons !== 0) return;
-  if(e.target.closest("button, a, .maplibregl-popup, .maplibregl-ctrl, #temaPanel, #zoomCtrl, #btnQr")) return;
+  if(e.target.closest("button, a, .maplibregl-popup, .maplibregl-ctrl, #temaPanel, #zoomCtrl")) return;
   setTiltFromClientPoint(e.clientX, e.clientY);
 }
 /* al tocar el mapa: congelar gyro para poder pan/zoom */
 function onTiltTouchStart(e){
   if(!tilt.on || !esMobileTilt()) return;
   if(e.pointerType === "mouse") return;
-  if(e.target.closest("button, a, #temaPanel, #zoomCtrl, #btnQr, #btnInclinar, #btnTema")) return;
+  if(e.target.closest("button, a, #temaPanel, #zoomCtrl, #btnInclinar, #btnTema")) return;
   tilt.touchPointers = (tilt.touchPointers || 0) + 1;
   tilt.holding = true;
 }
@@ -2546,17 +2674,11 @@ const S = { estado:"ATTRACT", hito:null, slide:0, _popupLl:null,
             _popupLockHasta:0 };
 const $ = s => document.querySelector(s);
 const attract = $("#attract");
-const qrModal = document.getElementById("qrModal");
-function abrirQr(){ qrModal.classList.add("abierto"); reiniciarInactividad(); }
-function cerrarQr(){ qrModal.classList.remove("abierto"); }
-document.getElementById("btnQr").addEventListener("pointerdown", e=>{ e.stopPropagation(); abrirQr(); });
-qrModal.addEventListener("pointerdown", cerrarQr);
-
 function irA(estado, dato){
   const anterior = S.estado;
   S.estado = estado;
   if(estado === "ATTRACT"){
-    cerrarPopupDom(); cerrarQr(); marcarActivo(null);
+    cerrarPopupDom(); marcarActivo(null);
     setPopupBlur(false);
     attract.classList.remove("oculto");
     encuadrar(false);
@@ -2985,6 +3107,9 @@ function aplicarTemaLive(){
     document.documentElement.style.setProperty("--map-blend", blend);
   }catch(_){}
   aplicarGrosorRuta();
+  if(typeof asegurarIconosHuella === "function" && map && map.getLayer("huellas")){
+    asegurarIconosHuella(true).catch(()=>{});
+  }
   const calles = (temaState.filters && temaState.filters.calles) || "completo";
   if(typeof aplicarModoCalles === "function") aplicarModoCalles(calles);
   if(typeof aplicarSensInclinacion === "function") aplicarSensInclinacion();
