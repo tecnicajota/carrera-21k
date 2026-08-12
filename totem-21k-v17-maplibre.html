@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-19">
+<meta name="totem-version" content="2026-08-12-v17-build-20">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1269,7 +1269,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 19</div>
+  <div id="buildTag" aria-hidden="true">v17 · 20</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2173,10 +2173,17 @@ function salirDePopup(){
   cerrarPopupDom();
   if(map){
     const z = Math.max(map.getMinZoom(), map.getZoom() - 0.7);
+    /* si inclinación sigue activa, no aplastar el pitch restaurado */
+    const pitch = (tilt.on && !tilt.paused)
+      ? (tilt.pitchAnchor != null ? tilt.pitchAnchor : map.getPitch())
+      : map.getPitch();
+    const bearing = (tilt.on && !tilt.paused)
+      ? (tilt.bearingAnchor != null ? tilt.bearingAnchor : map.getBearing())
+      : map.getBearing();
     const opts = {
       zoom: z,
-      pitch: map.getPitch(),
-      bearing: map.getBearing(),
+      pitch,
+      bearing,
       padding: { top:0, bottom:0, left:0, right:0 },
       offset: [0, 0],
       duration: 480,
@@ -2400,6 +2407,46 @@ function aplanarCamaraTilt(){
       map.setBearing(0);
     }catch(_){}
   }
+}
+function pausarTiltPorPopup(pausar){
+  if(!tilt.on) return;
+  if(pausar){
+    /* guardar inclinación real (ancla + cámara) antes de aplanar */
+    let p = tilt.pitchAnchor || 0;
+    let b = tilt.bearingAnchor || 0;
+    if(map){
+      try{
+        p = map.getPitch();
+        b = map.getBearing();
+      }catch(_){}
+    }
+    tilt._popupPitch = p;
+    tilt._popupBearing = b;
+    tilt.paused = true;
+    resetTiltTargets();
+    aplanarCamaraTilt();
+    return;
+  }
+  /* al cerrar popup: volver a la inclinación previa y recalibrar al celu ahora */
+  tilt.paused = false;
+  const p = clampTilt(tilt._popupPitch != null ? tilt._popupPitch : 0, 0, tilt.maxPitchCam);
+  const b = clampTilt(tilt._popupBearing != null ? tilt._popupBearing : 0, -tilt.maxBearingCam, tilt.maxBearingCam);
+  tilt.pitchAnchor = p;
+  tilt.bearingAnchor = b;
+  tilt.target = {rx:0, ry:0, x:0, y:0};
+  tilt.cur = {rx:0, ry:0, x:0, y:0};
+  tilt.baseBeta = null;
+  tilt.baseGamma = null;
+  tilt.lockAplanar = false;
+  tilt.inputLockHasta = performance.now() + 220;
+  aplicarTiltVars();
+  if(map && !respaldoRaster){
+    try{
+      map.setPitch(p);
+      map.setBearing(b);
+    }catch(_){}
+  }
+  asegurarLoopTilt();
 }
 function aplicarCamaraDesdeTilt(){
   if(!map || respaldoRaster) return;
@@ -2655,14 +2702,6 @@ function initInclinacion(){
       tilt.baseBeta = null;
       tilt.baseGamma = null;
     });
-  }
-}
-function pausarTiltPorPopup(pausar){
-  if(!tilt.on) return;
-  tilt.paused = !!pausar;
-  if(pausar){
-    resetTiltTargets();
-    aplanarCamaraTilt();
   }
 }
 function resetCamaraPlana(){
