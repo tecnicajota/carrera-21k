@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-12-corazon-3d">
+<meta name="totem-version" content="2026-08-12-stroke-blur-calles">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -816,14 +816,17 @@ header{
     saturate(var(--map-sat, 2.5))
     hue-rotate(calc(var(--map-hue, 339) * 1deg))
     brightness(calc(var(--map-bri, 0.99) * (1 - var(--map-dark, 0.04) * 0.55)))
-    contrast(var(--map-con, 1.08));
+    contrast(var(--map-con, 1.08))
+    blur(var(--map-blur, 0px));
+  transition:filter .4s ease;
 }
 body.noche .leaflet-tile-pane{
   filter:
     saturate(var(--map-sat, 2.5))
     hue-rotate(calc(var(--map-hue, 339) * 1deg))
     brightness(calc(var(--map-bri, 0.99) * (1 - var(--map-dark, 0.04) * 0.55)))
-    contrast(var(--map-con, 1.08));
+    contrast(var(--map-con, 1.08))
+    blur(var(--map-blur, 0px));
 }
 
 .leaflet-tinte-pane{
@@ -831,6 +834,34 @@ body.noche .leaflet-tile-pane{
   pointer-events:none;
   mix-blend-mode:var(--map-blend, multiply);
   isolation:auto;
+  transition:filter .4s ease;
+}
+.leaflet-overlay-pane,
+.leaflet-marker-pane,
+.leaflet-shadow-pane{
+  transition:filter .4s ease;
+}
+/* blur del mapa al abrir popup (el cartel queda nítido) */
+#mapa.popup-blur{
+  --map-blur:5px;
+}
+#mapa.popup-blur .leaflet-tinte-pane,
+#mapa.popup-blur .leaflet-overlay-pane,
+#mapa.popup-blur .leaflet-marker-pane,
+#mapa.popup-blur .leaflet-shadow-pane{
+  filter:blur(5px);
+}
+@media (prefers-reduced-motion: reduce){
+  .leaflet-tile-pane,
+  .leaflet-tinte-pane,
+  .leaflet-overlay-pane,
+  .leaflet-marker-pane,
+  .leaflet-shadow-pane{transition:none;}
+  #mapa.popup-blur{--map-blur:2px;}
+  #mapa.popup-blur .leaflet-tinte-pane,
+  #mapa.popup-blur .leaflet-overlay-pane,
+  #mapa.popup-blur .leaflet-marker-pane,
+  #mapa.popup-blur .leaflet-shadow-pane{filter:blur(2px);}
 }
 .mapa-tinte{
   position:absolute;
@@ -1169,6 +1200,24 @@ path.trazaRuta{
   width:100%;padding:8px 10px;border-radius:8px;
   border:1px solid rgba(127,127,127,.35);
   background:#fff;color:#183246;font-size:12px;font-family:inherit;
+}
+.temaSeg{
+  display:flex;gap:6px;flex-wrap:wrap;
+}
+.temaSeg label{
+  flex:1;min-width:88px;
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;padding:10px 8px;border-radius:10px;
+  border:2px solid rgba(24,50,70,.22);
+  background:#fff;font-size:11px;font-weight:700;
+  text-align:center;cursor:pointer;line-height:1.25;
+}
+.temaSeg input{
+  position:absolute;opacity:0;pointer-events:none;
+}
+.temaSeg label:has(input:checked),
+.temaSeg label.on{
+  border-color:#EF981F;background:rgba(239,152,31,.16);color:#183246;
 }
 .temaVal{font-size:11px;font-family:ui-monospace,monospace;opacity:.75;}
 .temaAcciones{display:flex;flex-wrap:wrap;gap:8px;}
@@ -1855,7 +1904,12 @@ const CFG = {
      Para el tótem offline: bajar los tiles de la zona y cambiar
      estas URLs por http://localhost:8000/{z}/{x}/{y}.png */
   /* Mapa claro con nombres (estilo ref AI); el degradé se fusiona con multiply.
-     Respaldo: Voyager si light_all no carga. */
+     completo = todos los nombres; medio = etiquetas principales; solo = sin nombres.
+     Respaldo: Voyager si el base no carga. */
+  tilesCompleto: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+  tilesNolabels: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+  /* Voyager labels: prioriza avenidas / vías principales sobre callecitas */
+  tilesLabelsMedio: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png",
   tilesDia: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
   tilesRespaldo: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
   atribucion:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
@@ -1919,22 +1973,49 @@ function ajustarZoomMin(){
   map.setMinZoom(Math.max(12, z));
 }
 map.on("resize", ajustarZoomMin);
-const capaDia = L.tileLayer(CFG.tilesDia, {attribution:CFG.atribucion, maxZoom:19}).addTo(map);
-
-/* fallback: si el proveedor minimalista no responde, pasa a OSM */
+let capaBase = null, capaLabels = null;
 let tilesOk = 0, tilesMal = 0, respaldoActivo = false;
+function tileOpts(extra){
+  return Object.assign({attribution:CFG.atribucion, maxZoom:19, subdomains:"abcd"}, extra || {});
+}
+function wireTileFallback(layer){
+  tilesOk = 0; tilesMal = 0;
+  layer.on("tileload", ()=> tilesOk++);
+  layer.on("tileerror", ()=>{
+    tilesMal++;
+    if(tilesOk === 0 && tilesMal >= 3) activarRespaldo();
+  });
+  setTimeout(()=>{ if(tilesOk === 0 && capaBase === layer && !respaldoActivo) activarRespaldo(); }, 6000);
+}
 function activarRespaldo(){
   if(respaldoActivo) return;
   respaldoActivo = true;
-  map.removeLayer(capaDia);
-  L.tileLayer(CFG.tilesRespaldo, {attribution:CFG.atribucion, maxZoom:19}).addTo(map);
+  if(capaBase) map.removeLayer(capaBase);
+  if(capaLabels){ map.removeLayer(capaLabels); capaLabels = null; }
+  capaBase = L.tileLayer(CFG.tilesRespaldo, tileOpts()).addTo(map);
 }
-capaDia.on("tileload", ()=> tilesOk++);
-capaDia.on("tileerror", ()=>{
-  tilesMal++;
-  if(tilesOk === 0 && tilesMal >= 3) activarRespaldo();
-});
-setTimeout(()=>{ if(tilesOk === 0) activarRespaldo(); }, 6000);
+function aplicarModoCalles(modo){
+  const m = modo || "completo";
+  if(aplicarModoCalles._actual === m && capaBase) return;
+  respaldoActivo = false;
+  if(capaBase){ map.removeLayer(capaBase); capaBase = null; }
+  if(capaLabels){ map.removeLayer(capaLabels); capaLabels = null; }
+  if(m === "solo"){
+    capaBase = L.tileLayer(CFG.tilesNolabels, tileOpts()).addTo(map);
+  }else if(m === "medio"){
+    capaBase = L.tileLayer(CFG.tilesNolabels, tileOpts()).addTo(map);
+    capaLabels = L.tileLayer(CFG.tilesLabelsMedio, tileOpts({
+      opacity: 0.92,
+      className: "mapa-labels-medio",
+      zIndex: 2
+    })).addTo(map);
+  }else{
+    capaBase = L.tileLayer(CFG.tilesCompleto || CFG.tilesDia, tileOpts()).addTo(map);
+  }
+  aplicarModoCalles._actual = m;
+  if(capaBase) wireTileFallback(capaBase);
+}
+aplicarModoCalles("completo");
 
 /* capas: huellas abajo, km al medio, hitos arriba */
 map.createPane("huellas");
@@ -1981,7 +2062,17 @@ function padMapa(){
   return [52, 52];
 }
 function grosorRuta(){
-  return window.innerWidth < 768 ? 2 : 2.5;
+  const g = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.rutaGrosor != null)
+    ? Number(temaState.filters.rutaGrosor)
+    : 2.5;
+  return Math.max(0.5, Math.min(12, g));
+}
+function aplicarGrosorRuta(){
+  if(typeof ruta !== "undefined" && ruta) ruta.setStyle({weight:grosorRuta()});
+}
+function setPopupBlur(on){
+  const el = document.getElementById("mapa");
+  if(el) el.classList.toggle("popup-blur", !!on);
 }
 function encuadrar(animado){
   const opts = {
@@ -2104,6 +2195,7 @@ function renderHitos(){
         S.estado = "MAPA";
         S.hito = null;
         marcarActivo(null);
+        setPopupBlur(false);
         pausarTiltPorPopup(false);
         encuadrar(true);
       }
@@ -2178,6 +2270,7 @@ function irA(estado, dato){
   S.estado = estado;
   if(estado === "ATTRACT"){
     cerrarPopupDom(); cerrarQr(); marcarActivo(null);
+    setPopupBlur(false);
     attract.classList.remove("oculto"); iniciarRotador();
     encuadrar(false);
     pausarTiltPorPopup(true);
@@ -2186,6 +2279,7 @@ function irA(estado, dato){
     attract.classList.add("oculto");
     const veniaPopup = anterior === "POPUP";
     cerrarPopupDom(); marcarActivo(null); pararRotador();
+    setPopupBlur(false);
     if(anterior === "ATTRACT"){
       map.invalidateSize(); ajustarZoomMin();
       animarTrazado();
@@ -2195,6 +2289,7 @@ function irA(estado, dato){
   }
   if(estado === "POPUP"){
     attract.classList.add("oculto"); pararRotador();
+    setPopupBlur(true);
     pausarTiltPorPopup(true);
     S.hito = dato || S.hito;
   }
@@ -2664,7 +2759,7 @@ initInclinacion();
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v15";
+const TEMA_KEY = "totem21k-tema-v16";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -2688,9 +2783,16 @@ const TEMA_DEFAULT = {
     "dark": 0.04,
     "con": 1.08,
     "sat": 2.5,
-    "hue": 339
+    "hue": 339,
+    "rutaGrosor": 2.5,
+    "calles": "completo"
   }
 };
+const CALLES_OPTIONS = [
+  {value: "completo", label: "Mapa completo", hint: "Todos los nombres"},
+  {value: "medio", label: "Mapa medio", hint: "Solo importantes"},
+  {value: "solo", label: "Mapa solo", hint: "Sin nombres"}
+];
 const COLOR_SECTIONS = [
   {
     title: "Degradé (mapa + stand-by)",
@@ -2726,6 +2828,7 @@ const BLEND_OPTIONS = [
   {value: "normal", label: "Normal (velo encima)"}
 ];
 const FILTER_META = {
+  rutaGrosor: {label: "Grosor del recorrido", min: 1, max: 10, step: 0.25},
   tinte: {label: "Opacidad del degradé", min: 0, max: 1, step: 0.01},
   bri: {label: "Brillo del mapa", min: 0.4, max: 1.8, step: 0.01},
   dark: {label: "Oscuridad del mapa", min: 0, max: 1, step: 0.01},
@@ -2779,6 +2882,9 @@ function aplicarTemaLive(){
     const pane = map.getPane("tinte");
     if(pane) pane.style.mixBlendMode = blend;
   }catch(_){}
+  aplicarGrosorRuta();
+  const calles = (temaState.filters && temaState.filters.calles) || "completo";
+  if(typeof aplicarModoCalles === "function") aplicarModoCalles(calles);
 }
 function temaMsg(txt){
   const m = document.getElementById("temaMsg");
@@ -2815,6 +2921,19 @@ function renderPanelTema(){
     colores.appendChild(wrap);
   }
   filtros.innerHTML = "";
+  const callesVal = temaState.filters.calles || "completo";
+  const callesField = document.createElement("div");
+  callesField.className = "temaField";
+  callesField.innerHTML = `
+    <label>Nombres de calles</label>
+    <div class="temaSeg" role="radiogroup" aria-label="Nombres de calles">
+      ${CALLES_OPTIONS.map(o => `
+        <label class="${o.value===callesVal?"on":""}">
+          <input type="radio" name="temaCalles" data-calles="1" value="${o.value}"${o.value===callesVal?" checked":""}>
+          <span>${o.label}<br><small style="font-weight:600;opacity:.7">${o.hint}</small></span>
+        </label>`).join("")}
+    </div>`;
+  filtros.appendChild(callesField);
   const blendVal = temaState.filters.blend || "multiply";
   const blendField = document.createElement("div");
   blendField.className = "temaField";
@@ -2824,11 +2943,11 @@ function renderPanelTema(){
       ${BLEND_OPTIONS.map(o => `<option value="${o.value}"${o.value===blendVal?" selected":""}>${o.label}</option>`).join("")}
     </select>`;
   filtros.appendChild(blendField);
-  const filterKeys = ["tinte", "bri", "dark", "con", "sat", "hue"];
+  const filterKeys = ["rutaGrosor", "tinte", "bri", "dark", "con", "sat", "hue"];
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "tinte" ? 0.82 : key === "dark" ? 0.04 : key === "hue" ? 339 : key === "sat" ? 2.5 : key === "bri" ? 0.99 : key === "con" ? 1.08 : 1;
+    const fallback = key === "rutaGrosor" ? 2.5 : key === "tinte" ? 0.82 : key === "dark" ? 0.04 : key === "hue" ? 339 : key === "sat" ? 2.5 : key === "bri" ? 0.99 : key === "con" ? 1.08 : 1;
     const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
@@ -2893,6 +3012,14 @@ function initPanelTema(){
       aplicarTemaLive();
       return;
     }
+    if(t.dataset.calles){
+      temaState.filters.calles = t.value;
+      document.querySelectorAll("#temaFiltros .temaSeg label").forEach(lab=>{
+        lab.classList.toggle("on", lab.querySelector("input")?.value === t.value);
+      });
+      aplicarTemaLive();
+      return;
+    }
     if(!t.dataset.filter) return;
     const key = t.dataset.filter;
     const num = Number(t.value);
@@ -2903,6 +3030,14 @@ function initPanelTema(){
   });
   document.getElementById("temaFiltros").addEventListener("change", e=>{
     const t = e.target;
+    if(t.dataset.calles){
+      temaState.filters.calles = t.value;
+      document.querySelectorAll("#temaFiltros .temaSeg label").forEach(lab=>{
+        lab.classList.toggle("on", lab.querySelector("input")?.value === t.value);
+      });
+      aplicarTemaLive();
+      return;
+    }
     if(!t.dataset.blend) return;
     temaState.filters.blend = t.value;
     aplicarTemaLive();
