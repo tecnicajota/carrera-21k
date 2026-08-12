@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-21">
+<meta name="totem-version" content="2026-08-12-v17-build-22">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@600;700&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62.5..125,400..900&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@600;700&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 
@@ -745,10 +745,11 @@ header{display:none !important;}
 }
 .maplibregl-popup.hito-popup button.maplibregl-popup-close-button:hover{opacity:1;}
 .hito-pop-title{
-  font-family:'Montserrat',sans-serif;
+  font-family:'Archivo',system-ui,sans-serif;
   font-weight:900;
+  font-stretch:108%;
   font-size:14px;
-  letter-spacing:.04em;
+  letter-spacing:-.015em;
   text-transform:uppercase;
   margin:0 28px 6px 0;
   line-height:1.2;
@@ -758,9 +759,11 @@ header{display:none !important;}
 }
 .hito-pop-dir{
   margin:0 0 10px;
-  font-family:'Montserrat',sans-serif;
+  font-family:'Archivo',system-ui,sans-serif;
+  font-stretch:100%;
   font-size:11px;
   font-weight:600;
+  letter-spacing:-.01em;
   line-height:1.35;
   color:#E7671A;
   animation:hitoPopFadeUp .4s ease both;
@@ -778,9 +781,11 @@ header{display:none !important;}
   animation-delay:calc(var(--pop-dur,.65s) * .24);
 }
 .hito-pop-body{
-  font-family:'Montserrat',sans-serif;
+  font-family:'Archivo',system-ui,sans-serif;
+  font-stretch:100%;
   font-weight:500;
   font-size:12.5px;
+  letter-spacing:-.01em;
   line-height:1.55;
   color:#2a3030;
   max-height:min(36vh, 220px);
@@ -1269,7 +1274,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 21</div>
+  <div id="buildTag" aria-hidden="true">v17 · 22</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
