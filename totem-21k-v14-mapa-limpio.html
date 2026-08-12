@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-12-fix-attract">
+<meta name="totem-version" content="2026-08-12-rotar-bounds-estandar">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -893,12 +893,12 @@ path.trazaRuta{
 }
 #tiltStage #mapa{
   position:absolute;
-  /* sobredimensionado fuerte: al rotar no se ve el rectángulo */
-  inset:-22%;
-  width:144%;
-  height:144%;
-  transform-origin:50% 55%;
-  transform:translate3d(0,0,0) scale(1);
+  /* sobredimensionado fuerte: al inclinar/rotar no se ve el rectángulo */
+  inset:-32%;
+  width:164%;
+  height:164%;
+  transform-origin:50% 50%;
+  transform:translate3d(0,0,0) rotate(var(--map-rot, 0deg)) scale(1);
   background:var(--fondo);
 }
 #mapaWrap.tilt-on #tiltStage #mapa{
@@ -906,7 +906,8 @@ path.trazaRuta{
     translate3d(var(--tilt-x, 0px), var(--tilt-y, 0px), 0)
     rotateX(var(--tilt-rx, 0deg))
     rotateY(var(--tilt-ry, 0deg))
-    scale(var(--tilt-scale, 1.18));
+    rotate(var(--map-rot, 0deg))
+    scale(var(--tilt-scale, 1.32));
   will-change:transform;
   box-shadow:none;
 }
@@ -1091,8 +1092,10 @@ path.trazaRuta{
 }
 
 #btnInclinar{top:12px;z-index:1200;}
-#btnTema{top:62px;z-index:1200;}
+#btnRotar{top:62px;z-index:1200;}
+#btnTema{top:112px;z-index:1200;}
 #btnInclinar,
+#btnRotar,
 #btnTema{
   display:inline-flex;
   position:absolute;left:12px;
@@ -1103,15 +1106,18 @@ path.trazaRuta{
   color:var(--tinta);box-shadow:var(--sombra);
 }
 #btnInclinar .dot,
+#btnRotar .dot,
 #btnTema .dot{
   width:8px;height:8px;border-radius:50%;
   background:var(--tinta-suave);
 }
 #btnInclinar.activo,
+#btnRotar.activo,
 #btnTema.activo{
   border-color:var(--acento);color:var(--acento);
 }
 #btnInclinar.activo .dot,
+#btnRotar.activo .dot,
 #btnTema.activo .dot{
   background:var(--acento);
   box-shadow:0 0 0 4px color-mix(in srgb, var(--acento) 25%, transparent);
@@ -1340,6 +1346,21 @@ path.trazaRuta{
   display:grid;place-items:center;
 }
 #zoomCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
+#rotCtrl{
+  position:absolute;right:16px;bottom:290px;z-index:900;
+  display:flex;flex-direction:column;gap:8px;
+}
+#rotCtrl button{
+  width:48px;height:48px;border-radius:50%;
+  background:var(--boton);border:2.5px solid var(--tinta);
+  font-size:16px;font-weight:700;color:var(--tinta);
+  box-shadow:var(--sombra);
+  display:grid;place-items:center;line-height:1;
+}
+#rotCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
+#rotCtrl button.activo{
+  border-color:var(--acento);color:var(--acento);
+}
 
 /* header oculto: mapa a pantalla completa */
 header{display:none !important;}
@@ -1514,6 +1535,7 @@ header{display:none !important;}
   .hito-pop-body{font-size:12px;line-height:1.5;}
 
   #btnInclinar,
+  #btnRotar,
   #btnTema{
     left:max(10px, env(safe-area-inset-left, 0px));
     padding:9px 12px;
@@ -1522,7 +1544,8 @@ header{display:none !important;}
     max-width:calc(100vw - 80px);
   }
   #btnInclinar{top:max(10px, env(safe-area-inset-top, 0px));}
-  #btnTema{top:calc(54px + env(safe-area-inset-top, 0px));}
+  #btnRotar{top:calc(54px + env(safe-area-inset-top, 0px));}
+  #btnTema{top:calc(98px + env(safe-area-inset-top, 0px));}
 
   #temaCard{
     width:100%;
@@ -1535,7 +1558,15 @@ header{display:none !important;}
   .temaBody{padding:12px 14px calc(20px + env(safe-area-inset-bottom, 0px));}
 
   body:has(.leaflet-popup.hito-popup) #btnInclinar,
-  body:has(.leaflet-popup.hito-popup) #btnTema{opacity:.35;pointer-events:none;}
+  body:has(.leaflet-popup.hito-popup) #btnRotar,
+  body:has(.leaflet-popup.hito-popup) #btnTema,
+  body:has(.leaflet-popup.hito-popup) #rotCtrl{opacity:.35;pointer-events:none;}
+
+  #rotCtrl{
+    right:max(10px, env(safe-area-inset-right, 0px));
+    bottom:calc(250px + env(safe-area-inset-bottom, 0px));
+  }
+  #rotCtrl button{width:42px;height:42px;font-size:14px;}
 
   .qrCard{
     margin:16px;
@@ -1596,7 +1627,8 @@ header{display:none !important;}
   }
   .hito-pop-title{font-size:12px;}
   .hito-pop-body{font-size:11px;}
-  #btnInclinar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
+  #btnInclinar, #btnRotar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
+  #rotCtrl{bottom:calc(210px + env(safe-area-inset-bottom, 0px));}
   #attract .marca{display:none;}
   #attract h1{font-size:clamp(28px, 10vh, 48px);}
   #attract svg.miniruta{margin:10px 0 4px;}
@@ -1642,11 +1674,21 @@ header{display:none !important;}
       <span class="dot" aria-hidden="true"></span>
       Inclinación
     </button>
+    <button id="btnRotar" type="button" aria-pressed="false" title="Rotar el mapa / vista horizontal del recorrido">
+      <span class="dot" aria-hidden="true"></span>
+      Rotar
+    </button>
     <button id="btnTema" type="button" aria-pressed="false" title="Configurar colores y filtros">
       <span class="dot" aria-hidden="true"></span>
       Colores
     </button>
     <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
+    <div id="rotCtrl" aria-label="Rotación del mapa">
+      <button id="rotIzq" type="button" title="Rotar 15° a la izquierda">↺</button>
+      <button id="rotHoriz" type="button" title="Recorrido horizontal" aria-pressed="false">═</button>
+      <button id="rotNorte" type="button" title="Norte arriba">N</button>
+      <button id="rotDer" type="button" title="Rotar 15° a la derecha">↻</button>
+    </div>
     <div id="zoomCtrl">
       <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Mi ubicación" title="Mostrar mi ubicación">◎</button>
       <button id="zMas" aria-label="Acercar">＋</button>
@@ -1955,12 +1997,15 @@ function puntoEn(metros){
    4. EL MAPA — sin máscara; zoom out limitado al circuito
    ============================================================ */
 let bounds = L.latLngBounds(RUTA_GEO);
+const BOUNDS_PAD = 0.58; /* aire extra para popups en el borde (llegada) */
+let mapBearing = 0;
+let rotHorizOn = false;
 const map = L.map("mapa", {
   zoomControl:false,
   doubleClickZoom:false,
   attributionControl:true,
-  maxBounds: bounds.pad(0.22),
-  maxBoundsViscosity: 1.0,
+  maxBounds: bounds.pad(BOUNDS_PAD),
+  maxBoundsViscosity: 0.85,
   maxZoom: 17,
   zoomSnap: 0.25,
   zoomDelta: 0.35,
@@ -1969,8 +2014,11 @@ const map = L.map("mapa", {
 
 /* no se puede alejar más allá del encuadre del recorrido */
 function ajustarZoomMin(){
-  const z = map.getBoundsZoom(bounds, false);
-  map.setMinZoom(Math.max(12, z));
+  const z = map.getBoundsZoom(bounds, false, padMapa());
+  const rot = Math.abs(((mapBearing % 180) + 180) % 180);
+  const tip = Math.min(rot, 180 - rot);
+  const extra = tip > 15 ? 0.85 : 0.35;
+  map.setMinZoom(Math.max(10.25, z - extra));
 }
 map.on("resize", ajustarZoomMin);
 let capaBase = null, capaLabels = null;
@@ -2056,10 +2104,15 @@ map.addLayer(new TinteDegrade());
 
 function padMapa(){
   const w = window.innerWidth, h = window.innerHeight;
-  if(h < 500) return [24, 24];
-  if(w < 420) return [32, 36];
-  if(w < 768) return [40, 44];
-  return [52, 52];
+  let p;
+  if(h < 500) p = [40, 40];
+  else if(w < 420) p = [52, 56];
+  else if(w < 768) p = [64, 68];
+  else p = [84, 92];
+  const rot = Math.abs(((mapBearing % 180) + 180) % 180);
+  const tip = Math.min(rot, 180 - rot);
+  const f = 1 + Math.min(1.15, tip / 45) * 0.55;
+  return [Math.round(p[0] * f), Math.round(p[1] * f)];
 }
 function grosorRuta(){
   let g = 2.5;
@@ -2080,9 +2133,10 @@ function setPopupBlur(on){
   if(el) el.classList.toggle("popup-blur", !!on);
 }
 function encuadrar(animado){
+  ajustarZoomMin();
   const opts = {
     padding: padMapa(),
-    maxZoom: 14.5,
+    maxZoom: mapBearing ? 14.1 : 14.4,
     duration: CFG.flyBoundsMs,
     easeLinearity: 0.22
   };
@@ -2187,9 +2241,12 @@ function renderHitos(){
       className: "hito-popup",
       maxWidth: 300,
       minWidth: 210,
-      offset: L.point(0, -14),
+      offset: L.point(0, -18),
       autoPan: true,
-      autoPanPadding: [56, 56],
+      autoPanPadding: [80, 100],
+      autoPanPaddingTopLeft: L.point(72, 140),
+      autoPanPaddingBottomRight: L.point(72, 100),
+      keepInView: true,
       closeButton: true,
       closeOnClick: true
     });
@@ -2226,9 +2283,13 @@ function volarYAbrir(h){
   const pin = marcadores[h.id];
   if(pin) pin.closePopup();
   const dur = CFG.flyHitoMs;
-  const z = Math.min(map.getMaxZoom(), Math.max(map.getZoom() + 0.6, CFG.zoomHito));
+  const z = Math.min(map.getMaxZoom(), Math.max(map.getZoom() + 0.5, CFG.zoomHito));
   irA("POPUP", h);
-  map.flyTo(h.geo, z, {duration: dur, easeLinearity: 0.25});
+  /* bajar un poco el centro para que el popup (arriba del pin) entre en vista,
+     sobre todo en la llegada / bordes del circuito */
+  const pt = map.project(h.geo, z);
+  const dest = map.unproject(pt.add([0, 120]), z);
+  map.flyTo(dest, z, {duration: dur, easeLinearity: 0.25});
   const open = ()=>{ if(S.estado === "POPUP" && pin) pin.openPopup(); };
   map.once("moveend", open);
   setTimeout(open, dur * 1000 + 40);
@@ -2459,7 +2520,7 @@ function refrescarRuta(){
   ruta.setLatLngs(RUTA_GEO);
   bounds = L.latLngBounds(RUTA_GEO);
   recalcularDistancias();
-  map.setMaxBounds(bounds.pad(0.22));
+  map.setMaxBounds(bounds.pad(BOUNDS_PAD));
   renderKms();
   aplicarAnimacion();
   ajustarZoomMin();
@@ -2493,7 +2554,7 @@ const btnInclinar = document.getElementById("btnInclinar");
 const labelInclinar = () =>
   '<span class="dot" aria-hidden="true"></span> Inclinación';
 
-const TILT_BASE_SCALE = 1.2;
+const TILT_BASE_SCALE = 1.34;
 const tilt = {
   on: false,
   permiso: false,
@@ -2503,8 +2564,8 @@ const tilt = {
   cur: {rx:0, ry:0, x:0, y:0, scale:1},
   target: {rx:0, ry:0, x:0, y:0, scale:1},
   raf: 0,
-  maxDeg: 11,   /* tope suave: no llega a mostrar el cuadrado */
-  maxShift: 8,
+  maxDeg: 12,   /* tope suave: el bleed extra cubre el cuadrado */
+  maxShift: 10,
   gyroWatch: 0,
   pointers: new Map(),
   dragging: false
@@ -2543,7 +2604,7 @@ function setTiltFromAxes(nx, ny){
   tilt.target.x = clamp(nx, -1, 1) * tilt.maxShift;
   tilt.target.y = clamp(-ny, -1, 1) * tilt.maxShift * 0.45;
   /* scale extra según inclinación para seguir tapando bordes */
-  tilt.target.scale = TILT_BASE_SCALE + mag * 0.16;
+  tilt.target.scale = TILT_BASE_SCALE + mag * 0.22;
 }
 function loopTilt(){
   const t = 0.18;
@@ -2601,7 +2662,7 @@ function setTiltFromClientPoint(clientX, clientY){
 }
 function onPointerTiltDown(e){
   if(!tilt.on || S.estado === "POPUP") return;
-  if(e.target.closest("button, a, .leaflet-popup, .leaflet-control, #temaPanel, #zoomCtrl")) return;
+  if(e.target.closest("button, a, .leaflet-popup, .leaflet-control, #temaPanel, #zoomCtrl, #rotCtrl")) return;
   tilt.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
   if(tilt.pointers.size === 1){
     tilt.dragging = true;
@@ -2667,6 +2728,10 @@ function setMapDragEnabled(si){
     else { map.dragging.disable(); /* pinch sigue para zoom si hace falta */ }
   }catch(_){}
 }
+function syncMapInteract(){
+  const rotado = Math.abs(mapBearing) > 0.5;
+  setMapDragEnabled(!tilt.on && !rotado);
+}
 function activarInclinacion(si){
   tilt.on = !!si;
   tilt.gyroOk = false;
@@ -2676,7 +2741,7 @@ function activarInclinacion(si){
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
   btnInclinar.innerHTML = labelInclinar();
-  setMapDragEnabled(!tilt.on);
+  syncMapInteract();
   if(tilt.on){
     resetTiltTargets();
     tilt.target.scale = TILT_BASE_SCALE;
@@ -2751,6 +2816,101 @@ function initInclinacion(){
 }
 
 /* ============================================================
+   ROTACIÓN — norte arriba, pasos de 15°, o recorrido horizontal
+   ============================================================ */
+const btnRotar = document.getElementById("btnRotar");
+const rotHorizBtn = document.getElementById("rotHoriz");
+const rotNorteBtn = document.getElementById("rotNorte");
+function normBearing(deg){
+  let d = ((deg % 360) + 360) % 360;
+  if(d > 180) d -= 360;
+  return Math.round(d * 100) / 100;
+}
+function bearingRutaHorizontal(){
+  /* eje principal del circuito (PCA) → lo dejamos horizontal en pantalla */
+  const pts = RUTA_GEO;
+  if(!pts.length) return -42;
+  let sLat = 0, sLng = 0;
+  for(const p of pts){ sLat += p[0]; sLng += p[1]; }
+  const mLat = sLat / pts.length, mLng = sLng / pts.length;
+  const cos = Math.cos(mLat * Math.PI / 180);
+  let sxx = 0, syy = 0, sxy = 0;
+  for(const p of pts){
+    const x = (p[1] - mLng) * cos; /* este */
+    const y = (p[0] - mLat);      /* norte */
+    sxx += x * x; syy += y * y; sxy += x * y;
+  }
+  /* ángulo del eje mayor desde el este hacia el norte */
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  /* CSS rotate es horario; queremos ese eje en horizontal */
+  return normBearing(-(ang * 180 / Math.PI));
+}
+function updateRotUI(){
+  const horiz = rotHorizOn || Math.abs(normBearing(mapBearing - bearingRutaHorizontal())) < 2;
+  rotHorizOn = horiz && Math.abs(mapBearing) > 0.5;
+  if(btnRotar){
+    btnRotar.classList.toggle("activo", Math.abs(mapBearing) > 0.5);
+    btnRotar.setAttribute("aria-pressed", Math.abs(mapBearing) > 0.5 ? "true" : "false");
+  }
+  if(rotHorizBtn){
+    rotHorizBtn.classList.toggle("activo", rotHorizOn);
+    rotHorizBtn.setAttribute("aria-pressed", rotHorizOn ? "true" : "false");
+  }
+  if(rotNorteBtn) rotNorteBtn.classList.toggle("activo", Math.abs(mapBearing) < 0.5);
+}
+function aplicarBearing(deg, {reencuadrar = true, horiz = false} = {}){
+  mapBearing = normBearing(deg);
+  rotHorizOn = !!horiz;
+  const wrap = document.getElementById("mapaWrap");
+  if(wrap) wrap.style.setProperty("--map-rot", mapBearing.toFixed(2) + "deg");
+  document.documentElement.style.setProperty("--map-rot", mapBearing.toFixed(2) + "deg");
+  syncMapInteract();
+  updateRotUI();
+  if(reencuadrar && S && S.estado !== "ATTRACT") encuadrar(true);
+  else if(reencuadrar){ ajustarZoomMin(); encuadrar(false); }
+}
+function rotarPaso(delta){
+  aplicarBearing(mapBearing + delta, {reencuadrar:true, horiz:false});
+}
+function toggleHorizontal(){
+  if(rotHorizOn && Math.abs(mapBearing) > 0.5){
+    aplicarBearing(0, {reencuadrar:true, horiz:false});
+  }else{
+    aplicarBearing(bearingRutaHorizontal(), {reencuadrar:true, horiz:true});
+  }
+}
+function initRotacion(){
+  aplicarBearing(0, {reencuadrar:false, horiz:false});
+  document.getElementById("rotIzq").addEventListener("click", e=>{
+    e.stopPropagation();
+    rotarPaso(-15);
+    reiniciarInactividad();
+  });
+  document.getElementById("rotDer").addEventListener("click", e=>{
+    e.stopPropagation();
+    rotarPaso(15);
+    reiniciarInactividad();
+  });
+  document.getElementById("rotNorte").addEventListener("click", e=>{
+    e.stopPropagation();
+    aplicarBearing(0, {reencuadrar:true, horiz:false});
+    reiniciarInactividad();
+  });
+  document.getElementById("rotHoriz").addEventListener("click", e=>{
+    e.stopPropagation();
+    toggleHorizontal();
+    reiniciarInactividad();
+  });
+  if(btnRotar){
+    btnRotar.addEventListener("click", e=>{
+      e.stopPropagation();
+      toggleHorizontal();
+      reiniciarInactividad();
+    });
+  }
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 window._map = map;   // acceso desde consola para depurar
@@ -2758,13 +2918,14 @@ renderKms();
 renderHitos();
 aplicarAnimacion();
 initInclinacion();
+initRotacion();
 /* el panel de tema se inicializa al final del archivo (después de
    declarar TEMA_*). irA(ATTRACT) también va ahí para no cortar el init. */
 
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v16";
+const TEMA_KEY = "totem21k-tema-v17";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -2783,14 +2944,14 @@ const TEMA_DEFAULT = {
   },
   "filters": {
     "blend": "multiply",
-    "tinte": 0.82,
+    "tinte": 0.62,
     "bri": 0.99,
     "dark": 0.04,
     "con": 1.08,
     "sat": 2.5,
     "hue": 339,
-    "rutaGrosor": 2.5,
-    "calles": "completo"
+    "rutaGrosor": 3.75,
+    "calles": "medio"
   }
 };
 const CALLES_OPTIONS = [
@@ -2870,7 +3031,7 @@ function cssTemaLive(){
   --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
-  --map-sat:${f.sat ?? 2.5};--map-hue:${f.hue ?? 339};--map-bri:${f.bri ?? 0.99};--map-dark:${f.dark ?? 0.04};--map-con:${f.con ?? 1.08};--map-tinte-op:${f.tinte ?? 0.82};
+  --map-sat:${f.sat ?? 2.5};--map-hue:${f.hue ?? 339};--map-bri:${f.bri ?? 0.99};--map-dark:${f.dark ?? 0.04};--map-con:${f.con ?? 1.08};--map-tinte-op:${f.tinte ?? 0.62};
   --map-blend:${blend};
 }`;
 }
