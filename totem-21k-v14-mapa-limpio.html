@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-12-rotate-fill">
+<meta name="totem-version" content="2026-08-12-rotate-noborders">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2030,7 +2030,12 @@ map.on("resize", ajustarZoomMin);
 let capaBase = null, capaLabels = null;
 let tilesOk = 0, tilesMal = 0, respaldoActivo = false;
 function tileOpts(extra){
-  return Object.assign({attribution:CFG.atribucion, maxZoom:19, subdomains:"abcd"}, extra || {});
+  return Object.assign({
+    attribution:CFG.atribucion,
+    maxZoom:19,
+    subdomains:"abcd",
+    keepBuffer: 6
+  }, extra || {});
 }
 function wireTileFallback(layer){
   tilesOk = 0; tilesMal = 0;
@@ -2143,9 +2148,10 @@ function setPopupBlur(on){
 }
 function encuadrar(animado){
   ajustarZoomMin();
+  syncMaxBoundsPorRotacion();
   const opts = {
     padding: padMapa(),
-    maxZoom: mapBearing ? 14.1 : 14.4,
+    maxZoom: mapBearing ? 13.6 : 14.4,
     duration: CFG.flyBoundsMs,
     easeLinearity: 0.22
   };
@@ -2873,6 +2879,18 @@ function updateRotUI(){
   }
   if(rotNorteBtn) rotNorteBtn.classList.toggle("activo", Math.abs(mapBearing) < 0.5);
 }
+function syncMaxBoundsPorRotacion(){
+  try{
+    if(Math.abs(mapBearing) > 0.5){
+      /* al rotar, un maxBounds chico deja esquinas vacías (no como Google Maps) */
+      map.setMaxBounds(bounds.pad(1.35));
+      map.options.maxBoundsViscosity = 0.35;
+    }else{
+      map.setMaxBounds(bounds.pad(BOUNDS_PAD));
+      map.options.maxBoundsViscosity = 0.75;
+    }
+  }catch(_){}
+}
 function aplicarBearing(deg, {reencuadrar = true, horiz = false} = {}){
   mapBearing = normBearing(deg);
   rotHorizOn = !!horiz;
@@ -2880,7 +2898,7 @@ function aplicarBearing(deg, {reencuadrar = true, horiz = false} = {}){
   try{
     if(typeof map.setBearing === "function"){
       map.setBearing(theta);
-      /* fuerza recarga de tiles en la nueva orientación */
+      syncMaxBoundsPorRotacion();
       map.invalidateSize({pan:false});
       const c = map.getCenter();
       const z = map.getZoom();
