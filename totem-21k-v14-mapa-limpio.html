@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-12-rotate-noborders">
+<meta name="totem-version" content="2026-08-12-sin-rotar-standby">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -869,9 +869,9 @@ body.noche .leaflet-tile-pane{
   pointer-events:none;
   background:linear-gradient(
     135deg,
-    var(--sb-grad-1, #ff004c) 0%,
-    var(--sb-grad-2, #ff6200) 48%,
-    var(--sb-grad-3, #ffcd38) 100%
+    var(--map-grad-1, var(--sb-grad-1, #ff004c)) 0%,
+    var(--map-grad-2, var(--sb-grad-2, #ff6200)) 48%,
+    var(--map-grad-3, var(--sb-grad-3, #ffcd38)) 100%
   );
   opacity:var(--map-tinte-op, 0.82);
 }
@@ -1094,10 +1094,8 @@ path.trazaRuta{
 }
 
 #btnInclinar{top:12px;z-index:900;}
-#btnRotar{top:62px;z-index:900;}
-#btnTema{top:112px;z-index:900;}
+#btnTema{top:62px;z-index:900;}
 #btnInclinar,
-#btnRotar,
 #btnTema{
   display:inline-flex;
   position:absolute;left:12px;
@@ -1108,18 +1106,15 @@ path.trazaRuta{
   color:var(--tinta);box-shadow:var(--sombra);
 }
 #btnInclinar .dot,
-#btnRotar .dot,
 #btnTema .dot{
   width:8px;height:8px;border-radius:50%;
   background:var(--tinta-suave);
 }
 #btnInclinar.activo,
-#btnRotar.activo,
 #btnTema.activo{
   border-color:var(--acento);color:var(--acento);
 }
 #btnInclinar.activo .dot,
-#btnRotar.activo .dot,
 #btnTema.activo .dot{
   background:var(--acento);
   box-shadow:0 0 0 4px color-mix(in srgb, var(--acento) 25%, transparent);
@@ -1348,21 +1343,6 @@ path.trazaRuta{
   display:grid;place-items:center;
 }
 #zoomCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
-#rotCtrl{
-  position:absolute;right:16px;bottom:290px;z-index:900;
-  display:flex;flex-direction:column;gap:8px;
-}
-#rotCtrl button{
-  width:48px;height:48px;border-radius:50%;
-  background:var(--boton);border:2.5px solid var(--tinta);
-  font-size:16px;font-weight:700;color:var(--tinta);
-  box-shadow:var(--sombra);
-  display:grid;place-items:center;line-height:1;
-}
-#rotCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
-#rotCtrl button.activo{
-  border-color:var(--acento);color:var(--acento);
-}
 
 /* header oculto: mapa a pantalla completa */
 header{display:none !important;}
@@ -1537,7 +1517,6 @@ header{display:none !important;}
   .hito-pop-body{font-size:12px;line-height:1.5;}
 
   #btnInclinar,
-  #btnRotar,
   #btnTema{
     left:max(10px, env(safe-area-inset-left, 0px));
     padding:9px 12px;
@@ -1546,8 +1525,7 @@ header{display:none !important;}
     max-width:calc(100vw - 80px);
   }
   #btnInclinar{top:max(10px, env(safe-area-inset-top, 0px));}
-  #btnRotar{top:calc(54px + env(safe-area-inset-top, 0px));}
-  #btnTema{top:calc(98px + env(safe-area-inset-top, 0px));}
+  #btnTema{top:calc(54px + env(safe-area-inset-top, 0px));}
 
   #temaCard{
     width:100%;
@@ -1560,15 +1538,7 @@ header{display:none !important;}
   .temaBody{padding:12px 14px calc(20px + env(safe-area-inset-bottom, 0px));}
 
   body:has(.leaflet-popup.hito-popup) #btnInclinar,
-  body:has(.leaflet-popup.hito-popup) #btnRotar,
-  body:has(.leaflet-popup.hito-popup) #btnTema,
-  body:has(.leaflet-popup.hito-popup) #rotCtrl{opacity:.35;pointer-events:none;}
-
-  #rotCtrl{
-    right:max(10px, env(safe-area-inset-right, 0px));
-    bottom:calc(250px + env(safe-area-inset-bottom, 0px));
-  }
-  #rotCtrl button{width:42px;height:42px;font-size:14px;}
+  body:has(.leaflet-popup.hito-popup) #btnTema{opacity:.35;pointer-events:none;}
 
   .qrCard{
     margin:16px;
@@ -1629,8 +1599,7 @@ header{display:none !important;}
   }
   .hito-pop-title{font-size:12px;}
   .hito-pop-body{font-size:11px;}
-  #btnInclinar, #btnRotar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
-  #rotCtrl{bottom:calc(210px + env(safe-area-inset-bottom, 0px));}
+  #btnInclinar, #btnTema{font-size:10px;padding:8px 10px;min-height:36px;}
   #attract .marca{display:none;}
   #attract h1{font-size:clamp(28px, 10vh, 48px);}
   #attract svg.miniruta{margin:10px 0 4px;}
@@ -1676,21 +1645,11 @@ header{display:none !important;}
       <span class="dot" aria-hidden="true"></span>
       Inclinación
     </button>
-    <button id="btnRotar" type="button" aria-pressed="false" title="Rotar el mapa / vista horizontal del recorrido">
-      <span class="dot" aria-hidden="true"></span>
-      Rotar
-    </button>
     <button id="btnTema" type="button" aria-pressed="false" title="Configurar colores y filtros">
       <span class="dot" aria-hidden="true"></span>
       Colores
     </button>
     <button id="btnQr">📲 ¡Llevate el mapa en tu celu!</button>
-    <div id="rotCtrl" aria-label="Rotación del mapa">
-      <button id="rotIzq" type="button" title="Rotar 15° a la izquierda">↺</button>
-      <button id="rotHoriz" type="button" title="Recorrido horizontal" aria-pressed="false">═</button>
-      <button id="rotNorte" type="button" title="Norte arriba">N</button>
-      <button id="rotDer" type="button" title="Rotar 15° a la derecha">↻</button>
-    </div>
     <div id="zoomCtrl">
       <button id="btnUbicacion" type="button" aria-pressed="false" aria-label="Mi ubicación" title="Mostrar mi ubicación">◎</button>
       <button id="zMas" aria-label="Acercar">＋</button>
@@ -1707,7 +1666,11 @@ header{display:none !important;}
       </div>
       <div class="temaBody">
         <div class="temaSec">
-          <h4>Colores por pantalla</h4>
+          <h4>Pantalla stand-by</h4>
+          <div id="temaStandby"></div>
+        </div>
+        <div class="temaSec">
+          <h4>Colores del mapa</h4>
           <div id="temaColores"></div>
         </div>
         <div class="temaSec">
@@ -1738,7 +1701,6 @@ header{display:none !important;}
 
 </div>
 
-<script src="leaflet-rotate-src.js"></script>
 <script>
 /* ============================================================
    1. LA TRAZA — las mismas coordenadas reales del boceto SVG.
@@ -2001,8 +1963,6 @@ function puntoEn(metros){
    ============================================================ */
 let bounds = L.latLngBounds(RUTA_GEO);
 const BOUNDS_PAD = 0.58; /* aire extra para popups en el borde (llegada) */
-let mapBearing = 0;
-let rotHorizOn = false;
 const map = L.map("mapa", {
   zoomControl:false,
   doubleClickZoom:false,
@@ -2012,19 +1972,13 @@ const map = L.map("mapa", {
   maxZoom: 17,
   zoomSnap: 0.25,
   zoomDelta: 0.35,
-  wheelPxPerZoomLevel: 140,
-  /* rotación nativa (leaflet-rotate): como Google Maps, sin cuadrado CSS */
-  rotate: true,
-  bearing: 0
+  wheelPxPerZoomLevel: 140
 });
 
 /* no se puede alejar más allá del encuadre del recorrido */
 function ajustarZoomMin(){
   const z = map.getBoundsZoom(bounds, false, padMapa());
-  const rot = Math.abs(((mapBearing % 180) + 180) % 180);
-  const tip = Math.min(rot, 180 - rot);
-  const extra = tip > 15 ? 0.85 : 0.35;
-  map.setMinZoom(Math.max(10.25, z - extra));
+  map.setMinZoom(Math.max(10.25, z - 0.35));
 }
 map.on("resize", ajustarZoomMin);
 let capaBase = null, capaLabels = null;
@@ -2076,17 +2030,15 @@ function aplicarModoCalles(modo){
 }
 aplicarModoCalles("completo");
 
-/* capas: huellas/tinte rotan con el mapa; hitos/popups quedan derechos */
-const rotateRoot = map._rotatePane || map.getPane("mapPane");
-const noRotateRoot = map._norotatePane || map.getPane("mapPane");
-map.createPane("huellas", rotateRoot);
+/* capas: huellas, kms, hitos y tinte en paneles normales */
+map.createPane("huellas");
 map.getPane("huellas").style.zIndex = 450;
-map.createPane("kms", rotateRoot);
+map.createPane("kms");
 map.getPane("kms").style.zIndex = 550;
-map.createPane("hitos", noRotateRoot);
+map.createPane("hitos");
 map.getPane("hitos").style.zIndex = 650;
 /* tinte degradé: encima de tiles, debajo de la ruta; multiply une colores al mapa */
-map.createPane("tinte", rotateRoot);
+map.createPane("tinte");
 map.getPane("tinte").classList.add("leaflet-tinte-pane");
 map.getPane("tinte").style.zIndex = 350;
 map.getPane("tinte").style.pointerEvents = "none";
@@ -2096,11 +2048,11 @@ const TinteDegrade = L.Layer.extend({
   onAdd(map){
     this._map = map;
     this._el = L.DomUtil.create("div", "mapa-tinte", map.getPane("tinte"));
-    map.on("move zoom viewreset zoomanim resize rotate", this._update, this);
+    map.on("move zoom viewreset zoomanim resize", this._update, this);
     this._update();
   },
   onRemove(map){
-    map.off("move zoom viewreset zoomanim resize rotate", this._update, this);
+    map.off("move zoom viewreset zoomanim resize", this._update, this);
     if(this._el){ L.DomUtil.remove(this._el); this._el = null; }
   },
   _update(){
@@ -2118,15 +2070,10 @@ map.addLayer(new TinteDegrade());
 
 function padMapa(){
   const w = window.innerWidth, h = window.innerHeight;
-  let p;
-  if(h < 500) p = [40, 40];
-  else if(w < 420) p = [52, 56];
-  else if(w < 768) p = [64, 68];
-  else p = [84, 92];
-  const rot = Math.abs(((mapBearing % 180) + 180) % 180);
-  const tip = Math.min(rot, 180 - rot);
-  const f = 1 + Math.min(1.15, tip / 45) * 0.55;
-  return [Math.round(p[0] * f), Math.round(p[1] * f)];
+  if(h < 500) return [40, 40];
+  if(w < 420) return [52, 56];
+  if(w < 768) return [64, 68];
+  return [84, 92];
 }
 function grosorRuta(){
   let g = 2.5;
@@ -2148,10 +2095,9 @@ function setPopupBlur(on){
 }
 function encuadrar(animado){
   ajustarZoomMin();
-  syncMaxBoundsPorRotacion();
   const opts = {
     padding: padMapa(),
-    maxZoom: mapBearing ? 13.6 : 14.4,
+    maxZoom: 14.4,
     duration: CFG.flyBoundsMs,
     easeLinearity: 0.22
   };
@@ -2681,7 +2627,7 @@ function setTiltFromClientPoint(clientX, clientY){
 }
 function onPointerTiltDown(e){
   if(!tilt.on || S.estado === "POPUP") return;
-  if(e.target.closest("button, a, .leaflet-popup, .leaflet-control, #temaPanel, #zoomCtrl, #rotCtrl")) return;
+  if(e.target.closest("button, a, .leaflet-popup, .leaflet-control, #temaPanel, #zoomCtrl")) return;
   tilt.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
   if(tilt.pointers.size === 1){
     tilt.dragging = true;
@@ -2747,10 +2693,6 @@ function setMapDragEnabled(si){
     else { map.dragging.disable(); /* pinch sigue para zoom si hace falta */ }
   }catch(_){}
 }
-function syncMapInteract(){
-  /* con rotación nativa el drag sigue funcionando; solo se corta con inclinación */
-  setMapDragEnabled(!tilt.on);
-}
 function activarInclinacion(si){
   tilt.on = !!si;
   tilt.gyroOk = false;
@@ -2760,7 +2702,7 @@ function activarInclinacion(si){
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
   btnInclinar.innerHTML = labelInclinar();
-  syncMapInteract();
+  setMapDragEnabled(!tilt.on);
   if(tilt.on){
     resetTiltTargets();
     tilt.target.scale = TILT_BASE_SCALE;
@@ -2837,121 +2779,6 @@ function initInclinacion(){
 }
 
 /* ============================================================
-   ROTACIÓN — norte arriba, pasos de 15°, o recorrido horizontal
-   ============================================================ */
-const btnRotar = document.getElementById("btnRotar");
-const rotHorizBtn = document.getElementById("rotHoriz");
-const rotNorteBtn = document.getElementById("rotNorte");
-function normBearing(deg){
-  let d = ((deg % 360) + 360) % 360;
-  if(d > 180) d -= 360;
-  return Math.round(d * 100) / 100;
-}
-function bearingRutaHorizontal(){
-  /* eje principal del circuito (PCA) → lo dejamos horizontal en pantalla */
-  const pts = RUTA_GEO;
-  if(!pts.length) return -42;
-  let sLat = 0, sLng = 0;
-  for(const p of pts){ sLat += p[0]; sLng += p[1]; }
-  const mLat = sLat / pts.length, mLng = sLng / pts.length;
-  const cos = Math.cos(mLat * Math.PI / 180);
-  let sxx = 0, syy = 0, sxy = 0;
-  for(const p of pts){
-    const x = (p[1] - mLng) * cos; /* este */
-    const y = (p[0] - mLat);      /* norte */
-    sxx += x * x; syy += y * y; sxy += x * y;
-  }
-  /* ángulo del eje mayor desde el este hacia el norte */
-  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-  /* CSS rotate es horario; queremos ese eje en horizontal */
-  return normBearing(-(ang * 180 / Math.PI));
-}
-function updateRotUI(){
-  const horiz = rotHorizOn || Math.abs(normBearing(mapBearing - bearingRutaHorizontal())) < 2;
-  rotHorizOn = horiz && Math.abs(mapBearing) > 0.5;
-  if(btnRotar){
-    btnRotar.classList.toggle("activo", Math.abs(mapBearing) > 0.5);
-    btnRotar.setAttribute("aria-pressed", Math.abs(mapBearing) > 0.5 ? "true" : "false");
-  }
-  if(rotHorizBtn){
-    rotHorizBtn.classList.toggle("activo", rotHorizOn);
-    rotHorizBtn.setAttribute("aria-pressed", rotHorizOn ? "true" : "false");
-  }
-  if(rotNorteBtn) rotNorteBtn.classList.toggle("activo", Math.abs(mapBearing) < 0.5);
-}
-function syncMaxBoundsPorRotacion(){
-  try{
-    if(Math.abs(mapBearing) > 0.5){
-      /* al rotar, un maxBounds chico deja esquinas vacías (no como Google Maps) */
-      map.setMaxBounds(bounds.pad(1.35));
-      map.options.maxBoundsViscosity = 0.35;
-    }else{
-      map.setMaxBounds(bounds.pad(BOUNDS_PAD));
-      map.options.maxBoundsViscosity = 0.75;
-    }
-  }catch(_){}
-}
-function aplicarBearing(deg, {reencuadrar = true, horiz = false} = {}){
-  mapBearing = normBearing(deg);
-  rotHorizOn = !!horiz;
-  const theta = ((mapBearing % 360) + 360) % 360;
-  try{
-    if(typeof map.setBearing === "function"){
-      map.setBearing(theta);
-      syncMaxBoundsPorRotacion();
-      map.invalidateSize({pan:false});
-      const c = map.getCenter();
-      const z = map.getZoom();
-      map.setView(c, z, {animate:false});
-    }
-  }catch(_){}
-  syncMapInteract();
-  updateRotUI();
-  if(reencuadrar && S && S.estado !== "ATTRACT") encuadrar(true);
-  else if(reencuadrar){ ajustarZoomMin(); encuadrar(false); }
-}
-function rotarPaso(delta){
-  aplicarBearing(mapBearing + delta, {reencuadrar:true, horiz:false});
-}
-function toggleHorizontal(){
-  if(rotHorizOn && Math.abs(mapBearing) > 0.5){
-    aplicarBearing(0, {reencuadrar:true, horiz:false});
-  }else{
-    aplicarBearing(bearingRutaHorizontal(), {reencuadrar:true, horiz:true});
-  }
-}
-function initRotacion(){
-  aplicarBearing(0, {reencuadrar:false, horiz:false});
-  document.getElementById("rotIzq").addEventListener("click", e=>{
-    e.stopPropagation();
-    rotarPaso(-15);
-    reiniciarInactividad();
-  });
-  document.getElementById("rotDer").addEventListener("click", e=>{
-    e.stopPropagation();
-    rotarPaso(15);
-    reiniciarInactividad();
-  });
-  document.getElementById("rotNorte").addEventListener("click", e=>{
-    e.stopPropagation();
-    aplicarBearing(0, {reencuadrar:true, horiz:false});
-    reiniciarInactividad();
-  });
-  document.getElementById("rotHoriz").addEventListener("click", e=>{
-    e.stopPropagation();
-    toggleHorizontal();
-    reiniciarInactividad();
-  });
-  if(btnRotar){
-    btnRotar.addEventListener("click", e=>{
-      e.stopPropagation();
-      toggleHorizontal();
-      reiniciarInactividad();
-    });
-  }
-}
-
-/* ============================================================
    INIT
    ============================================================ */
 window._map = map;   // acceso desde consola para depurar
@@ -2959,14 +2786,13 @@ renderKms();
 renderHitos();
 aplicarAnimacion();
 initInclinacion();
-initRotacion();
 /* el panel de tema se inicializa al final del archivo (después de
    declarar TEMA_*). irA(ATTRACT) también va ahí para no cortar el init. */
 
 /* ============================================================
    PANEL DE TEMA — colores + filtros día/noche (localStorage)
    ============================================================ */
-const TEMA_KEY = "totem21k-tema-v17";
+const TEMA_KEY = "totem21k-tema-v18";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -2977,6 +2803,9 @@ const TEMA_DEFAULT = {
     "sb-grad-3": "#ffcd38",
     "sb-texto": "#ffffff",
     "sb-borde": "#ffffff",
+    "map-grad-1": "#ff004c",
+    "map-grad-2": "#ff6200",
+    "map-grad-3": "#ffcd38",
     "fondo": "#F3F2F1",
     "ruta": "#F7C21C",
     "hito": "#FFFFFF",
@@ -3000,15 +2829,20 @@ const CALLES_OPTIONS = [
   {value: "medio", label: "Mapa medio", hint: "Solo importantes"},
   {value: "solo", label: "Mapa solo", hint: "Sin nombres"}
 ];
+const STANDBY_COLORS = {
+  "sb-grad-1": "Degradé inicio",
+  "sb-grad-2": "Degradé medio",
+  "sb-grad-3": "Degradé final",
+  "sb-texto": "Letras",
+  "sb-borde": "Borde letras"
+};
 const COLOR_SECTIONS = [
   {
-    title: "Degradé (mapa + stand-by)",
+    title: "Degradé del mapa",
     keys: {
-      "sb-grad-1": "Degradé inicio",
-      "sb-grad-2": "Degradé medio",
-      "sb-grad-3": "Degradé final",
-      "sb-texto": "Letras stand-by",
-      "sb-borde": "Borde letras stand-by"
+      "map-grad-1": "Degradé inicio",
+      "map-grad-2": "Degradé medio",
+      "map-grad-3": "Degradé final"
     }
   },
   {
@@ -3052,11 +2886,16 @@ function deepMergeTema(base, patch){
   const src = patch.colors ? patch : (patch.dia || patch.noche || {});
   if(src.colors) Object.assign(out.colors, src.colors);
   if(src.filters) Object.assign(out.filters, src.filters);
+  /* temas viejos: si no hay map-grad, copiar desde sb-grad */
+  const c = out.colors;
+  if(!c["map-grad-1"] && c["sb-grad-1"]) c["map-grad-1"] = c["sb-grad-1"];
+  if(!c["map-grad-2"] && c["sb-grad-2"]) c["map-grad-2"] = c["sb-grad-2"];
+  if(!c["map-grad-3"] && c["sb-grad-3"]) c["map-grad-3"] = c["sb-grad-3"];
   return out;
 }
 function cargarTemaGuardado(){
   try{
-    const raw = localStorage.getItem(TEMA_KEY);
+    const raw = localStorage.getItem(TEMA_KEY) || localStorage.getItem("totem21k-tema-v17");
     if(!raw) return;
     temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(raw));
   }catch(_){}
@@ -3064,6 +2903,9 @@ function cargarTemaGuardado(){
 function cssTemaLive(){
   const c = temaState.colors, f = temaState.filters;
   const blend = f.blend || "multiply";
+  const mg1 = c["map-grad-1"] || c["sb-grad-1"];
+  const mg2 = c["map-grad-2"] || c["sb-grad-2"];
+  const mg3 = c["map-grad-3"] || c["sb-grad-3"];
   return `
 :root{
   --fondo:${c.fondo};--header:${c.fondo};
@@ -3072,6 +2914,7 @@ function cssTemaLive(){
   --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
+  --map-grad-1:${mg1};--map-grad-2:${mg2};--map-grad-3:${mg3};
   --map-sat:${f.sat ?? 2.5};--map-hue:${f.hue ?? 339};--map-bri:${f.bri ?? 0.99};--map-dark:${f.dark ?? 0.04};--map-con:${f.con ?? 1.08};--map-tinte-op:${f.tinte ?? 0.62};
   --map-blend:${blend};
 }`;
@@ -3099,10 +2942,31 @@ function temaMsg(txt){
 }
 function renderPanelTema(){
   const card = document.getElementById("temaCard");
+  const standby = document.getElementById("temaStandby");
   const colores = document.getElementById("temaColores");
   const filtros = document.getElementById("temaFiltros");
   if(!card || !colores || !filtros) return;
   card.classList.add("tema-unico");
+  function fillColorGrid(host, keys){
+    if(!host) return;
+    host.innerHTML = "";
+    const grid = document.createElement("div");
+    grid.className = "temaGrid";
+    for(const key of Object.keys(keys)){
+      const val = temaState.colors[key] || "#000000";
+      const field = document.createElement("div");
+      field.className = "temaField";
+      field.innerHTML = `
+        <label>${keys[key]}</label>
+        <div class="row">
+          <input type="color" data-color="${key}" value="${val.length===7?val:"#000000"}">
+          <input type="text" data-color-text="${key}" value="${val}" maxlength="20" spellcheck="false">
+        </div>`;
+      grid.appendChild(field);
+    }
+    host.appendChild(grid);
+  }
+  fillColorGrid(standby, STANDBY_COLORS);
   colores.innerHTML = "";
   for(const sec of COLOR_SECTIONS){
     const wrap = document.createElement("div");
@@ -3110,21 +2974,9 @@ function renderPanelTema(){
     const title = document.createElement("h5");
     title.textContent = sec.title;
     wrap.appendChild(title);
-    const grid = document.createElement("div");
-    grid.className = "temaGrid";
-    for(const key of Object.keys(sec.keys)){
-      const val = temaState.colors[key] || "#000000";
-      const field = document.createElement("div");
-      field.className = "temaField";
-      field.innerHTML = `
-        <label>${sec.keys[key]}</label>
-        <div class="row">
-          <input type="color" data-color="${key}" value="${val.length===7?val:"#000000"}">
-          <input type="text" data-color-text="${key}" value="${val}" maxlength="20" spellcheck="false">
-        </div>`;
-      grid.appendChild(field);
-    }
-    wrap.appendChild(grid);
+    const gridHost = document.createElement("div");
+    wrap.appendChild(gridHost);
+    fillColorGrid(gridHost, sec.keys);
     colores.appendChild(wrap);
   }
   filtros.innerHTML = "";
