@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-15">
+<meta name="totem-version" content="2026-08-12-v17-build-16">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1214,7 +1214,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 15</div>
+  <div id="buildTag" aria-hidden="true">v17 · 16</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1725,7 +1725,13 @@ function aplanarEstiloLiberty(){
         map.setPaintProperty(id, "fill-color", "#e6e4de");
       }
       if(t === "symbol"){
-        try{ map.setPaintProperty(id, "text-opacity", 0.72); }catch(_){}
+        const sl = layer["source-layer"] || "";
+        /* sacar POIs con íconos de colores (hospitales, colectivos, facultades, etc.) */
+        if(sl === "poi" || /^poi[_-]/i.test(id) || id === "airport"){
+          try{ map.setLayoutProperty(id, "visibility", "none"); }catch(_){}
+        }else{
+          try{ map.setPaintProperty(id, "text-opacity", 0.72); }catch(_){}
+        }
       }
     }catch(_){}
   }
@@ -2188,6 +2194,7 @@ const tilt = {
   maxBearingCam: 14,
   gyroWatch: 0,
   inputLockHasta: 0,
+  lockAplanar: false,  /* true solo al activar: aplanar; false tras pan (no snapea a cenital) */
   sensGyro: 30,        /* más ° = menos sensible (mejor para navegar) */
   deadGyro: 5,         /* zona muerta en grados */
   touchPointers: 0
@@ -2239,8 +2246,11 @@ function aplicarCamaraDesdeTilt(){
   if(!map || respaldoRaster) return;
   if(!tilt.on || tilt.paused || tilt.holding || S.estado === "POPUP") return;
   if(tiltInputBloqueado()){
-    if(map.getPitch() > 0.2 || Math.abs(map.getBearing()) > 0.2){
-      try{ map.setPitch(0); map.setBearing(0); }catch(_){}
+    /* solo forzar plano en el lock inicial; tras pan/zoom mantener la inclinación */
+    if(tilt.lockAplanar){
+      if(map.getPitch() > 0.2 || Math.abs(map.getBearing()) > 0.2){
+        try{ map.setPitch(0); map.setBearing(0); }catch(_){}
+      }
     }
     return;
   }
@@ -2363,6 +2373,8 @@ function onTiltTouchEnd(e){
   tilt.baseBeta = null;
   tilt.baseGamma = null;
   tilt.holding = false;
+  /* lock solo para calibrar gyro: NO aplanar (eso causaba el flash a vista cenital) */
+  tilt.lockAplanar = false;
   tilt.inputLockHasta = performance.now() + 220;
   asegurarLoopTilt();
 }
@@ -2419,6 +2431,7 @@ function activarInclinacion(si){
     tilt.bearingAnchor = 0;
     tilt.holding = false;
     tilt.touchPointers = 0;
+    tilt.lockAplanar = true;
     tilt.inputLockHasta = performance.now() + (esMobileTilt() ? 450 : 280);
     aplanarCamaraTilt();
     modo3D = true;
