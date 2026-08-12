@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="totem-version" content="2026-08-12-stroke-blur-calles">
+<meta name="totem-version" content="2026-08-12-fix-attract">
 <title>21K Buenos Aires — Tótem del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2062,13 +2062,18 @@ function padMapa(){
   return [52, 52];
 }
 function grosorRuta(){
-  const g = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.rutaGrosor != null)
-    ? Number(temaState.filters.rutaGrosor)
-    : 2.5;
-  return Math.max(0.5, Math.min(12, g));
+  let g = 2.5;
+  try{
+    if(temaState && temaState.filters && temaState.filters.rutaGrosor != null){
+      g = Number(temaState.filters.rutaGrosor);
+    }
+  }catch(_){ /* temaState aún no inicializado */ }
+  return Math.max(0.5, Math.min(12, isFinite(g) ? g : 2.5));
 }
 function aplicarGrosorRuta(){
-  if(typeof ruta !== "undefined" && ruta) ruta.setStyle({weight:grosorRuta()});
+  try{
+    if(ruta) ruta.setStyle({weight:grosorRuta()});
+  }catch(_){}
 }
 function setPopupBlur(on){
   const el = document.getElementById("mapa");
