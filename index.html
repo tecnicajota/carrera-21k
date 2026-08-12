@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-20">
+<meta name="totem-version" content="2026-08-12-v17-build-21">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1269,7 +1269,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 20</div>
+  <div id="buildTag" aria-hidden="true">v17 · 21</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1771,11 +1771,17 @@ function aplanarEstiloLiberty(){
       }
       if(t === "symbol"){
         const sl = layer["source-layer"] || "";
-        /* sacar POIs con íconos de colores (hospitales, colectivos, facultades, etc.) */
-        if(sl === "poi" || /^poi[_-]/i.test(id) || id === "airport"){
+        if(id === "huellas"){ /* capa propia */ }
+        /* POIs + por defecto sin textos: barrios, ciudad, agua, calles, etc. */
+        else if(
+          sl === "poi" || /^poi[_-]/i.test(id) || id === "airport" ||
+          sl === "place" || sl === "transportation_name" || sl === "water_name" ||
+          sl === "waterway" || sl === "housenumber" || sl === "park" || sl === "mountain_peak" ||
+          /place_|highway-name|highway-shield|road_shield|water.?name|housenumber|park.?label/i.test(id)
+        ){
           try{ map.setLayoutProperty(id, "visibility", "none"); }catch(_){}
-        }else{
-          try{ map.setPaintProperty(id, "text-opacity", 0.72); }catch(_){}
+        }else if(layer.layout && layer.layout["text-field"] != null){
+          try{ map.setLayoutProperty(id, "visibility", "none"); }catch(_){}
         }
       }
     }catch(_){}
@@ -3036,7 +3042,7 @@ function initMap(){
     try{ aplanarEstiloLiberty(); }catch(e){ console.warn(e); }
     try{ agregarExtrusion(); }catch(e){ console.warn(e); }
     try{
-      const calles = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.calles) || "medio";
+      const calles = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.calles) || "solo";
       aplicarModoCalles(calles);
     }catch(e){ console.warn(e); }
     agregarRuta();
@@ -3079,7 +3085,7 @@ initMap();
 initInclinacion();
 
 function aplicarModoCalles(modo){
-  /* completo = todos · medio/simple = solo principales · solo/nada = sin nombres */
+  /* completo = todos · medio/simple = calles principales · solo/nada = sin ningún nombre */
   if(!map) return;
   let style;
   try{ style = map.getStyle(); }catch(_){ return; }
@@ -3087,20 +3093,38 @@ function aplicarModoCalles(modo){
   const m = (modo === "simple") ? "medio"
     : (modo === "nada") ? "solo"
     : (modo || "completo");
+  const CUSTOM = { huellas: 1 };
   for(const layer of style.layers){
     if(layer.type !== "symbol") continue;
     const id = layer.id;
+    if(CUSTOM[id]) continue;
     const sl = layer["source-layer"] || "";
+    const isPoi = sl === "poi" || /^poi[_-]/i.test(id) || id === "airport";
     const isCalle = sl === "transportation_name"
-      || /highway-name|highway-shield|road_shield/i.test(id);
-    if(!isCalle) continue;
+      || /highway-name|highway-shield|road_shield|road_label|street.?name/i.test(id);
+    const isLugar = sl === "place"
+      || /place_|label_place|settlement|suburb|neighbourhood|neighborhood|city|town|village|state|country/i.test(id);
+    const isAgua = sl === "water_name" || sl === "waterway"
+      || /water.?name|waterway|lake|river|stream|arroyo/i.test(id);
+    const isOtro = sl === "housenumber" || sl === "park" || sl === "mountain_peak"
+      || /housenumber|park.?label|mountain|peak|aerodrome|building.?name/i.test(id);
+    const hasText = !!(layer.layout && layer.layout["text-field"] != null);
+    const isLabel = isCalle || isLugar || isAgua || isOtro || isPoi || hasText;
+
     let vis = "visible";
     if(m === "solo"){
       vis = "none";
     }else if(m === "medio"){
-      const esMenor = /minor|path/i.test(id);
-      const esMayor = /major|shield/i.test(id);
-      vis = esMenor ? "none" : (esMayor ? "visible" : "none");
+      if(isPoi || isLugar || isAgua || isOtro || (!isCalle && isLabel)){
+        vis = "none";
+      }else if(isCalle){
+        const esMenor = /minor|path/i.test(id);
+        const esMayor = /major|shield/i.test(id);
+        vis = esMenor ? "none" : (esMayor ? "visible" : "none");
+      }
+    }else{
+      /* completo: nombres sí, POIs de íconos no */
+      vis = isPoi ? "none" : "visible";
     }
     try{ map.setLayoutProperty(id, "visibility", vis); }catch(_){}
   }
@@ -3114,7 +3138,7 @@ function aplicarSensInclinacion(){
   tilt.sensGyro = 46 - t * 34;  /* 46° → 12° */
   tilt.deadGyro = 7.5 - t * 4.5; /* 7.5° → 3° */
 }
-const TEMA_KEY = "totem21k-tema-v19";
+const TEMA_KEY = "totem21k-tema-v20";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -3144,13 +3168,13 @@ const TEMA_DEFAULT = {
     "hue": 339,
     "rutaGrosor": 3.75,
     "tiltSens": 5,
-    "calles": "medio"
+    "calles": "solo"
   }
 };
 const CALLES_OPTIONS = [
   {value: "completo", label: "Mapa completo", hint: "Todos los nombres"},
-  {value: "medio", label: "Mapa simple", hint: "Solo principales"},
-  {value: "solo", label: "Mapa nada", hint: "Sin nombres"}
+  {value: "medio", label: "Mapa simple", hint: "Solo calles principales"},
+  {value: "solo", label: "Mapa nada", hint: "Sin ningún nombre"}
 ];
 const STANDBY_COLORS = {
   "sb-grad-1": "Degradé inicio",
@@ -3269,7 +3293,7 @@ function aplicarTemaLive(){
   if(typeof asegurarIconosHuella === "function" && map && map.getLayer("huellas")){
     asegurarIconosHuella(true).catch(()=>{});
   }
-  const calles = (temaState.filters && temaState.filters.calles) || "completo";
+  const calles = (temaState.filters && temaState.filters.calles) || "solo";
   if(typeof aplicarModoCalles === "function") aplicarModoCalles(calles);
   if(typeof aplicarSensInclinacion === "function") aplicarSensInclinacion();
 }
@@ -3317,12 +3341,12 @@ function renderPanelTema(){
     colores.appendChild(wrap);
   }
   filtros.innerHTML = "";
-  const callesVal = temaState.filters.calles || "completo";
+  const callesVal = temaState.filters.calles || "solo";
   const callesField = document.createElement("div");
   callesField.className = "temaField";
   callesField.innerHTML = `
-    <label>Nombres de calles</label>
-    <div class="temaSeg" role="radiogroup" aria-label="Nombres de calles">
+    <label>Nombres del mapa</label>
+    <div class="temaSeg" role="radiogroup" aria-label="Nombres del mapa">
       ${CALLES_OPTIONS.map(o => `
         <label class="${o.value===callesVal?"on":""}">
           <input type="radio" name="temaCalles" data-calles="1" value="${o.value}"${o.value===callesVal?" checked":""}>
