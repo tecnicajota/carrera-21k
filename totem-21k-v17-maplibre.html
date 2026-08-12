@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-11">
+<meta name="totem-version" content="2026-08-12-v17-build-12">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1214,7 +1214,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 11</div>
+  <div id="buildTag" aria-hidden="true">v17 · 12</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2183,10 +2183,14 @@ const tilt = {
   maxShift: 8,
   maxPitchCam: 65,   /* pitch MapLibre según mouse/gyro — arranca en 0 */
   maxBearingCam: 22, /* giro suave izq/der con el mouse */
-  gyroWatch: 0
+  gyroWatch: 0,
+  inputLockHasta: 0  /* tras activar: calibrar plano, ignorar ghost-touch */
 };
 function esMobileTilt(){
   return window.matchMedia("(max-width:768px), (pointer:coarse)").matches;
+}
+function tiltInputBloqueado(){
+  return performance.now() < (tilt.inputLockHasta || 0);
 }
 function anguloPantalla(){
   if(screen.orientation && typeof screen.orientation.angle === "number"){
@@ -2204,9 +2208,22 @@ function aplicarTiltVars(){
   mapaWrapTilt.style.setProperty("--tilt-x", "0px");
   mapaWrapTilt.style.setProperty("--tilt-y", "0px");
 }
+function aplanarCamaraTilt(){
+  tilt.target = {rx:0, ry:0, x:0, y:0};
+  tilt.cur = {rx:0, ry:0, x:0, y:0};
+  aplicarTiltVars();
+  if(map && !respaldoRaster){
+    try{ map.jumpTo({ pitch: 0, bearing: 0 }); }catch(_){}
+  }
+}
 function aplicarCamaraDesdeTilt(){
   if(!map || respaldoRaster) return;
-  if(!tilt.on || tilt.paused || S.estado === "POPUP"){
+  if(!tilt.on || tilt.paused || S.estado === "POPUP") return;
+  if(tiltInputBloqueado()){
+    /* mantener plano mientras calibra */
+    if(map.getPitch() > 0.2 || Math.abs(map.getBearing()) > 0.2){
+      map.jumpTo({ pitch: 0, bearing: 0 });
+    }
     return;
   }
   const nx = tilt.cur.ry / tilt.maxDeg;
@@ -2225,6 +2242,7 @@ function resetTiltTargets(){
   tilt.baseGamma = null;
 }
 function setTiltFromAxes(nx, ny){
+  if(tiltInputBloqueado()) return;
   tilt.target.rx = clampTilt(-ny, -1, 1) * tilt.maxDeg;
   tilt.target.ry = clampTilt(nx, -1, 1) * tilt.maxDeg;
   tilt.target.x = clampTilt(nx, -1, 1) * tilt.maxShift;
@@ -2257,9 +2275,16 @@ function onOrientacion(e){
   const beta = e.beta, gamma = e.gamma;
   if(beta == null || gamma == null) return;
   tilt.gyroOk = true;
+  /* durante el lock: recalibrar base a la pose actual → al soltar arranca plano */
+  if(tiltInputBloqueado()){
+    tilt.baseBeta = beta;
+    tilt.baseGamma = gamma;
+    return;
+  }
   if(tilt.baseBeta == null){
     tilt.baseBeta = beta;
     tilt.baseGamma = gamma;
+    return; /* primer sample = cero, sin salto */
   }
   const dBeta = beta - tilt.baseBeta;
   const dGamma = gamma - tilt.baseGamma;
@@ -2275,6 +2300,7 @@ function onOrientacion(e){
   asegurarLoopTilt();
 }
 function setTiltFromClientPoint(clientX, clientY){
+  if(tiltInputBloqueado()) return;
   const r = mapaWrapTilt.getBoundingClientRect();
   if(!r.width || !r.height) return;
   const nx = ((clientX - r.left) / r.width - 0.5) * 2;
@@ -2284,6 +2310,8 @@ function setTiltFromClientPoint(clientX, clientY){
 }
 function onPointerTiltHover(e){
   if(!tilt.on || tilt.paused || S.estado === "POPUP") return;
+  /* celular: solo giroscopio (el touch del botón no debe inclinar) */
+  if(esMobileTilt()) return;
   if(e.pointerType === "touch" || e.pointerType === "pen") return;
   if(e.buttons !== 0) return;
   if(e.target.closest("button, a, .maplibregl-popup, .maplibregl-ctrl, #temaPanel, #zoomCtrl, #btnQr")) return;
@@ -2331,7 +2359,6 @@ function activarInclinacion(si){
   tilt.on = !!si;
   tilt.paused = false;
   tilt.gyroOk = false;
-  /* sin bleed CSS: la inclinación es pitch/bearing de la cámara */
   mapaWrapTilt.classList.remove("tilt-on");
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
@@ -2339,20 +2366,17 @@ function activarInclinacion(si){
   if(tilt.on){
     limitesMapaActivos(true);
     resetTiltTargets();
-    tilt.cur = {rx:0, ry:0, x:0, y:0};
-    aplicarTiltVars();
+    /* lock: en celu el toque del botón no debe inclinar; se calibra el gyro en pose actual */
+    tilt.inputLockHasta = performance.now() + (esMobileTilt() ? 900 : 350);
+    aplanarCamaraTilt();
     modo3D = true;
-    /* empieza desde arriba; el mouse/gyro inclina */
-    if(map && !respaldoRaster){
-      map.jumpTo({ pitch: 0, bearing: 0 });
-    }
     asegurarLoopTilt();
     if(esMobileTilt()) avisarGyroSiFalla();
   }else{
     clearTimeout(tilt.gyroWatch);
+    tilt.inputLockHasta = 0;
     resetTiltTargets();
-    tilt.cur = {rx:0, ry:0, x:0, y:0};
-    aplicarTiltVars();
+    aplanarCamaraTilt();
     asegurarLoopTilt();
     limitesMapaActivos(true);
     modo3D = false;
@@ -2374,9 +2398,7 @@ function pausarTiltPorPopup(pausar){
   tilt.paused = !!pausar;
   if(pausar){
     resetTiltTargets();
-    tilt.cur = {rx:0, ry:0, x:0, y:0};
-    aplicarTiltVars();
-    if(map) map.jumpTo({ pitch: 0, bearing: 0 });
+    aplanarCamaraTilt();
   }
 }
 function resetCamaraPlana(){
