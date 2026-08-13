@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-12-v17-build-24">
+<meta name="totem-version" content="2026-08-13-v17-build-26">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -849,20 +849,15 @@ header{display:none !important;}
   filter:drop-shadow(0 .04em .12em rgba(230, 80, 30, .35));
 }
 #attract .wordmark{
-  font-family:'Archivo Black',sans-serif;
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:900;
+  font-stretch:108%;
   font-size:1em;
   color:var(--sb-texto, #fff);
-  letter-spacing:-0.02em;
+  letter-spacing:-.015em;
   line-height:1;
-  filter:url(#sb-redondear);
-  padding:.12em;
+  padding:.06em 0;
   user-select:none;
-}
-#attract .fill{position:relative;display:inline-block;}
-#attract .fill.a::after{
-  content:"";position:absolute;background:currentColor;
-  border-radius:.08em;
-  left:.285em;top:.305em;width:.2em;height:.29em;
 }
 #attract .heart-wrap{
   display:inline-block;
@@ -905,16 +900,7 @@ header{display:none !important;}
   color:var(--sb-texto, #fff);
   text-shadow:0 2px 12px rgba(230, 80, 30, .45);
 }
-#attract .cta{
-  margin-top:2.2vmin;
-  font-family:'Inter',system-ui,sans-serif;
-  font-weight:600;
-  font-size:clamp(.85rem, 2.4vmin, 1.25rem);
-  color:color-mix(in srgb, var(--sb-texto, #fff) 95%, transparent);
-  text-shadow:0 1px 8px rgba(230, 80, 30, .5);
-  animation:sb-pulso 2.4s ease-in-out infinite;
-  -webkit-text-stroke:0;
-}
+#attract .cta{display:none;}
 @keyframes sb-latido{
   0%   { transform:scale(1); }
   8%   { transform:scale(1.16); }
@@ -1074,7 +1060,6 @@ header{display:none !important;}
   }
   #attract .lockup{font-size:clamp(3.2rem, 20vw, 7rem);}
   #attract .tagline{font-size:clamp(1.05rem, 4.5vw, 1.6rem);margin-top:3vmin;}
-  #attract .cta{font-size:clamp(.8rem, 3.4vw, 1.05rem);}
 
   #demoBar{opacity:.35;transform:scale(.9);transform-origin:bottom left;}
 }
@@ -1247,11 +1232,10 @@ header{display:none !important;}
   <div id="attract">
     <div class="screen">
       <div class="lockup">
-        <span class="wordmark" id="sbWm">B<span class="fill a">A</span></span>
         <span class="heart-wrap"><span class="heart" aria-hidden="true"></span></span>
+        <span class="wordmark" id="sbWm">BA</span>
       </div>
       <p class="tagline">Linda para recorrerla</p>
-      <p class="cta">Tocá la pantalla para ver el recorrido</p>
     </div>
   </div>
 
@@ -1287,7 +1271,7 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 24</div>
+  <div id="buildTag" aria-hidden="true">v17 · 26</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1561,6 +1545,7 @@ const HITOS = [
 
 const CFG = {
   inactividadMs: 60000,
+  introMs: 3000,           // mini intro stand-by → mapa
   slideMs: 5000,
   rotadorMs: 3200,
   nocheDesde: 19, nocheHasta: 7,
@@ -1697,9 +1682,9 @@ function reancorarMarkers(){
 function padMapa(){
   const w = window.innerWidth || 800;
   const h = window.innerHeight || 600;
-  /* deja aire para botones (izq/arriba) y zoom (der/abajo) */
-  if(w < 420) return { top: 56, bottom: Math.max(72, Math.round(h * 0.08)), left: 18, right: 58 };
-  if(w < 768) return { top: 64, bottom: Math.max(80, Math.round(h * 0.07)), left: 22, right: 64 };
+  /* móvil: menos padding → arranca un poco más cerca / con más zoom */
+  if(w < 420) return { top: 40, bottom: Math.max(52, Math.round(h * 0.05)), left: 12, right: 44 };
+  if(w < 768) return { top: 44, bottom: Math.max(56, Math.round(h * 0.05)), left: 14, right: 48 };
   if(w < 1100) return { top: 48, bottom: 56, left: 40, right: 72 };
   return { top: 56, bottom: 64, left: 56, right: 84 };
 }
@@ -1724,8 +1709,8 @@ let huellaMarkers = []; /* legacy; huellas van en capa canvas */
 function grosorRuta(){
   try{
     const g = temaState && temaState.filters && temaState.filters.rutaGrosor;
-    return (g != null) ? g : 3.75;
-  }catch(_){ return 3.75; }
+    return (g != null) ? g : 5.25;
+  }catch(_){ return 5.25; }
 }
 function aplicarGrosorRuta(){
   if(!map || !map.getLayer("ruta-linea")) return;
@@ -1743,7 +1728,9 @@ function limitesMapaActivos(si){
 
 function encuadrar(animado){
   if(!map) return;
-  const opts = { padding: padMapa(), maxZoom: 14.4, duration: animado ? (CFG.flyBoundsMs||1.4)*1000 : 0 };
+  const w = window.innerWidth || 800;
+  const maxZoom = w < 768 ? 15.05 : 14.4;
+  const opts = { padding: padMapa(), maxZoom, duration: animado ? (CFG.flyBoundsMs||1.4)*1000 : 0 };
   if(animado) map.fitBounds(BOUNDS_RUTA, opts);
   else map.fitBounds(BOUNDS_RUTA, { ...opts, duration: 0 });
 }
@@ -2389,8 +2376,9 @@ const tilt = {
   gyroWatch: 0,
   inputLockHasta: 0,
   lockAplanar: false,  /* true solo al activar: aplanar; false tras pan (no snapea a cenital) */
-  sensGyro: 30,        /* más ° = menos sensible (mejor para navegar) */
-  deadGyro: 5,         /* zona muerta en grados */
+  sensGyro: 24,        /* más ° = menos sensible */
+  deadGyro: 4,
+  mouseGain: 1.28,
   touchPointers: 0
 };
 function esMobileTilt(){
@@ -2568,8 +2556,9 @@ function setTiltFromClientPoint(clientX, clientY){
   if(tiltInputBloqueado() || tilt.holding) return;
   const r = mapaWrapTilt.getBoundingClientRect();
   if(!r.width || !r.height) return;
-  const nx = ((clientX - r.left) / r.width - 0.5) * 2;
-  const ny = ((clientY - r.top) / r.height - 0.5) * 2;
+  const g = tilt.mouseGain || 1.28;
+  const nx = ((clientX - r.left) / r.width - 0.5) * 2 * g;
+  const ny = ((clientY - r.top) / r.height - 0.5) * 2 * g;
   /* desktop: ancla 0, el centro del mouse = plano */
   tilt.pitchAnchor = 0;
   tilt.bearingAnchor = 0;
@@ -2770,10 +2759,20 @@ function setModo3D(si){
 
 /* ---------- estado / UI ---------- */
 const S = { estado:"ATTRACT", hito:null, slide:0, _popupLl:null,
-            tInactividad:null, tSlides:null, tRotador:null, _cerrandoPopup:false,
+            tInactividad:null, tIntro:null, tSlides:null, tRotador:null, _cerrandoPopup:false,
             _popupLockHasta:0 };
 const $ = s => document.querySelector(s);
 const attract = $("#attract");
+function pararIntro(){
+  clearTimeout(S.tIntro);
+  S.tIntro = null;
+}
+function arrancarIntro(){
+  pararIntro();
+  S.tIntro = setTimeout(()=>{
+    if(S.estado === "ATTRACT") irA("MAPA");
+  }, CFG.introMs || 3000);
+}
 function irA(estado, dato){
   const anterior = S.estado;
   S.estado = estado;
@@ -2784,6 +2783,9 @@ function irA(estado, dato){
     attract.classList.remove("oculto");
     encuadrar(false);
     resetCamaraPlana();
+    arrancarIntro();
+  }else{
+    pararIntro();
   }
   if(estado === "MAPA"){
     attract.classList.add("oculto");
@@ -3156,13 +3158,16 @@ function aplicarModoCalles(modo){
 }
 function aplicarSensInclinacion(){
   if(typeof tilt === "undefined") return;
-  const s = Number(temaState?.filters?.tiltSens ?? 5);
+  const s = Number(temaState?.filters?.tiltSens ?? 7);
   const t = Math.max(0, Math.min(1, (s - 1) / 9));
-  /* 1 = suave (hace falta inclinar más) · 10 = muy sensible */
-  tilt.sensGyro = 46 - t * 34;  /* 46° → 12° */
-  tilt.deadGyro = 7.5 - t * 4.5; /* 7.5° → 3° */
+  /* 1 = suave · 10 = muy sensible (gyro + mouse) */
+  tilt.sensGyro = 38 - t * 28;   /* 38° → 10° */
+  tilt.deadGyro = 5.5 - t * 3.5; /* 5.5° → 2° */
+  tilt.mouseGain = 1.1 + t * 0.55; /* 1.1 → 1.65 */
+  tilt.maxPitchCam = 56 + t * 10;  /* 56 → 66 */
+  tilt.maxBearingCam = 12 + t * 6; /* 12 → 18 */
 }
-const TEMA_KEY = "totem21k-tema-v21";
+const TEMA_KEY = "totem21k-tema-v22";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -3190,8 +3195,8 @@ const TEMA_DEFAULT = {
     "con": 1.08,
     "sat": 2.5,
     "hue": 339,
-    "rutaGrosor": 3.75,
-    "tiltSens": 5,
+    "rutaGrosor": 5.25,
+    "tiltSens": 7,
     "calles": "solo"
   }
 };
@@ -3268,14 +3273,16 @@ function deepMergeTema(base, patch){
 function cargarTemaGuardado(){
   try{
     const rawV19 = localStorage.getItem(TEMA_KEY);
-    const rawOld = localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
+    const rawOld = localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
     if(rawV19){
       temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV19));
       return;
     }
     if(!rawOld) return;
     temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawOld));
-    /* migración: solo degradé stand-by más oscuro (ref PDF) */
+    /* migración: grosor ruta + sensibilidad inclinación */
+    temaState.filters.rutaGrosor = TEMA_DEFAULT.filters.rutaGrosor;
+    temaState.filters.tiltSens = TEMA_DEFAULT.filters.tiltSens;
     ["sb-grad-1","sb-grad-2","sb-grad-3"].forEach(k=>{
       temaState.colors[k] = TEMA_DEFAULT.colors[k];
     });
@@ -3391,8 +3398,8 @@ function renderPanelTema(){
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
-    const fallback = key === "rutaGrosor" ? 2.5
-      : key === "tiltSens" ? 5
+    const fallback = key === "rutaGrosor" ? 5.25
+      : key === "tiltSens" ? 7
       : key === "tinte" ? 0.82
       : key === "dark" ? 0.04
       : key === "hue" ? 339
