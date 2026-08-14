@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-75">
+<meta name="totem-version" content="2026-08-14-v17-build-81">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -342,8 +342,11 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   font-family:'Archivo',system-ui,sans-serif;
   font-weight:900;font-stretch:112%;font-size:15px;
   letter-spacing:-.02em;
-  border:2px solid #fff;
-  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  border:2.5px solid #111;
+  box-shadow:0 2px 8px rgba(0,0,0,.45);
+  text-shadow:0 0 2px #000, 0 1px 2px #000;
+  -webkit-text-stroke:0.55px #000;
+  paint-order:stroke fill;
   opacity:0;transform:scale(.45);
   transition:opacity .4s ease, transform .4s cubic-bezier(.2,1.2,.3,1);
 }
@@ -358,9 +361,10 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   width:42px;height:42px;
   font-size:18px;
   font-weight:900;
-  border-width:2.5px;
-  box-shadow:0 3px 12px rgba(0,0,0,.4);
-  -webkit-text-stroke:0.35px #fff;
+  border:3px solid #111;
+  box-shadow:0 3px 12px rgba(0,0,0,.5);
+  text-shadow:0 0 2px #000, 0 1px 3px #000;
+  -webkit-text-stroke:0.7px #000;
 }
 #mapa .maplibregl-marker:has(.kmIcono){
   z-index:6 !important;
@@ -1705,7 +1709,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 75</div>
+  <div id="buildTag" aria-hidden="true">v17 · 81</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2028,7 +2032,7 @@ const CFG = {
   slideMs: 5000,
   rotadorMs: 3200,
   nocheDesde: 19, nocheHasta: 7,
-  animarMapa: true,
+  animarMapa: false,       // sin huellas / piecitos
   cicloHuellasMs: 9000,
   pasoHuellaM: 240,        // metros entre pisadas
   zoomHito: 15.25,
@@ -2521,16 +2525,21 @@ function slotAntesDeEdificios(){
   return primerSymbolLayerId();
 }
 function asegurarOrdenCapasRecorrido(){
-  /* abajo → arriba: ruta → huellas-trazado → huellas → edificios 3D */
+  /* ruta debajo de los nombres (los nombres van al costado con offset) */
   if(!map) return;
-  const before = slotAntesDeEdificios();
   try{
-    if(map.getLayer("huellas") && before) map.moveLayer("huellas", before);
-    if(map.getLayer("huellas-trazado") && map.getLayer("huellas")) map.moveLayer("huellas-trazado", "huellas");
-    else if(map.getLayer("huellas-trazado") && before) map.moveLayer("huellas-trazado", before);
-    if(map.getLayer("ruta-linea") && map.getLayer("huellas-trazado")) map.moveLayer("ruta-linea", "huellas-trazado");
-    else if(map.getLayer("ruta-linea") && map.getLayer("huellas")) map.moveLayer("ruta-linea", "huellas");
-    else if(map.getLayer("ruta-linea") && before) map.moveLayer("ruta-linea", before);
+    const beforeSym = primerSymbolLayerId();
+    if(map.getLayer("huellas") && beforeSym) map.moveLayer("huellas", beforeSym);
+    if(map.getLayer("huellas-trazado")){
+      if(map.getLayer("huellas")) map.moveLayer("huellas-trazado", "huellas");
+      else if(beforeSym) map.moveLayer("huellas-trazado", beforeSym);
+    }
+    if(map.getLayer("ruta-linea")){
+      const before = map.getLayer("huellas-trazado")
+        ? "huellas-trazado"
+        : (map.getLayer("huellas") ? "huellas" : beforeSym);
+      if(before) map.moveLayer("ruta-linea", before);
+    }
   }catch(_){}
 }
 function agregarRuta(){
@@ -2772,33 +2781,10 @@ function camaraSeguirTrazado(metros, {instant} = {}){
 }
 function volverEncuadreTrasTrazado(opts){
   if(!map) return;
-  const saltar = !!(opts && opts.saltar);
-  if(saltar){
-    zoomOutSuaveAlSaltar();
-    return;
-  }
-  const w = window.innerWidth || 800;
-  const maxZoom = w < 768 ? 15.05 : 14.4;
-  try{ map.stop(); }catch(_){}
-  try{
-    map.fitBounds(BOUNDS_RUTA, {
-      padding: padMapa(),
-      maxZoom,
-      pitch: 0,
-      bearing: 0,
-      duration: Math.round((CFG.flyBoundsMs || 1.4) * 1000),
-      essential: true,
-      offset: [0, 0]
-    });
-  }catch(_){
-    try{
-      map.easeTo({ pitch: 0, bearing: 0, duration: 900, essential: true });
-      encuadrar(true);
-    }catch(__){}
-  }
-  setTimeout(()=>{ try{ actualizarExtrusion(); }catch(_){} }, 400);
+  /* mismo zoom out suave al terminar o al saltar */
+  zoomOutSuaveAlSaltar();
 }
-/* saltar: zoom out continuo desde la cámara actual (sin salto brusco) */
+/* zoom out continuo desde la cámara actual (fin o saltar) */
 function zoomOutSuaveAlSaltar(){
   if(!map) return;
   const w = window.innerWidth || 800;
@@ -2862,18 +2848,16 @@ function terminarTrazado(opts){
   if(mapaEl) mapaEl.classList.remove("dibujando");
   volverCorazonesBlancosTrasTrazado();
   aplicarAnimacion();
+  asegurarOrdenCapasRecorrido();
   if(tilt.on){
     tilt.paused = false;
     tilt.pitchAnchor = 0;
     tilt.bearingAnchor = 0;
   }
   volverEncuadreTrasTrazado(opts);
-  /* inclinación al final: si saltó, esperar el zoom out suave */
-  if(saltar){
-    setTimeout(()=>{ activarInclinacionTrasTrazado(); }, 2400);
-  }else{
-    activarInclinacionTrasTrazado();
-  }
+  /* esperar el zoom out suave (fin o saltar) antes de inclinación */
+  setTimeout(()=>{ activarInclinacionTrasTrazado(); }, 2400);
+  if(typeof reiniciarInactividad === "function") reiniciarInactividad();
 }
 async function activarInclinacionTrasTrazado(){
   if(!btnInclinar) return;
@@ -2996,6 +2980,7 @@ async function animarTrazado(){
   trazadoActivo = true;
   _trazadoCamListo = false;
   _trazadoCenter = null;
+  try{ clearTimeout(S.tInactividad); }catch(_){}
   const mapaEl = document.getElementById("mapa");
   if(mapaEl) mapaEl.classList.add("dibujando");
   limpiarHuellas();
@@ -3013,7 +2998,7 @@ async function animarTrazado(){
   }
   setRutaCoordsVacias();
   setRutaVisibleTrazado(false);
-  await asegurarCapaHuellasTrazado();
+  /* sin huellas en el trazado */
   if(!trazadoActivo) return;
   /* 1) cámara del recorrido → 2) flip → 3) trazo (misma cámara, sin reacomodar) */
   await camaraIntroRecorrido();
@@ -3022,11 +3007,11 @@ async function animarTrazado(){
   await esperarMs(CFG.trazadoIntroCorazonMs || 900);
   if(!trazadoActivo) return;
   setRutaVisibleTrazado(true);
+  asegurarOrdenCapasRecorrido();
   map.getSource("ruta").setData({
     type: "Feature",
     geometry: { type: "LineString", coordinates: coordsHastaMetros(0) }
   });
-  actualizarHuellasTrazado(0);
   const t0 = performance.now();
   function frame(now){
     if(!trazadoActivo) return;
@@ -3036,7 +3021,6 @@ async function animarTrazado(){
       type: "Feature",
       geometry: { type: "LineString", coordinates: coordsHastaMetros(metros) }
     });
-    actualizarHuellasTrazado(metros);
     revelarKmsHasta(metros);
     revelarCorazones3dCerca(metros);
     camaraSeguirTrazado(metros);
@@ -3954,8 +3938,8 @@ async function generarHuellas(){
   huellaRaf = requestAnimationFrame(tickHuellaOpacidad);
 }
 function aplicarAnimacion(){
-  if(CFG.animarMapa) generarHuellas();
-  else limpiarHuellas();
+  /* piecitos desactivados */
+  limpiarHuellas();
 }
 function renderKms(){ /* KMs se crean en asegurarKms() durante el trazado */ }
 
@@ -4510,14 +4494,10 @@ attract.addEventListener("pointerdown", e=>{
 })();
 
 function reiniciarInactividad(){
-  clearTimeout(S.tInactividad);
-  S.tInactividad = setTimeout(()=>{
-    if(typeof modoEdicion !== "undefined" && modoEdicion) return;
-    irA("ATTRACT");
-  }, CFG.inactividadMs);
+  /* timer de inactividad desactivado */
+  try{ clearTimeout(S.tInactividad); }catch(_){}
+  S.tInactividad = null;
 }
-["pointerdown","pointermove","keydown"].forEach(ev=>
-  document.addEventListener(ev, reiniciarInactividad, {passive:true}));
 document.addEventListener("contextmenu", e=> e.preventDefault());
 
 document.getElementById("zMas").addEventListener("pointerdown", e=>{
@@ -4809,7 +4789,7 @@ function aplicarModoCalles(modo){
   const m = (modo === "simple") ? "medio"
     : (modo === "nada") ? "solo"
     : (modo || "completo");
-  const CUSTOM = { huellas: 1 };
+  const CUSTOM = { huellas: 1, "huellas-trazado": 1 };
   for(const layer of style.layers){
     if(layer.type !== "symbol") continue;
     const id = layer.id;
@@ -4826,6 +4806,8 @@ function aplicarModoCalles(modo){
       || /housenumber|park.?label|mountain|peak|aerodrome|building.?name/i.test(id);
     const hasText = !!(layer.layout && layer.layout["text-field"] != null);
     const isLabel = isCalle || isLugar || isAgua || isOtro || isPoi || hasText;
+    const esMenor = /minor|path/i.test(id);
+    const esMayor = /major|shield|motorway|primary|secondary/i.test(id);
 
     let vis = "visible";
     if(m === "solo"){
@@ -4834,17 +4816,80 @@ function aplicarModoCalles(modo){
       if(isPoi || isLugar || isAgua || isOtro || (!isCalle && isLabel)){
         vis = "none";
       }else if(isCalle){
-        const esMenor = /minor|path/i.test(id);
-        const esMayor = /major|shield/i.test(id);
-        vis = esMenor ? "none" : (esMayor ? "visible" : "none");
+        /* principales + shields; sin callecitas/path */
+        vis = esMenor ? "none" : "visible";
       }
     }else{
       /* completo: nombres sí, POIs de íconos no */
       vis = isPoi ? "none" : "visible";
     }
     try{ map.setLayoutProperty(id, "visibility", vis); }catch(_){}
+    if(vis !== "visible") continue;
+    if(!isCalle && !(m === "completo" && (isLugar || isAgua))) continue;
+
+    /* no tocar text-font: OpenFreeMap solo tiene Noto Sans Regular/Italic */
+    if(m === "completo"){
+      if(isCalle){
+        try{
+          map.setLayerZoomRange(
+            id,
+            esMenor ? 13.2 : 11.2,
+            24
+          );
+        }catch(_){}
+        try{
+          map.setLayoutProperty(id, "text-size", [
+            "interpolate", ["linear"], ["zoom"],
+            11, esMenor ? 12 : 14,
+            13, esMenor ? 14 : 17,
+            15, esMenor ? 17 : 22,
+            17, esMenor ? 20 : 28
+          ]);
+        }catch(_){}
+        /* al costado de la calzada / línea del recorrido (no encima) */
+        if(!/shield/i.test(id)){
+          try{
+            map.setLayoutProperty(id, "text-offset", [
+              0,
+              esMenor ? 1.05 : 1.4
+            ]);
+          }catch(_){}
+          try{ map.setLayoutProperty(id, "text-padding", 2); }catch(_){}
+        }
+      }else{
+        try{
+          map.setLayoutProperty(id, "text-size", [
+            "interpolate", ["linear"], ["zoom"],
+            11, 12,
+            14, 16,
+            16, 20
+          ]);
+        }catch(_){}
+      }
+      try{ map.setPaintProperty(id, "text-color", "#ffffff"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-color", "#000000"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-width", isCalle ? 2.8 : 2.2); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-blur", 0.1); }catch(_){}
+      try{ map.setPaintProperty(id, "text-opacity", 1); }catch(_){}
+    }else if(isCalle){
+      try{
+        map.setLayoutProperty(id, "text-size", [
+          "interpolate", ["linear"], ["zoom"],
+          12, 12,
+          14, 15,
+          16, 18
+        ]);
+      }catch(_){}
+      try{ map.setPaintProperty(id, "text-color", "#ffffff"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-color", "#000000"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-width", 2); }catch(_){}
+      if(!/shield/i.test(id)){
+        try{ map.setLayoutProperty(id, "text-offset", [0, 1.15]); }catch(_){}
+      }
+    }
   }
   aplicarModoCalles._actual = m;
+  asegurarOrdenCapasRecorrido();
 }
 function aplicarSensInclinacion(){
   if(typeof tilt === "undefined") return;
@@ -4905,7 +4950,7 @@ const TEMA_DEFAULT = {
     "hue": 339,
     "rutaGrosor": 5.25,
     "tiltSens": 7,
-    "calles": "solo",
+    "calles": "completo",
     "mapLook": "degrade",
     "mapDegrade": true,
     "trazadoTempo": 5,
