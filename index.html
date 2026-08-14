@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-81">
+<meta name="totem-version" content="2026-08-14-v17-build-82">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4918,7 +4918,7 @@ function cfgCamaraSuavidad(){
     centerLerp: 0.055 - u * 0.028   /* 0.055 → 0.027 */
   };
 }
-const TEMA_KEY = "totem21k-tema-v26";
+const TEMA_KEY = "totem21k-tema-v27";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -4950,9 +4950,9 @@ const TEMA_DEFAULT = {
     "hue": 339,
     "rutaGrosor": 5.25,
     "tiltSens": 7,
-    "calles": "completo",
-    "mapLook": "degrade",
-    "mapDegrade": true,
+    "calles": "medio",
+    "mapLook": "satellite",
+    "mapDegrade": false,
     "trazadoTempo": 5,
     "trazadoSuavidad": 5
   }
@@ -5047,20 +5047,26 @@ function deepMergeTema(base, patch){
 }
 function cargarTemaGuardado(){
   try{
-    const rawV26 = localStorage.getItem(TEMA_KEY);
-    const rawOld = localStorage.getItem("totem21k-tema-v25") || localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
-    if(rawV26){
-      temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV26));
+    const rawV27 = localStorage.getItem(TEMA_KEY);
+    const rawOld = localStorage.getItem("totem21k-tema-v26") || localStorage.getItem("totem21k-tema-v25") || localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
+    if(rawV27){
+      temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV27));
       return;
     }
-    if(!rawOld) return;
-    temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawOld));
-    /* migración v26: degradé Degrade2 como estándar */
+    /* v27 estándar: satélite + calles medio (ignora prefs viejas de look/calles) */
+    if(rawOld){
+      temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawOld));
+    }
+    temaState.filters.mapLook = TEMA_DEFAULT.filters.mapLook;
+    temaState.filters.mapDegrade = TEMA_DEFAULT.filters.mapDegrade;
+    temaState.filters.calles = TEMA_DEFAULT.filters.calles;
+    temaState.filters.rutaGrosor = TEMA_DEFAULT.filters.rutaGrosor;
+    temaState.filters.tiltSens = TEMA_DEFAULT.filters.tiltSens;
+    temaState.filters.trazadoTempo = TEMA_DEFAULT.filters.trazadoTempo;
+    temaState.filters.trazadoSuavidad = TEMA_DEFAULT.filters.trazadoSuavidad;
     ["map-grad-1","map-grad-2","map-grad-3","map-grad-4","map-grad-5"].forEach(k=>{
       temaState.colors[k] = TEMA_DEFAULT.colors[k];
     });
-    temaState.filters.rutaGrosor = TEMA_DEFAULT.filters.rutaGrosor;
-    temaState.filters.tiltSens = TEMA_DEFAULT.filters.tiltSens;
     ["sb-grad-1","sb-grad-2","sb-grad-3"].forEach(k=>{
       temaState.colors[k] = TEMA_DEFAULT.colors[k];
     });

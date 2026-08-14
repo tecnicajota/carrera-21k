@@ -1,0 +1,38 @@
+{
+  "colors": {
+    "tinta": "#183246",
+    "marca": "#EF981F",
+    "acento": "#EF981F",
+    "sb-grad-1": "#9b2677",
+    "sb-grad-2": "#c53737",
+    "sb-grad-3": "#dfa63f",
+    "sb-texto": "#ffffff",
+    "sb-borde": "#ffffff",
+    "map-grad-1": "#AE2087",
+    "map-grad-2": "#EC1484",
+    "map-grad-3": "#EC2630",
+    "map-grad-4": "#F05C26",
+    "map-grad-5": "#F8BA1B",
+    "fondo": "#F3F2F1",
+    "ruta": "#F7C21C",
+    "hito": "#FFFFFF",
+    "boton": "#FFFFFF",
+    "tarjeta": "#FFFFFF"
+  },
+  "filters": {
+    "blend": "multiply",
+    "tinte": 0.62,
+    "bri": 0.99,
+    "dark": 0.04,
+    "con": 1.08,
+    "sat": 2.5,
+    "hue": 339,
+    "rutaGrosor": 5.25,
+    "tiltSens": 7,
+    "calles": "medio",
+    "mapLook": "satellite",
+    "mapDegrade": false,
+    "trazadoTempo": 5,
+    "trazadoSuavidad": 5
+  }
+}
