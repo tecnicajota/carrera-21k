@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-64">
+<meta name="totem-version" content="2026-08-14-v17-build-65">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -904,7 +904,7 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 #btnSaltarTrazado{
   position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom, 0px));
   transform:translateX(-50%);
-  z-index:920;
+  z-index:930;
   display:none;
   align-items:center;justify-content:center;
   padding:12px 22px;min-height:44px;border-radius:99px;
@@ -912,9 +912,19 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   font-family:'Archivo',system-ui,sans-serif;
   font-weight:700;font-size:13px;letter-spacing:-.01em;
   color:var(--tinta);box-shadow:var(--sombra);
+  pointer-events:auto;
 }
 #btnSaltarTrazado.visible{display:inline-flex;}
 #btnSaltarTrazado:active{transform:translateX(-50%) scale(.96);background:var(--acento);color:var(--tarjeta);}
+/* durante el trazado: captura toques; solo “Saltar” queda por encima */
+#trazadoLock{
+  position:absolute;inset:0;z-index:910;
+  display:none;
+  pointer-events:auto;
+  touch-action:none;
+  background:transparent;
+}
+#trazadoLock.visible{display:block;}
 @media (max-width: 768px){
   #btnSaltarTrazado{
     bottom:calc(16px + env(safe-area-inset-bottom, 0px));
@@ -1665,6 +1675,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     <div id="toast3d" class="toast-3d" role="status" aria-live="polite"></div>
     <div class="hint" hidden></div>
     <button id="btnSaltarTrazado" type="button" hidden>Saltar animación</button>
+    <div id="trazadoLock" hidden aria-hidden="true"></div>
     <button id="btnInclinar" type="button" aria-pressed="false" aria-label="Inclinación" title="Inclinación">
       <svg class="ico-inclinar" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="8" y="3.2" width="8" height="17.6" rx="1.7" stroke="currentColor" stroke-width="2" transform="rotate(-20 12 12)"/>
@@ -1694,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 64</div>
+  <div id="buildTag" aria-hidden="true">v17 · 65</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2465,9 +2476,39 @@ function coordsHastaMetros(metros){
 }
 function mostrarBtnSaltarTrazado(si){
   const btn = document.getElementById("btnSaltarTrazado");
-  if(!btn) return;
-  btn.hidden = !si;
-  btn.classList.toggle("visible", !!si);
+  if(btn){
+    btn.hidden = !si;
+    btn.classList.toggle("visible", !!si);
+  }
+  const lock = document.getElementById("trazadoLock");
+  if(lock){
+    lock.hidden = !si;
+    lock.classList.toggle("visible", !!si);
+    lock.setAttribute("aria-hidden", si ? "false" : "true");
+  }
+  /* congelar gestos del mapa: el toque no debe cortar ni pelear con el recorrido */
+  if(map){
+    try{
+      if(si){
+        map.dragPan.disable();
+        map.dragRotate.disable();
+        map.scrollZoom.disable();
+        map.touchZoomRotate.disable();
+        map.touchPitch.disable();
+        map.boxZoom.disable();
+        map.keyboard.disable();
+        map.doubleClickZoom.disable();
+      }else{
+        map.dragPan.enable();
+        map.dragRotate.enable();
+        map.scrollZoom.enable();
+        map.touchZoomRotate.enable();
+        map.touchPitch.enable();
+        map.boxZoom.enable();
+        map.keyboard.enable();
+      }
+    }catch(_){}
+  }
 }
 function bearingEntreLatLng(a, b){
   /* a,b = [lat,lng] → rumbo geodésico approx. en grados MapLibre */
@@ -3089,11 +3130,13 @@ function crearPinEl(h, delay){
   /* corazón: solo zoom / enfoque */
   el.addEventListener("click", e=>{
     e.stopPropagation();
+    if(trazadoActivo) return;
     volarAHito(h);
   });
   /* puntito: abre el popup */
   info.addEventListener("click", e=>{
     e.stopPropagation();
+    if(trazadoActivo) return;
     abrirPopupHito(h);
   });
   return root;
@@ -4106,14 +4149,17 @@ document.addEventListener("contextmenu", e=> e.preventDefault());
 
 document.getElementById("zMas").addEventListener("pointerdown", e=>{
   e.stopPropagation();
+  if(trazadoActivo) return;
   map.zoomTo(map.getZoom() + 0.35, { duration: 250 });
 });
 document.getElementById("zMenos").addEventListener("pointerdown", e=>{
   e.stopPropagation();
+  if(trazadoActivo) return;
   map.zoomTo(map.getZoom() - 0.35, { duration: 250 });
 });
 document.getElementById("zReset").addEventListener("pointerdown", e=>{
   e.stopPropagation();
+  if(trazadoActivo) return;
   encuadrar(true);
 });
 document.getElementById("btnSaltarTrazado")?.addEventListener("pointerdown", e=>{
@@ -4122,6 +4168,12 @@ document.getElementById("btnSaltarTrazado")?.addEventListener("pointerdown", e=>
   saltarTrazado();
   if(typeof reiniciarInactividad === "function") reiniciarInactividad();
 });
+/* el lock come toques; no deja que lleguen al mapa */
+document.getElementById("trazadoLock")?.addEventListener("pointerdown", e=>{
+  e.preventDefault();
+  e.stopPropagation();
+  if(typeof reiniciarInactividad === "function") reiniciarInactividad();
+}, {passive:false});
 
 /* geoloc — punto blanco + seguir ubicación */
 const btnUbicacion = document.getElementById("btnUbicacion");
