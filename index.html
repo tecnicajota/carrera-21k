@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-73">
+<meta name="totem-version" content="2026-08-14-v17-build-74">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 73</div>
+  <div id="buildTag" aria-hidden="true">v17 · 74</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2719,6 +2719,7 @@ function cfgTrazadoCam(){
 function poseCamaraTrazado(metros){
   const tip = puntoEn(metros);
   const camCfg = cfgTrazadoCam();
+  const suave = (typeof cfgCamaraSuavidad === "function") ? cfgCamaraSuavidad() : null;
   const look = camCfg.look;
   const camM = Math.min(LARGO_TOTAL - 0.1, metros + look);
   const camPt = puntoEn(camM);
@@ -2726,9 +2727,18 @@ function poseCamaraTrazado(metros){
   const back = puntoEn(backM);
   const rumboA = bearingEntreLatLng(camPt.latlng, tip.latlng);
   const rumboB = bearingEntreLatLng(camPt.latlng, back.latlng);
+  const mix = suave ? suave.bearingMix : 0.48;
+  let bearing = lerpBearing(rumboA, rumboB, mix);
+  /* suavidad alta: promedia rumbo un poco más adelante (curvas menos secas) */
+  if(suave && suave.lookSmooth > 20){
+    const aheadM = Math.min(LARGO_TOTAL - 0.1, camM + suave.lookSmooth);
+    const ahead = puntoEn(aheadM);
+    const rumboC = bearingEntreLatLng(camPt.latlng, ahead.latlng);
+    bearing = lerpBearing(bearing, rumboC, 0.22 + (suave.bearingMix - 0.42) * 0.35);
+  }
   return {
     center: aLngLat(camPt.latlng),
-    bearing: lerpBearing(rumboA, rumboB, 0.48),
+    bearing,
     zoom: camCfg.zoom,
     pitch: respaldoRaster ? 0 : camCfg.pitch,
     offsetY: camCfg.offsetY
@@ -2750,13 +2760,16 @@ function jumpPoseTrazado(pose){
 function camaraSeguirTrazado(metros, {instant} = {}){
   if(!map) return;
   const pose = poseCamaraTrazado(metros);
+  const suave = (typeof cfgCamaraSuavidad === "function")
+    ? cfgCamaraSuavidad()
+    : { bearingLerp: 0.028, centerLerp: 0.038 };
   if(!_trazadoCamListo || instant){
     _trazadoBearing = pose.bearing;
     _trazadoCenter = pose.center.slice();
     _trazadoCamListo = true;
   }else{
-    _trazadoBearing = lerpBearing(_trazadoBearing, pose.bearing, 0.028);
-    _trazadoCenter = lerpLngLat(_trazadoCenter, pose.center, 0.038);
+    _trazadoBearing = lerpBearing(_trazadoBearing, pose.bearing, suave.bearingLerp);
+    _trazadoCenter = lerpLngLat(_trazadoCenter, pose.center, suave.centerLerp);
   }
   jumpPoseTrazado({
     center: _trazadoCenter,
@@ -3000,8 +3013,9 @@ async function animarTrazado(){
   asegurarKms();
   ocultarKms();
   mostrarBtnSaltarTrazado(true);
+  const dur = (typeof duracionTrazadoMs === "function") ? duracionTrazadoMs() : (CFG.trazadoMs || 52000);
   const introTotal = (CFG.trazadoIntroZoomMs || 1400) + (CFG.trazadoIntroCorazonMs || 900);
-  tilt.inputLockHasta = performance.now() + (CFG.trazadoMs || 52000) + introTotal + 2500;
+  tilt.inputLockHasta = performance.now() + dur + introTotal + 2500;
   if(tilt.on){
     tilt.paused = true;
     aplicarTiltVars();
@@ -3022,7 +3036,6 @@ async function animarTrazado(){
     geometry: { type: "LineString", coordinates: coordsHastaMetros(0) }
   });
   actualizarHuellasTrazado(0);
-  const dur = CFG.trazadoMs || 52000;
   const t0 = performance.now();
   function frame(now){
     if(!trazadoActivo) return;
@@ -4853,6 +4866,23 @@ function aplicarSensInclinacion(){
   tilt.maxPitchCam = 56 + t * 10;  /* 56 → 66 */
   tilt.maxBearingCam = 12 + t * 6; /* 12 → 18 */
 }
+/* panel: 1 rápida (~28s) · 5 normal (~52s) · 10 lenta (~110s) */
+function duracionTrazadoMs(){
+  const t = Number(temaState?.filters?.trazadoTempo ?? 5);
+  const u = (Math.max(1, Math.min(10, t)) - 1) / 9;
+  return Math.round(28000 + u * 82000);
+}
+/* panel: 1 seca · 10 suave (cámara en curvas) */
+function cfgCamaraSuavidad(){
+  const s = Number(temaState?.filters?.trazadoSuavidad ?? 7);
+  const u = (Math.max(1, Math.min(10, s)) - 1) / 9;
+  return {
+    bearingLerp: 0.06 - u * 0.048,
+    centerLerp: 0.075 - u * 0.052,
+    bearingMix: 0.42 + u * 0.22,
+    lookSmooth: 30 + u * 110
+  };
+}
 const TEMA_KEY = "totem21k-tema-v26";
 const TEMA_DEFAULT = {
   "colors": {
@@ -4887,7 +4917,9 @@ const TEMA_DEFAULT = {
     "tiltSens": 7,
     "calles": "solo",
     "mapLook": "degrade",
-    "mapDegrade": true
+    "mapDegrade": true,
+    "trazadoTempo": 5,
+    "trazadoSuavidad": 7
   }
 };
 const CALLES_OPTIONS = [
@@ -4939,6 +4971,8 @@ const BLEND_OPTIONS = [
 const FILTER_META = {
   rutaGrosor: {label: "Grosor del recorrido", min: 1, max: 10, step: 0.25},
   tiltSens: {label: "Sensibilidad inclinación", min: 1, max: 10, step: 1},
+  trazadoTempo: {label: "Velocidad del trazado", min: 1, max: 10, step: 1},
+  trazadoSuavidad: {label: "Suavidad de curvas", min: 1, max: 10, step: 1},
   tinte: {label: "Opacidad del degradé", min: 0, max: 1, step: 0.01},
   bri: {label: "Brillo del mapa", min: 0.4, max: 1.8, step: 0.01},
   dark: {label: "Oscuridad del mapa", min: 0, max: 1, step: 0.01},
@@ -5130,12 +5164,14 @@ function renderPanelTema(){
       ${BLEND_OPTIONS.map(o => `<option value="${o.value}"${o.value===blendVal?" selected":""}>${o.label}</option>`).join("")}
     </select>`;
   filtros.appendChild(blendField);
-  const filterKeys = ["rutaGrosor", "tiltSens", "tinte", "bri", "dark", "con", "sat", "hue"];
+  const filterKeys = ["rutaGrosor", "tiltSens", "trazadoTempo", "trazadoSuavidad", "tinte", "bri", "dark", "con", "sat", "hue"];
   for(const key of filterKeys){
     const meta = FILTER_META[key];
     if(!meta) continue;
     const fallback = key === "rutaGrosor" ? 8.5
       : key === "tiltSens" ? 7
+      : key === "trazadoTempo" ? 5
+      : key === "trazadoSuavidad" ? 7
       : key === "tinte" ? 0.82
       : key === "dark" ? 0.04
       : key === "hue" ? 339
@@ -5146,7 +5182,13 @@ function renderPanelTema(){
     const val = temaState.filters[key] ?? fallback;
     const field = document.createElement("div");
     field.className = "temaField";
-    const hint = key === "tiltSens" ? ` <small style="font-weight:600;opacity:.65">(1 suave · 10 fuerte)</small>` : "";
+    let hint = "";
+    if(key === "tiltSens") hint = ` <small style="font-weight:600;opacity:.65">(1 suave · 10 fuerte)</small>`;
+    if(key === "trazadoTempo"){
+      const secs = Math.round((28000 + ((Math.max(1, Math.min(10, Number(val))) - 1) / 9) * 82000) / 1000);
+      hint = ` <small style="font-weight:600;opacity:.65">(1 rápida · 10 lenta · <span data-tempo-secs>~${secs}s</span>)</small>`;
+    }
+    if(key === "trazadoSuavidad") hint = ` <small style="font-weight:600;opacity:.65">(1 seca · 10 suave)</small>`;
     field.innerHTML = `
       <label>${meta.label}${hint} <span class="temaVal" data-fval="${key}">${val}</span></label>
       <input type="range" data-filter="${key}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${val}">`;
@@ -5239,6 +5281,11 @@ function initPanelTema(){
     temaState.filters[key] = num;
     const lab = document.querySelector(`[data-fval="${key}"]`);
     if(lab) lab.textContent = String(num);
+    if(key === "trazadoTempo"){
+      const secs = Math.round(duracionTrazadoMs() / 1000);
+      const secEl = document.querySelector("[data-tempo-secs]");
+      if(secEl) secEl.textContent = `~${secs}s`;
+    }
     aplicarTemaLive();
   });
   document.getElementById("temaFiltros").addEventListener("change", e=>{
