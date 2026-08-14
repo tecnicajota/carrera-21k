@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-65">
+<meta name="totem-version" content="2026-08-14-v17-build-66">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -203,13 +203,13 @@ body.noche .maplibregl-canvas-container{
   pointer-events:none;
   background:linear-gradient(
     175deg,
-    var(--map-grad-1, var(--sb-grad-1, #c2187a)) 0%,
-    var(--map-grad-1, var(--sb-grad-1, #c2187a)) 8%,
-    var(--map-grad-2, #e03555) 28%,
-    var(--map-grad-3, var(--sb-grad-2, #ef4a28)) 50%,
-    var(--map-grad-4, #f58220) 72%,
-    var(--map-grad-5, var(--sb-grad-3, #ffc52e)) 92%,
-    var(--map-grad-5, var(--sb-grad-3, #ffc52e)) 100%
+    var(--map-grad-1, var(--sb-grad-1, #AE2087)) 0%,
+    var(--map-grad-1, var(--sb-grad-1, #AE2087)) 8%,
+    var(--map-grad-2, #EC1484) 28%,
+    var(--map-grad-3, var(--sb-grad-2, #EC2630)) 50%,
+    var(--map-grad-4, #F05C26) 72%,
+    var(--map-grad-5, var(--sb-grad-3, #F8BA1B)) 92%,
+    var(--map-grad-5, var(--sb-grad-3, #F8BA1B)) 100%
   );
   opacity:var(--map-tinte-op, 0.82);
 }
@@ -230,13 +230,13 @@ path.trazaRuta{
   overflow:hidden;
   background:linear-gradient(
     175deg,
-    var(--map-grad-1, #c2187a) 0%,
-    var(--map-grad-1, #c2187a) 8%,
-    var(--map-grad-2, #e03555) 28%,
-    var(--map-grad-3, #ef4a28) 50%,
-    var(--map-grad-4, #f58220) 72%,
-    var(--map-grad-5, #ffc52e) 92%,
-    var(--map-grad-5, #ffc52e) 100%
+    var(--map-grad-1, #AE2087) 0%,
+    var(--map-grad-1, #AE2087) 8%,
+    var(--map-grad-2, #EC1484) 28%,
+    var(--map-grad-3, #EC2630) 50%,
+    var(--map-grad-4, #F05C26) 72%,
+    var(--map-grad-5, #F8BA1B) 92%,
+    var(--map-grad-5, #F8BA1B) 100%
   );
 }
 #tiltStage #mapa{
@@ -1570,13 +1570,13 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   position:absolute; inset:0; z-index:1; pointer-events:none;
   background:linear-gradient(
     175deg,
-    var(--map-grad-1, #c2187a) 0%,
-    var(--map-grad-1, #c2187a) 8%,
-    var(--map-grad-2, #e03555) 28%,
-    var(--map-grad-3, #ef4a28) 50%,
-    var(--map-grad-4, #f58220) 72%,
-    var(--map-grad-5, #ffc52e) 92%,
-    var(--map-grad-5, #ffc52e) 100%
+    var(--map-grad-1, #AE2087) 0%,
+    var(--map-grad-1, #AE2087) 8%,
+    var(--map-grad-2, #EC1484) 28%,
+    var(--map-grad-3, #EC2630) 50%,
+    var(--map-grad-4, #F05C26) 72%,
+    var(--map-grad-5, #F8BA1B) 92%,
+    var(--map-grad-5, #F8BA1B) 100%
   );
   opacity:var(--map-tinte-op, 0.35);
   mix-blend-mode:var(--map-blend, multiply);
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 65</div>
+  <div id="buildTag" aria-hidden="true">v17 · 66</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2640,8 +2640,21 @@ function terminarTrazado(){
     tilt.bearingAnchor = 0;
   }
   volverEncuadreTrasTrazado();
+  /* al salir del recorrido: inclinación ya activa (compu + móvil) */
+  activarInclinacionTrasTrazado();
 }
-function saltarTrazado(){
+async function activarInclinacionTrasTrazado(){
+  if(!btnInclinar) return;
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if(tilt.on){
+    tilt.paused = false;
+    return;
+  }
+  if(esMobileTilt()){
+    try{ await pedirPermisoOrientacion(); }catch(_){}
+  }
+  activarInclinacion(true, {quiet: true});
+}
   if(!trazadoActivo) return;
   terminarTrazado();
 }
@@ -3905,7 +3918,8 @@ function bindTiltMapGestures(m){
   /* ya no usamos dragstart/pitchstart (desincronizaban y trababan el pan) */
   if(!m) return;
 }
-function activarInclinacion(si){
+function activarInclinacion(si, opts){
+  const quiet = !!(opts && opts.quiet);
   tilt.on = !!si;
   tilt.paused = false;
   tilt.gyroOk = false;
@@ -3929,11 +3943,15 @@ function activarInclinacion(si){
     modo3D = true;
     try{ actualizarExtrusion(); }catch(_){}
     asegurarLoopTilt();
-    if(esMobileTilt()){
+    if(!quiet){
+      if(esMobileTilt()){
+        avisarGyroSiFalla();
+        toast3d("incliná suave · al tocar el mapa se congela");
+      }else{
+        toast3d("mové el mouse · al arrastrar el mapa se congela");
+      }
+    }else if(esMobileTilt()){
       avisarGyroSiFalla();
-      toast3d("incliná suave · al tocar el mapa se congela");
-    }else{
-      toast3d("mové el mouse · al arrastrar el mapa se congela");
     }
   }else{
     clearTimeout(tilt.gyroWatch);
@@ -4481,7 +4499,7 @@ function aplicarSensInclinacion(){
   tilt.maxPitchCam = 56 + t * 10;  /* 56 → 66 */
   tilt.maxBearingCam = 12 + t * 6; /* 12 → 18 */
 }
-const TEMA_KEY = "totem21k-tema-v25";
+const TEMA_KEY = "totem21k-tema-v26";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -4492,11 +4510,11 @@ const TEMA_DEFAULT = {
     "sb-grad-3": "#dfa63f",
     "sb-texto": "#ffffff",
     "sb-borde": "#ffffff",
-    "map-grad-1": "#c2187a",
-    "map-grad-2": "#e03555",
-    "map-grad-3": "#ef4a28",
-    "map-grad-4": "#f58220",
-    "map-grad-5": "#ffc52e",
+    "map-grad-1": "#AE2087",
+    "map-grad-2": "#EC1484",
+    "map-grad-3": "#EC2630",
+    "map-grad-4": "#F05C26",
+    "map-grad-5": "#F8BA1B",
     "fondo": "#F3F2F1",
     "ruta": "#F7C21C",
     "hito": "#FFFFFF",
@@ -4511,7 +4529,7 @@ const TEMA_DEFAULT = {
     "con": 1.08,
     "sat": 2.5,
     "hue": 339,
-    "rutaGrosor": 8.5,
+    "rutaGrosor": 5.25,
     "tiltSens": 7,
     "calles": "solo"
   }
@@ -4594,15 +4612,18 @@ function deepMergeTema(base, patch){
 }
 function cargarTemaGuardado(){
   try{
-    const rawV19 = localStorage.getItem(TEMA_KEY);
-    const rawOld = localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
-    if(rawV19){
-      temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV19));
+    const rawV26 = localStorage.getItem(TEMA_KEY);
+    const rawOld = localStorage.getItem("totem21k-tema-v25") || localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
+    if(rawV26){
+      temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV26));
       return;
     }
     if(!rawOld) return;
     temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawOld));
-    /* migración: grosor ruta + sensibilidad inclinación */
+    /* migración v26: degradé Degrade2 como estándar */
+    ["map-grad-1","map-grad-2","map-grad-3","map-grad-4","map-grad-5"].forEach(k=>{
+      temaState.colors[k] = TEMA_DEFAULT.colors[k];
+    });
     temaState.filters.rutaGrosor = TEMA_DEFAULT.filters.rutaGrosor;
     temaState.filters.tiltSens = TEMA_DEFAULT.filters.tiltSens;
     ["sb-grad-1","sb-grad-2","sb-grad-3"].forEach(k=>{
