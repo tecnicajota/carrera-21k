@@ -334,6 +334,9 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 .km-wrap{
   width:34px;height:34px;
   pointer-events:none;
+  transform:scale(var(--km-zoom-scale, 1));
+  transform-origin:center center;
+  will-change:transform;
 }
 .kmIcono{
   width:34px;height:34px;border-radius:50%;
@@ -1709,7 +1712,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 81</div>
+  <div id="buildTag" aria-hidden="true">v17 · 82</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2623,6 +2626,19 @@ function revelarTodosKms(){
   kmMarkers.forEach(k=>{
     k.visible = true;
     k.el.classList.add("visible");
+  });
+  actualizarTamanoKmsPorZoom();
+}
+/* al acercar zoom, los KM no se achican tanto (crecen un poco en px) */
+function actualizarTamanoKmsPorZoom(){
+  if(!map || !kmMarkers.length) return;
+  const z = map.getZoom();
+  /* overview ~13 → 1.0 · cerca ~16.2 → ~1.42 */
+  const t = Math.max(0, Math.min(1, (z - 13.0) / 3.2));
+  const s = 1 + t * 0.42;
+  kmMarkers.forEach(k=>{
+    const wrap = k.marker && k.marker.getElement && k.marker.getElement();
+    if(wrap) wrap.style.setProperty("--km-zoom-scale", String(Math.round(s * 100) / 100));
   });
 }
 function metrosHastaPunto(idx){
@@ -4764,8 +4780,8 @@ function initMap(){
   map.on("pitch", actualizarExtrusion);
   map.on("pitchend", syncBoton3DDesdePitch);
   map.on("resize", ()=>{ ajustarZoomMin(); });
-  map.on("zoom", ()=>{ aplicarGrosorRuta(); });
-  map.on("zoomend", ()=>{ reancorarMarkers(); });
+  map.on("zoom", ()=>{ aplicarGrosorRuta(); actualizarTamanoKmsPorZoom(); });
+  map.on("zoomend", ()=>{ reancorarMarkers(); actualizarTamanoKmsPorZoom(); });
   map.on("moveend", ()=>{ reancorarMarkers(); });
   map.on("click", onMapClickCerrarPopup);
 
