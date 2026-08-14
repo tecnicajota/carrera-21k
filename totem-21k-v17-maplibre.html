@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-74">
+<meta name="totem-version" content="2026-08-14-v17-build-75">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 74</div>
+  <div id="buildTag" aria-hidden="true">v17 · 75</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2719,7 +2719,6 @@ function cfgTrazadoCam(){
 function poseCamaraTrazado(metros){
   const tip = puntoEn(metros);
   const camCfg = cfgTrazadoCam();
-  const suave = (typeof cfgCamaraSuavidad === "function") ? cfgCamaraSuavidad() : null;
   const look = camCfg.look;
   const camM = Math.min(LARGO_TOTAL - 0.1, metros + look);
   const camPt = puntoEn(camM);
@@ -2727,18 +2726,10 @@ function poseCamaraTrazado(metros){
   const back = puntoEn(backM);
   const rumboA = bearingEntreLatLng(camPt.latlng, tip.latlng);
   const rumboB = bearingEntreLatLng(camPt.latlng, back.latlng);
-  const mix = suave ? suave.bearingMix : 0.48;
-  let bearing = lerpBearing(rumboA, rumboB, mix);
-  /* suavidad alta: promedia rumbo un poco más adelante (curvas menos secas) */
-  if(suave && suave.lookSmooth > 20){
-    const aheadM = Math.min(LARGO_TOTAL - 0.1, camM + suave.lookSmooth);
-    const ahead = puntoEn(aheadM);
-    const rumboC = bearingEntreLatLng(camPt.latlng, ahead.latlng);
-    bearing = lerpBearing(bearing, rumboC, 0.22 + (suave.bearingMix - 0.42) * 0.35);
-  }
+  /* mix fijo (como antes): directo; la suavidad va en el lerp de seguimiento */
   return {
     center: aLngLat(camPt.latlng),
-    bearing,
+    bearing: lerpBearing(rumboA, rumboB, 0.48),
     zoom: camCfg.zoom,
     pitch: respaldoRaster ? 0 : camCfg.pitch,
     offsetY: camCfg.offsetY
@@ -4872,15 +4863,14 @@ function duracionTrazadoMs(){
   const u = (Math.max(1, Math.min(10, t)) - 1) / 9;
   return Math.round(28000 + u * 82000);
 }
-/* panel: 1 seca · 10 suave (cámara en curvas) */
+/* panel: 1 más reactiva · 5 = como antes · 10 un poco más suave (sin lag) */
 function cfgCamaraSuavidad(){
-  const s = Number(temaState?.filters?.trazadoSuavidad ?? 7);
+  const s = Number(temaState?.filters?.trazadoSuavidad ?? 5);
   const u = (Math.max(1, Math.min(10, s)) - 1) / 9;
+  /* centro en 5 ≈ bearing 0.028 / center 0.038 (valores originales) */
   return {
-    bearingLerp: 0.06 - u * 0.048,
-    centerLerp: 0.075 - u * 0.052,
-    bearingMix: 0.42 + u * 0.22,
-    lookSmooth: 30 + u * 110
+    bearingLerp: 0.042 - u * 0.024, /* 0.042 → 0.018 */
+    centerLerp: 0.055 - u * 0.028   /* 0.055 → 0.027 */
   };
 }
 const TEMA_KEY = "totem21k-tema-v26";
@@ -4919,7 +4909,7 @@ const TEMA_DEFAULT = {
     "mapLook": "degrade",
     "mapDegrade": true,
     "trazadoTempo": 5,
-    "trazadoSuavidad": 7
+    "trazadoSuavidad": 5
   }
 };
 const CALLES_OPTIONS = [
@@ -5004,6 +4994,10 @@ function deepMergeTema(base, patch){
     f.mapLook = (f.mapDegrade === false) ? "natural" : "degrade";
   }
   f.mapDegrade = f.mapLook === "degrade";
+  /* v74 buggy: suavidad alta trababa la cámara → recentrar a normal */
+  if(f.trazadoSuavidad == null) f.trazadoSuavidad = 5;
+  else if(Number(f.trazadoSuavidad) > 7) f.trazadoSuavidad = 5;
+  if(f.trazadoTempo == null) f.trazadoTempo = 5;
   return out;
 }
 function cargarTemaGuardado(){
@@ -5171,7 +5165,7 @@ function renderPanelTema(){
     const fallback = key === "rutaGrosor" ? 8.5
       : key === "tiltSens" ? 7
       : key === "trazadoTempo" ? 5
-      : key === "trazadoSuavidad" ? 7
+      : key === "trazadoSuavidad" ? 5
       : key === "tinte" ? 0.82
       : key === "dark" ? 0.04
       : key === "hue" ? 339
@@ -5188,7 +5182,7 @@ function renderPanelTema(){
       const secs = Math.round((28000 + ((Math.max(1, Math.min(10, Number(val))) - 1) / 9) * 82000) / 1000);
       hint = ` <small style="font-weight:600;opacity:.65">(1 rápida · 10 lenta · <span data-tempo-secs>~${secs}s</span>)</small>`;
     }
-    if(key === "trazadoSuavidad") hint = ` <small style="font-weight:600;opacity:.65">(1 seca · 10 suave)</small>`;
+    if(key === "trazadoSuavidad") hint = ` <small style="font-weight:600;opacity:.65">(5 = normal · 10 más suave)</small>`;
     field.innerHTML = `
       <label>${meta.label}${hint} <span class="temaVal" data-fval="${key}">${val}</span></label>
       <input type="range" data-filter="${key}" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${val}">`;
