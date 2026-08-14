@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-66">
+<meta name="totem-version" content="2026-08-14-v17-build-67">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2163,6 +2163,33 @@ function padMapa(){
   if(w < 1100) return { top: 48, bottom: 56, left: 40, right: 72 };
   return { top: 56, bottom: 64, left: 56, right: 84 };
 }
+/* al saltar: más aire alrededor → zoom out y recorrido centrado */
+function padMapaOverview(){
+  const w = window.innerWidth || 800;
+  const h = window.innerHeight || 600;
+  if(w < 420){
+    return {
+      top: Math.round(h * 0.14),
+      bottom: Math.round(h * 0.16),
+      left: Math.round(w * 0.1),
+      right: Math.round(w * 0.1)
+    };
+  }
+  if(w < 768){
+    return {
+      top: Math.round(h * 0.13),
+      bottom: Math.round(h * 0.15),
+      left: Math.round(w * 0.09),
+      right: Math.round(w * 0.09)
+    };
+  }
+  return {
+    top: Math.round(h * 0.12),
+    bottom: Math.round(h * 0.12),
+    left: Math.round(w * 0.14),
+    right: Math.round(w * 0.14)
+  };
+}
 function boundsRutaLngLat(){
   let minLng=Infinity, minLat=Infinity, maxLng=-Infinity, maxLat=-Infinity;
   for(const [lat,lng] of RUTA_GPS){
@@ -2598,18 +2625,28 @@ function camaraSeguirTrazado(metros, {instant} = {}){
     offsetY: pose.offsetY
   });
 }
-function volverEncuadreTrasTrazado(){
+function volverEncuadreTrasTrazado(opts){
   if(!map) return;
+  const saltar = !!(opts && opts.saltar);
   const w = window.innerWidth || 800;
-  const maxZoom = w < 768 ? 15.05 : 14.4;
+  /* saltar: más zoom out y padding equilibrado → ruta al centro */
+  const maxZoom = saltar
+    ? (w < 768 ? 14.05 : 13.45)
+    : (w < 768 ? 15.05 : 14.4);
+  const padding = saltar ? padMapaOverview() : padMapa();
+  const dur = saltar
+    ? Math.round((CFG.flyBoundsMs || 1.4) * 1200)
+    : Math.round((CFG.flyBoundsMs || 1.4) * 1000);
+  try{ map.stop(); }catch(_){}
   try{
     map.fitBounds(BOUNDS_RUTA, {
-      padding: padMapa(),
+      padding,
       maxZoom,
       pitch: 0,
       bearing: 0,
-      duration: Math.round((CFG.flyBoundsMs || 1.4) * 1000),
-      essential: true
+      duration: dur,
+      essential: true,
+      offset: [0, 0]
     });
   }catch(_){
     try{
@@ -2619,7 +2656,7 @@ function volverEncuadreTrasTrazado(){
   }
   setTimeout(()=>{ try{ actualizarExtrusion(); }catch(_){} }, 400);
 }
-function terminarTrazado(){
+function terminarTrazado(opts){
   if(!trazadoActivo) return;
   trazadoActivo = false;
   if(trazadoRaf){ cancelAnimationFrame(trazadoRaf); trazadoRaf = 0; }
@@ -2639,7 +2676,7 @@ function terminarTrazado(){
     tilt.pitchAnchor = 0;
     tilt.bearingAnchor = 0;
   }
-  volverEncuadreTrasTrazado();
+  volverEncuadreTrasTrazado(opts);
   /* al salir del recorrido: inclinación ya activa (compu + móvil) */
   activarInclinacionTrasTrazado();
 }
@@ -2657,7 +2694,7 @@ async function activarInclinacionTrasTrazado(){
 }
 function saltarTrazado(){
   if(!trazadoActivo) return;
-  terminarTrazado();
+  terminarTrazado({saltar: true});
 }
 let _corazonesTrazado3d = new Set();
 let _hitosTrazadoGeo = [];
