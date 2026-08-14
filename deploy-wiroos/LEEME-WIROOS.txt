@@ -1,13 +1,12 @@
-﻿# Subir a Wiroos — Tótem 21K (v17 · 47 · optimizado)
+﻿# Subir a Wiroos — Tótem 21K (v17 · 50)
 
 ## Qué subir a public_html
 
   index.html
   .htaccess
-  fotos/   (solo .webp — 24 archivos)
+  fotos/   (WebP + intro-ba / intro-heart)
 
-NO subas la carpeta backup-originales/ (está fuera de deploy-wiroos
-o no debe ir al hosting: solo respaldo local).
+NO subas backup-originales ni el resto del repo.
 
 ## Carpeta lista
 
@@ -23,13 +22,8 @@ c:\Users\Charly\Downloads\carrera\totem-21k-wiroos.zip
 2. Abrí public_html
 3. Subí el ZIP y descomprimilo (o subí index.html + .htaccess + fotos/)
 4. Si pide reemplazar, aceptá
-5. Abrí el dominio y forzá una recarga (Ctrl+F5) la primera vez
+5. Forzá recarga (Ctrl+F5)
 
-## Caché
+## Repo GitHub
 
-- HTML: max-age=300 + must-revalidate (se actualiza rápido tras deploy)
-- fotos/*.webp: max-age=1 año + immutable (versionadas con ?v=47)
-
-## Backup local (NO subir)
-
-c:\Users\Charly\Downloads\carrera\backup-originales\
+https://github.com/tecnicajota/carrera-21k

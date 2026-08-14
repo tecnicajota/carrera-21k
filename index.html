@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-13-v17-build-46">
+<meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
+<meta name="totem-version" content="2026-08-14-v17-build-50">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62.5..125,400..900&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@600;700&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62.5..125,400..900&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=Inter:ital,wght@0,600;0,700;1,700&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 
@@ -192,10 +192,14 @@ body.noche .maplibregl-canvas-container{
   left:0;top:0;
   pointer-events:none;
   background:linear-gradient(
-    180deg,
-    var(--map-grad-1, var(--sb-grad-1, #ff004c)) 0%,
-    var(--map-grad-2, var(--sb-grad-2, #ff6200)) 48%,
-    var(--map-grad-3, var(--sb-grad-3, #ffcd38)) 100%
+    175deg,
+    var(--map-grad-1, var(--sb-grad-1, #c2187a)) 0%,
+    var(--map-grad-1, var(--sb-grad-1, #c2187a)) 8%,
+    var(--map-grad-2, #e03555) 28%,
+    var(--map-grad-3, var(--sb-grad-2, #ef4a28)) 50%,
+    var(--map-grad-4, #f58220) 72%,
+    var(--map-grad-5, var(--sb-grad-3, #ffc52e)) 92%,
+    var(--map-grad-5, var(--sb-grad-3, #ffc52e)) 100%
   );
   opacity:var(--map-tinte-op, 0.82);
 }
@@ -215,10 +219,14 @@ path.trazaRuta{
   transform-style:preserve-3d;
   overflow:hidden;
   background:linear-gradient(
-    180deg,
-    var(--map-grad-1, #ff004c) 0%,
-    var(--map-grad-2, #ff6200) 48%,
-    var(--map-grad-3, #ffcd38) 100%
+    175deg,
+    var(--map-grad-1, #c2187a) 0%,
+    var(--map-grad-1, #c2187a) 8%,
+    var(--map-grad-2, #e03555) 28%,
+    var(--map-grad-3, #ef4a28) 50%,
+    var(--map-grad-4, #f58220) 72%,
+    var(--map-grad-5, #ffc52e) 92%,
+    var(--map-grad-5, #ffc52e) 100%
   );
 }
 #tiltStage #mapa{
@@ -615,8 +623,6 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 /* Colores fuera de mapaWrap y por encima del stand-by (#attract z=1100) */
 #btnTema{
   position:absolute;left:12px;top:62px;z-index:1250;
-  /* temporal: oculto para presentación (el panel sigue disponible en código) */
-  display:none !important;
 }
 #btnInclinar,
 #btnTema{
@@ -1084,7 +1090,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   }
 }
 
-/* ---------- ATTRACT / STAND-BY (corazon AI + BA -> frase) ---------- */
+/* ---------- ATTRACT / STAND-BY (corazon + BA blanco + frase) ---------- */
 #attract{
   position:absolute;inset:0;z-index:1100;
   display:grid;place-items:center;
@@ -1097,8 +1103,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--sb-grad-1, #9b2677) 75%, transparent) 0%, transparent 50%),
     linear-gradient(135deg, var(--sb-grad-1, #9b2677) 0%, var(--sb-grad-2, #c53737) 38%, var(--sb-grad-3, #dfa63f) 100%);
   font-family:'Inter',system-ui,sans-serif;
-  color:var(--sb-ba, #063042);
-  --sb-ba:#063042;
+  color:var(--sb-texto, #ffffff);
 }
 #attract.oculto{
   opacity:0;
@@ -1128,14 +1133,14 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   flex-direction:column;
   align-items:center;
   gap:clamp(10px, 2.2vmin, 20px);
-  transition:opacity .75s ease, transform .75s cubic-bezier(.22,1,.36,1);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.22,1,.36,1);
   will-change:opacity, transform;
 }
 #attract .lockup{
   display:flex;align-items:center;justify-content:center;
   gap:clamp(6px, 1.4vmin, 16px);
   font-size:clamp(4rem, 18vmin, 11rem);
-  filter:drop-shadow(0 .05em .16em rgba(0, 20, 40, .22));
+  filter:drop-shadow(0 .04em .12em rgba(0, 20, 40, .28));
 }
 #attract .sb-heart{
   display:block;
@@ -1147,72 +1152,40 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   user-select:none;
   pointer-events:none;
 }
-#attract .wordmark{
-  font-family:'Archivo Black','Archivo',system-ui,sans-serif;
-  font-weight:400;
-  font-stretch:112%;
-  font-size:1em;
-  color:var(--sb-ba, #063042);
-  letter-spacing:-.06em;
-  line-height:.82;
-  padding:.02em 0 .08em;
+/* BA como imagen del banner (no tipografía) */
+#attract .wordmark,
+#attract img.sb-ba{
+  display:block;
+  height:clamp(56px, 14vmin, 132px);
+  width:auto;
+  max-width:min(46vw, 280px);
+  object-fit:contain;
   user-select:none;
+  pointer-events:none;
+  filter:drop-shadow(0 .04em .12em rgba(0,20,40,.22));
 }
+/* frase: Inter Bold, en blanco */
 #attract .subline{
   margin:0;
-  font-family:'Archivo',system-ui,sans-serif;
-  font-weight:500;
+  font-family:'Inter',system-ui,sans-serif;
+  font-weight:700;
   font-size:clamp(1.2rem, 3.9vmin, 2rem);
   letter-spacing:-0.01em;
   line-height:1.2;
-  color:var(--sb-ba, #063042);
+  color:var(--sb-texto, #ffffff);
   text-align:center;
   white-space:nowrap;
   max-width:96vw;
+  text-shadow:0 2px 12px rgba(0,20,40,.28);
 }
 #attract .subline .re{
   font-style:italic;
   font-weight:700;
-  font-stretch:105%;
   letter-spacing:.02em;
   padding:0 .05em;
 }
-#attract .tagline{
-  position:absolute;
-  left:50%;top:50%;
-  margin:0;
-  width:max-content;
-  max-width:96vw;
-  font-family:'Archivo',system-ui,sans-serif;
-  font-weight:700;
-  font-stretch:100%;
-  font-size:clamp(1.05rem, 4.1vw, 2.55rem);
-  letter-spacing:-0.02em;
-  line-height:1.1;
-  color:var(--sb-ba, #063042);
-  text-align:center;
-  white-space:nowrap;
-  opacity:0;
-  transform:translate(-50%, -50%) scale(.22);
-  transform-origin:50% 50%;
-  pointer-events:none;
-  filter:drop-shadow(0 2px 10px rgba(0,20,40,.18));
-  transition:opacity .95s cubic-bezier(.22,1,.36,1), transform 1.15s cubic-bezier(.16,1,.3,1);
-  will-change:opacity, transform;
-}
-/* fase 1: ♥ BA + linda para RE correrla */
+#attract .tagline{display:none !important;}
 #attract.fase-logo .intro-logo{opacity:1;transform:scale(1);}
-#attract.fase-logo .tagline{opacity:0;transform:translate(-50%, -50%) scale(.22);}
-/* fase 2: solo “La ciudad…” horizontal */
-#attract.fase-frase .intro-logo{
-  opacity:0;
-  transform:scale(.86) translateY(-6%);
-  pointer-events:none;
-}
-#attract.fase-frase .tagline{
-  opacity:1;
-  transform:translate(-50%, -50%) scale(1);
-}
 #attract .cta{display:none;}
 @keyframes sb-latido{
   0%   { transform:scale(1); }
@@ -1228,8 +1201,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
 }
 @media (prefers-reduced-motion: reduce){
   #attract .sb-heart{animation:none;}
-  #attract .intro-logo,
-  #attract .tagline{transition-duration:.01ms !important;}
+  #attract .intro-logo{transition-duration:.01ms !important;}
 }
 
 #demoBar{display:none;}
@@ -1480,10 +1452,14 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
 .mapa-tinte-overlay{
   position:absolute; inset:0; z-index:1; pointer-events:none;
   background:linear-gradient(
-    180deg,
-    var(--map-grad-1, #ff004c) 0%,
-    var(--map-grad-2, #ff6200) 48%,
-    var(--map-grad-3, #ffcd38) 100%
+    175deg,
+    var(--map-grad-1, #c2187a) 0%,
+    var(--map-grad-1, #c2187a) 8%,
+    var(--map-grad-2, #e03555) 28%,
+    var(--map-grad-3, #ef4a28) 50%,
+    var(--map-grad-4, #f58220) 72%,
+    var(--map-grad-5, #ffc52e) 92%,
+    var(--map-grad-5, #ffc52e) 100%
   );
   opacity:var(--map-tinte-op, 0.35);
   mix-blend-mode:var(--map-blend, multiply);
@@ -1561,12 +1537,11 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     <div class="screen">
       <div class="intro-logo" id="sbLogoBlock">
         <div class="lockup" id="sbLockup">
-          <img class="sb-heart" src="fotos/intro-heart.png?v=2" alt="" width="168" height="143" decoding="async">
-          <span class="wordmark" id="sbWm">BA</span>
+          <img class="sb-heart" src="fotos/intro-heart.webp?v=47" alt="" width="168" height="143" decoding="async">
+          <img class="sb-ba wordmark" id="sbWm" src="fotos/intro-ba.webp?v=50" alt="BA" width="563" height="303" decoding="async">
         </div>
         <p class="subline" id="sbSubline">Linda para <span class="re">RE</span> correrla.</p>
       </div>
-      <p class="tagline" id="sbTagline">La ciudad más linda del mundo</p>
     </div>
   </div>
 
@@ -1612,7 +1587,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 46</div>
+  <div id="buildTag" aria-hidden="true">v17 · 50</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1777,146 +1752,146 @@ const HITOS = [
   { id:"planetario", nombre:"Planetario Galileo Galilei",
     dir:"Av. Sarmiento s/n, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.56975,-58.41185],
-    foto:"fotos/planetario.jpg",
+    foto:"fotos/planetario.webp?v=47",
     texto:"Completamente renovado, el Planetario es uno de los atractivos imperdibles de la ciudad.El Planetario es el principal centro de divulgación de astronomía de la ciudad. Cuenta con una sala de proyección semiesférica con trescientas sesenta butacas reclinables y una cúpula de veinte metros de diámetro donde se reproducen cerca de 8.900 estrellas, planetas y satélites del universoSu edificio de cinco pisos también cuenta con un museo y una pequeña sala de proyección secundaria, además de albergar una colección de meteoritos provenientes del norte argentino."
   },
   { id:"hipodromo", nombre:"Hipódromo Argentino de Palermo",
     dir:"Av. del Libertador 4101, C1426 Cdad. Autónoma de Buenos Aires",
     geo:[-34.569048,-58.426160],
-    foto:"fotos/hipodromo.jpg",
+    foto:"fotos/hipodromo.webp?v=47",
     texto:"Este es un gran atractivo turístico de la Ciudad de Buenos Aires. Se destaca por su construcción arquitectónica monumental del siglo XIX y por los grandes eventos hípicos que se disputan durante todo el año, como el Gran Premio Nacional. El ingreso al predio es libre y gratuito. La Tribuna Oficial se destaca por su impactante arquitectura —que la convirtió en Patrimonio Histórico de la Ciudad— y por tener la mejor ubicación, frente al disco de llegada. Además, hay otras tres: Paddock, Especial y Nueva."
   },
   { id:"ecoparque", nombre:"Ecoparque",
     dir:"Av. Gral. Las Heras 4267, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.581202,-58.420045],
-    foto:"fotos/ecoparque.jpg",
+    foto:"fotos/ecoparque.webp?v=47",
     texto:"El Ecoparque es un centro para la conservación de especies autóctonas en peligro de extinción que colabora activamente con la recuperación de los ecosistemas y el enriquecimiento de la biodiversidad argentina, abriendo sus puertas para promover la educación ambiental."
   },
   { id:"jardinjapones", nombre:"Jardín Japonés",
     dir:"Av. Casares 3450, Cdad. Autónoma de Buenos Aires",
     geo:[-34.574641,-58.409836],
-    foto:"fotos/jardinjapones.jpg",
+    foto:"fotos/jardinjapones.webp?v=47",
     texto:"Rodeado por los Bosques de Palermo, el Jardín Japonés es un rincón de Buenos Aires que enamora a quien lo visite. Construido en 1967 en ocasión de la visita del emperador de Japón Akihito y su esposa Michiko, se trata del jardín de estilo japonés más grande fuera del país nipón."
   },
   { id:"malba", nombre:"Museo de Arte Latinoamericano de Buenos Aires (MALBA)",
     dir:"Av. Pres. Figueroa Alcorta 3415",
     geo:[-34.57705,-58.40325],
-    foto:"fotos/malba.jpg",
+    foto:"fotos/malba.webp?v=47",
     texto:"El Museo de Arte Latinoamericano (MALBA) es uno de los más interesantes de la Ciudad: aloja la colección de arte de la Fundación Costantini, con aproximadamente 400 obras (pinturas, esculturas, grabados, fotografías y objetos) de grandes artistas latinoamericanos del siglo XX."
   },
   { id:"floralis", nombre:"Floralis Generica",
     dir:"Av. Pres. Figueroa Alcorta 2301, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.58155,-58.39385],
-    foto:"fotos/floralis.jpg",
+    foto:"fotos/floralis.webp?v=47",
     texto:"La Floralis Genérica es la primera escultura en movimiento. Increíblemente, esta obra de acero inoxidable de 20 metros de alto y de 18 toneladas se abre y se cierra según el momento del día. Lo hace gracias a que cuenta con un sistema hidráulico y células fotoeléctricas."
   },
   { id:"derecho", nombre:"Facultad de Derecho de Buenos Aires",
     dir:"Av. Pres. Figueroa Alcorta 2263, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.582630,-58.391980],
-    foto:"fotos/derecho.jpg",
+    foto:"fotos/derecho.webp?v=47",
     texto:"Este edificio, que data de 1949, es el resultado de un concurso de anteproyectos adjudicado a los arquitectos Arturo Ochoa, Ismael Chiapore y Pedro Vivent. Está inspirado en el más puro estilo dórico, sin otra decoración que la que le presta su propia estructura monumental. Ocupa una superficie de 40.000 m2 que se distribuyen en planta baja, piso principal y dos pisos altos, y cuenta con un museo, una pinacoteca y una biblioteca especializada."
   },
   { id:"thays", nombre:"Parque Carlos Thays",
     dir:"Av. del Libertador 2048-2002, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.584795,-58.387122],
-    foto:"fotos/thays.jpg",
+    foto:"fotos/thays.webp?v=47",
     texto:"En pleno barrio de Recoleta, en el predio en el que funcionó hasta 1990 el antiguo parque de diversiones Italpark, un espacio verde de más de cuatro hectáreas se destaca sobre la Avenida Del Libertador."
   },
   { id:"marq", nombre:"Museo de Arquitectura y Diseño (Marq)",
     dir:"Av. del Libertador 999, C1001 Cdad. Autónoma de Buenos Aires",
     geo:[-34.586327,-58.385184],
-    foto:"fotos/marq.jpg",
+    foto:"fotos/marq.webp?v=47",
     texto:"Fue creado por la Sociedad Central de Arquitectos a fines de 2000, con el objetivo de preservar, exhibir y difundir el patrimonio arquitectónico y urbano nacional e internacional. Está ubicado en la ex torre de agua del complejo ferroviario de Retiro. El edificio, construido en 1915, es un ejemplo destacable de la arquitectura ferroviaria desarrollada en Argentina. La superficie cubierta, de 280 m², se distribuye en cuatro plantas."
   },
   { id:"colon", nombre:"Teatro Colon",
     dir:"Cerrito 628, C1010 Cdad. Autónoma de Buenos Aires",
     geo:[-34.60111,-58.38306],
-    foto:"fotos/colon.jpg",
+    foto:"fotos/colon.webp?v=47",
     texto:"El Teatro Colón es uno de los imperdibles del mundo de la lírica y está a la altura de La Scala de Milán, la Ópera Garnier de París y el Royal Opera House de Londres. Este edificio fue inaugurado el 25 de mayo de 1908, con una función de Aida, de Giuseppe Verdi. Desde entonces, los directores, cantantes y bailarines más importantes de la historia engalanaron su escenario."
   },
   { id:"obelisco", nombre:"Obelisco",
     dir:"Av. Corrientes, C1035 Cdad. Autónoma de Buenos Aires",
     geo:[-34.60374,-58.38157],
-    foto:"fotos/obelisco.jpg",
+    foto:"fotos/obelisco.webp?v=47",
     texto:"El Obelisco es el mayor emblema de la Ciudad de Buenos Aires. Fue inaugurado el 23 de mayo de 1936 en homenaje al cuarto centenario de la primera fundación de Buenos Aires., y se alza exactamente en el lugar donde se izó por primera vez la bandera nacional en la Ciudad. Es obra del arquitecto Alberto Prebisch, uno de los principales exponentes del modernismo argentino y autor también del vecino Teatro Gran Rex."
   },
   { id:"granrex", nombre:"Teatro Gran Rex",
     dir:"Av. Corrientes 857, C1043AAI, C1043AAI Cdad. Autónoma de Buenos Aires",
     geo:[-34.60355,-58.37895],
-    foto:"fotos/granrex.jpg",
+    foto:"fotos/granrex.webp?v=47",
     texto:"Con capacidad para 3.262 espectadores y una historia ligada a la modernidad arquitectónica y a los espectáculos de mayor despliegue, este coloso cultural es un símbolo de innovación, arte y vanguardia. Desde su inauguración en 1937, el Gran Rex se consolidó como el teatro de los grandes espectáculos musicales. Por su escenario desfilaron artistas consagrados a nivel nacional e internacional, con puestas en escena que siguen asombrando por su despliegue técnico y artístico."
   },
   { id:"libertad", nombre:"Palacio libertad",
     dir:"Sarmiento 151, C1041 Cdad. Autónoma de Buenos Aires",
     geo:[-34.603612,-58.369729],
-    foto:"fotos/libertad.jpg",
+    foto:"fotos/libertad.webp?v=47",
     texto:"El Palacio Libertad es un espacio moderno, amplio y diverso dedicado a diversas manifestaciones artísticas que incluyen conciertos, recitales, exhibiciones de artes visuales, eventos de literatura, poesía, artes performáticas y nuevas tecnologías, talleres, festivales, proyecciones, homenajes, ferias y una programación específica para la infancia."
   },
   { id:"casarosada", nombre:"Casa de Gobierno (Casa Rosada)",
     dir:"Balcarce 78, C1064AAC Cdad. Autónoma de Buenos Aires",
     geo:[-34.60805,-58.37035],
-    foto:"fotos/casarosada.jpg",
+    foto:"fotos/casarosada.webp?v=47",
     texto:"La Casa Rosada es un palacio ubicado frente a la Plaza de Mayo que funciona como sede del Gobierno Nacional. Este imponente edificio de color rosado ocupa el predio donde se erigió en 1580 el Fuerte de Buenos Aires. Fue la residencia de virreyes españoles y luego albergó, con algunas reformas, a las autoridades de los sucesivos gobiernos patrios. El actual edificio es el producto de la fusión de dos construcciones anteriores: la sede presidencial y el Palacio de Correos (en la esquina de Hipólito Yrigoyen y Balcarce)."
   },
   { id:"plazamayo", nombre:"Plaza de mayo",
     dir:"Av. Hipólito Yrigoyen s/n, C1087 Cdad. Autónoma de Buenos Aires",
     geo:[-34.608367,-58.372283],
-    foto:"fotos/plazamayo.jpg",
+    foto:"fotos/plazamayo.webp?v=47",
     texto:"La Plaza de Mayo es la más antigua de Buenos Aires y escenario de la mayoría de los acontecimientos políticos más importantes de la historia argentina. Su nombre es un homenaje a la Revolución del 25 de Mayo de 1810, que ocurrió en esta misma plaza y que dio inicio a la gesta de la Independencia argentina, a partir de la cual se comenzó a elegir una forma de gobierno propia."
   },
   { id:"nuevedejulio", nombre:"Avenida 9 de Julio",
     dir:"",
     geo:[-34.5975,-58.3816],
-    foto:"fotos/nuevedejulio.jpg",
+    foto:"fotos/nuevedejulio.webp?v=47",
     texto:"Por sus 140 metros de ancho, es conocida como “la avenida más ancha” del mundo. Atraviesa el centro de la ciudad desde Constitución hasta la Av. del Libertador. Fue inaugurada en 1937 y diseñada originalmente por el prestigioso paisajista Carlos Thays. Cuenta con 1000 jacarandás, ceibos y cerezos, muchos de ellos donados por Japón. El desafío de quienes la cruzan habitualmente es hacerlo caminando de una punta a la otra en un solo intento y sin que los semáforos interrumpan."
   },
   { id:"manzana", nombre:"Complejo Historico Cultural Manzana de las Luces",
     dir:"Perú 222, C1067 Cdad. Autónoma de Buenos Aires",
     geo:[-34.610590,-58.374797],
-    foto:"fotos/manzana.jpg",
+    foto:"fotos/manzana.webp?v=47",
     texto:"La Manzana de las Luces es uno de los principales complejos históricos de la ciudad y alberga varias de las construcciones más antiguas, como la Iglesia de San Ignacio, que es considerada la de mayor edad que todavía se conserva en pie en Buenos Aires, obra de los jesuitas que se habían instalado allí."
   },
   { id:"bellasartes", nombre:"Museo Nacional de Bellas Artes",
     dir:"Av. del Libertador 1473, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.58395,-58.39285],
-    foto:"fotos/bellasartes.jpg",
+    foto:"fotos/bellasartes.webp?v=47",
     texto:"El Museo Nacional de Bellas Artes es uno de los más antiguos en la Ciudad y de los más importantes de Latinoamérica. Tiene la mayor colección de arte argentino del país. Está ubicado en el barrio de Recoleta y fue inaugurado en la Navidad de 1896. El objetivo era albergar arte internacional de todos los períodos históricos y promover y consolidar el arte argentino."
   },
   { id:"ccrecoleta", nombre:"Centro Cultural Recoleta",
     dir:"Junín 1930, C1113AAX Cdad. Autónoma de Buenos Aires",
     geo:[-34.586506,-58.391677],
-    foto:"fotos/ccrecoleta.jpg",
+    foto:"fotos/ccrecoleta.webp?v=47",
     texto:"Este edificio albergaba originalmente el convento de los monjes recoletos, que dio nombre al barrio. Fue construido en 1732 en terrenos donados por don Fernando de Valdez e Inclán y su esposa, según el diseño de los arquitectos jesuitas Juan Kraus y Juan Wolf."
   },
   { id:"cementerio", nombre:"Cementerio de la Recoleta",
     dir:"Junín 1760, Cdad. Autónoma de Buenos Aires",
     geo:[-34.587364,-58.392956],
-    foto:"fotos/cementerio.jpg",
+    foto:"fotos/cementerio.webp?v=47",
     texto:"El Cementerio de la Recoleta se encuentra ubicado en el exclusivo barrio de la Recoleta, que debe su nombre a que allí se hallaba el convento de los monjes recoletos, al que también pertenecía la vecina Basílica Nuestra Señora del Pilar (en la antigua huerta de los monjes se construyó el cementerio)."
   },
   { id:"palais", nombre:"Palais de Glace",
     dir:"Posadas 1725, C1112ADE Cdad. Autónoma de Buenos Aires",
     geo:[-34.585578,-58.389251],
-    foto:"fotos/palais.jpg",
+    foto:"fotos/palais.webp?v=47",
     texto:"El Palais de Glace fue construido por J. L. Ruiz Basadre como pista de patinaje sobre hielo (1911-1921). Fue inaugurado en 1910 y más tarde habilitado como salón de baile popular, hasta que en 1931 pasó a ser sala de exposiciones de obras artísticas. El techo abovedado culmina en una magnífica cúpula de vidrio y lucernas destinadas a brindar luz natural a la pista de patinaje. Actualmente se encuentra cerrado temporalmente."
   },
   { id:"decorativo", nombre:"Museo Nacional de Arte Decorativo",
     dir:"Av. del Libertador 1902, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.582673,-58.401076],
-    foto:"fotos/decorativo.jpg",
+    foto:"fotos/decorativo.webp?v=47",
     texto:"El palacete que lo aloja, de estilo neoclásico, es una obra de 1911 del arquitecto francés René Sergent. Su decoración testimonia el modo de vida de un sector de la sociedad argentina de principios del siglo XX."
   },
   { id:"josehernandez", nombre:"Museo de Arte Popular José Hernández",
     dir:"Av. del Libertador 2373, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.579651,-58.404941],
-    foto:"fotos/josehernandez.jpg",
+    foto:"fotos/josehernandez.webp?v=47",
     texto:"El MAP funciona en el edificio que fuera la casa de Félix Bunge. En su testamento, el hombre dejó su voluntad de donarla a la Ciudad de Buenos Aires “para que la destine a un museo de motivos argentinos”. Hoy, este museo colecciona, investiga y promueve el arte popular argentino en sus diferentes variantes. Posee una colección de 8 mil piezas de diversas especialidades y oficios artesanales y épocas históricas, representativas de las tradiciones criollas y de los pueblos originarios de la Argentina. El edificio aloja también a la Biblioteca del Folclore Nacional."
   },
 ];
 
 const CFG = {
   inactividadMs: 60000,
-  introMs: 5400,           // logo → frase (~5.4s) → mapa
+  introMs: 3000,           // ♥ + BA blanco + frase → mapa (3s)
   trazadoMs: 26000,        // animación lenta del recorrido + kms
   numKms: 21,
   slideMs: 5000,
@@ -2435,7 +2410,7 @@ function animarTrazado(){
 function popupHtml(h){
   const dir = h.dir ? `<p class="hito-pop-dir">${h.dir}</p>` : "";
   const foto = h.foto
-    ? `<img class="hito-pop-foto" src="${h.foto}" alt="" loading="lazy">`
+    ? `<img class="hito-pop-foto" src="${h.foto}" alt="" loading="lazy" decoding="async">`
     : "";
   const txt = (h.texto || "").trim();
   const body = txt ? `<p>${txt}</p>` : "";
@@ -3638,14 +3613,8 @@ function resetIntroFases(){
 function arrancarIntro(){
   pararIntro();
   resetIntroFases();
-  const total = CFG.introMs || 5400;
-  /* logo ~56%; “La ciudad…” un poco más corta */
-  const aFrase = Math.round(total * 0.56);
-  S.tIntroFrase = setTimeout(()=>{
-    if(S.estado !== "ATTRACT") return;
-    attract.classList.remove("fase-logo");
-    attract.classList.add("fase-frase");
-  }, aFrase);
+  const total = CFG.introMs || 3000;
+  S.tIntroFrase = null;
   S.tIntro = setTimeout(()=>{
     if(S.estado === "ATTRACT") irA("MAPA");
   }, total);
@@ -3722,18 +3691,6 @@ attract.addEventListener("pointerdown", e=>{
       if(S.estado === "POPUP") salirDePopup();
     }
   });
-})();
-(function initStandbyRedondeo(){
-  const blur = document.querySelector("#sb-redondear feGaussianBlur");
-  const wm = document.getElementById("sbWm");
-  if(!blur || !wm) return;
-  function ajustar(){
-    const fs = parseFloat(getComputedStyle(wm).fontSize) || 64;
-    blur.setAttribute("stdDeviation", (fs * 0.038).toFixed(2));
-  }
-  window.addEventListener("resize", ajustar);
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(ajustar);
-  ajustar();
 })();
 
 function reiniciarInactividad(){
@@ -4070,7 +4027,7 @@ function aplicarSensInclinacion(){
   tilt.maxPitchCam = 56 + t * 10;  /* 56 → 66 */
   tilt.maxBearingCam = 12 + t * 6; /* 12 → 18 */
 }
-const TEMA_KEY = "totem21k-tema-v22";
+const TEMA_KEY = "totem21k-tema-v24";
 const TEMA_DEFAULT = {
   "colors": {
     "tinta": "#183246",
@@ -4081,9 +4038,11 @@ const TEMA_DEFAULT = {
     "sb-grad-3": "#dfa63f",
     "sb-texto": "#ffffff",
     "sb-borde": "#ffffff",
-    "map-grad-1": "#ff004c",
-    "map-grad-2": "#ff6200",
-    "map-grad-3": "#ffcd38",
+    "map-grad-1": "#c2187a",
+    "map-grad-2": "#e03555",
+    "map-grad-3": "#ef4a28",
+    "map-grad-4": "#f58220",
+    "map-grad-5": "#ffc52e",
     "fondo": "#F3F2F1",
     "ruta": "#F7C21C",
     "hito": "#FFFFFF",
@@ -4119,9 +4078,11 @@ const COLOR_SECTIONS = [
   {
     title: "Degradé del mapa",
     keys: {
-      "map-grad-1": "Degradé inicio",
-      "map-grad-2": "Degradé medio",
-      "map-grad-3": "Degradé final"
+      "map-grad-1": "Degradé 1 (arriba)",
+      "map-grad-2": "Degradé 2",
+      "map-grad-3": "Degradé 3 (medio)",
+      "map-grad-4": "Degradé 4",
+      "map-grad-5": "Degradé 5 (abajo)"
     }
   },
   {
@@ -4171,6 +4132,10 @@ function deepMergeTema(base, patch){
   if(!c["map-grad-1"] && c["sb-grad-1"]) c["map-grad-1"] = c["sb-grad-1"];
   if(!c["map-grad-2"] && c["sb-grad-2"]) c["map-grad-2"] = c["sb-grad-2"];
   if(!c["map-grad-3"] && c["sb-grad-3"]) c["map-grad-3"] = c["sb-grad-3"];
+  if(!c["map-grad-2"]) c["map-grad-2"] = TEMA_DEFAULT.colors["map-grad-2"];
+  if(!c["map-grad-3"]) c["map-grad-3"] = TEMA_DEFAULT.colors["map-grad-3"];
+  if(!c["map-grad-4"]) c["map-grad-4"] = TEMA_DEFAULT.colors["map-grad-4"];
+  if(!c["map-grad-5"]) c["map-grad-5"] = c["map-grad-3"] || TEMA_DEFAULT.colors["map-grad-5"];
   return out;
 }
 function cargarTemaGuardado(){
@@ -4195,8 +4160,10 @@ function cssTemaLive(){
   const c = temaState.colors, f = temaState.filters;
   const blend = f.blend || "multiply";
   const mg1 = c["map-grad-1"] || c["sb-grad-1"];
-  const mg2 = c["map-grad-2"] || c["sb-grad-2"];
-  const mg3 = c["map-grad-3"] || c["sb-grad-3"];
+  const mg2 = c["map-grad-2"] || TEMA_DEFAULT.colors["map-grad-2"];
+  const mg3 = c["map-grad-3"] || c["sb-grad-2"];
+  const mg4 = c["map-grad-4"] || TEMA_DEFAULT.colors["map-grad-4"];
+  const mg5 = c["map-grad-5"] || c["sb-grad-3"];
   return `
 :root{
   --fondo:${c.fondo};--header:${c.fondo};
@@ -4205,7 +4172,7 @@ function cssTemaLive(){
   --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
-  --map-grad-1:${mg1};--map-grad-2:${mg2};--map-grad-3:${mg3};
+  --map-grad-1:${mg1};--map-grad-2:${mg2};--map-grad-3:${mg3};--map-grad-4:${mg4};--map-grad-5:${mg5};
   --map-sat:${f.sat ?? 2.5};--map-hue:${f.hue ?? 339};--map-bri:${f.bri ?? 0.99};--map-dark:${f.dark ?? 0.04};--map-con:${f.con ?? 1.08};--map-tinte-op:${f.tinte ?? 0.62};
   --map-blend:${blend};
 }`;

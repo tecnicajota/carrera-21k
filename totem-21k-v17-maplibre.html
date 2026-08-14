@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-47">
+<meta name="totem-version" content="2026-08-14-v17-build-50">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62.5..125,400..900&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@600;700&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62.5..125,400..900&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=Inter:ital,wght@0,600;0,700;1,700&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <style>
 
@@ -1090,7 +1090,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   }
 }
 
-/* ---------- ATTRACT / STAND-BY (corazon AI + BA -> frase) ---------- */
+/* ---------- ATTRACT / STAND-BY (corazon + BA blanco + frase) ---------- */
 #attract{
   position:absolute;inset:0;z-index:1100;
   display:grid;place-items:center;
@@ -1103,8 +1103,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--sb-grad-1, #9b2677) 75%, transparent) 0%, transparent 50%),
     linear-gradient(135deg, var(--sb-grad-1, #9b2677) 0%, var(--sb-grad-2, #c53737) 38%, var(--sb-grad-3, #dfa63f) 100%);
   font-family:'Inter',system-ui,sans-serif;
-  color:var(--sb-ba, #063042);
-  --sb-ba:#063042;
+  color:var(--sb-texto, #ffffff);
 }
 #attract.oculto{
   opacity:0;
@@ -1134,14 +1133,14 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   flex-direction:column;
   align-items:center;
   gap:clamp(10px, 2.2vmin, 20px);
-  transition:opacity .75s ease, transform .75s cubic-bezier(.22,1,.36,1);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.22,1,.36,1);
   will-change:opacity, transform;
 }
 #attract .lockup{
   display:flex;align-items:center;justify-content:center;
   gap:clamp(6px, 1.4vmin, 16px);
   font-size:clamp(4rem, 18vmin, 11rem);
-  filter:drop-shadow(0 .05em .16em rgba(0, 20, 40, .22));
+  filter:drop-shadow(0 .04em .12em rgba(0, 20, 40, .28));
 }
 #attract .sb-heart{
   display:block;
@@ -1153,72 +1152,40 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   user-select:none;
   pointer-events:none;
 }
-#attract .wordmark{
-  font-family:'Archivo Black','Archivo',system-ui,sans-serif;
-  font-weight:400;
-  font-stretch:112%;
-  font-size:1em;
-  color:var(--sb-ba, #063042);
-  letter-spacing:-.06em;
-  line-height:.82;
-  padding:.02em 0 .08em;
+/* BA como imagen del banner (no tipografía) */
+#attract .wordmark,
+#attract img.sb-ba{
+  display:block;
+  height:clamp(56px, 14vmin, 132px);
+  width:auto;
+  max-width:min(46vw, 280px);
+  object-fit:contain;
   user-select:none;
+  pointer-events:none;
+  filter:drop-shadow(0 .04em .12em rgba(0,20,40,.22));
 }
+/* frase: Inter Bold, en blanco */
 #attract .subline{
   margin:0;
-  font-family:'Archivo',system-ui,sans-serif;
-  font-weight:500;
+  font-family:'Inter',system-ui,sans-serif;
+  font-weight:700;
   font-size:clamp(1.2rem, 3.9vmin, 2rem);
   letter-spacing:-0.01em;
   line-height:1.2;
-  color:var(--sb-ba, #063042);
+  color:var(--sb-texto, #ffffff);
   text-align:center;
   white-space:nowrap;
   max-width:96vw;
+  text-shadow:0 2px 12px rgba(0,20,40,.28);
 }
 #attract .subline .re{
   font-style:italic;
   font-weight:700;
-  font-stretch:105%;
   letter-spacing:.02em;
   padding:0 .05em;
 }
-#attract .tagline{
-  position:absolute;
-  left:50%;top:50%;
-  margin:0;
-  width:max-content;
-  max-width:96vw;
-  font-family:'Archivo',system-ui,sans-serif;
-  font-weight:700;
-  font-stretch:100%;
-  font-size:clamp(1.05rem, 4.1vw, 2.55rem);
-  letter-spacing:-0.02em;
-  line-height:1.1;
-  color:var(--sb-ba, #063042);
-  text-align:center;
-  white-space:nowrap;
-  opacity:0;
-  transform:translate(-50%, -50%) scale(.22);
-  transform-origin:50% 50%;
-  pointer-events:none;
-  filter:drop-shadow(0 2px 10px rgba(0,20,40,.18));
-  transition:opacity .95s cubic-bezier(.22,1,.36,1), transform 1.15s cubic-bezier(.16,1,.3,1);
-  will-change:opacity, transform;
-}
-/* fase 1: ♥ BA + linda para RE correrla */
+#attract .tagline{display:none !important;}
 #attract.fase-logo .intro-logo{opacity:1;transform:scale(1);}
-#attract.fase-logo .tagline{opacity:0;transform:translate(-50%, -50%) scale(.22);}
-/* fase 2: solo “La ciudad…” horizontal */
-#attract.fase-frase .intro-logo{
-  opacity:0;
-  transform:scale(.86) translateY(-6%);
-  pointer-events:none;
-}
-#attract.fase-frase .tagline{
-  opacity:1;
-  transform:translate(-50%, -50%) scale(1);
-}
 #attract .cta{display:none;}
 @keyframes sb-latido{
   0%   { transform:scale(1); }
@@ -1234,8 +1201,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
 }
 @media (prefers-reduced-motion: reduce){
   #attract .sb-heart{animation:none;}
-  #attract .intro-logo,
-  #attract .tagline{transition-duration:.01ms !important;}
+  #attract .intro-logo{transition-duration:.01ms !important;}
 }
 
 #demoBar{display:none;}
@@ -1572,11 +1538,10 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
       <div class="intro-logo" id="sbLogoBlock">
         <div class="lockup" id="sbLockup">
           <img class="sb-heart" src="fotos/intro-heart.webp?v=47" alt="" width="168" height="143" decoding="async">
-          <span class="wordmark" id="sbWm">BA</span>
+          <img class="sb-ba wordmark" id="sbWm" src="fotos/intro-ba.webp?v=50" alt="BA" width="563" height="303" decoding="async">
         </div>
         <p class="subline" id="sbSubline">Linda para <span class="re">RE</span> correrla.</p>
       </div>
-      <p class="tagline" id="sbTagline">La ciudad más linda del mundo</p>
     </div>
   </div>
 
@@ -1622,7 +1587,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 47</div>
+  <div id="buildTag" aria-hidden="true">v17 · 50</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1926,7 +1891,7 @@ const HITOS = [
 
 const CFG = {
   inactividadMs: 60000,
-  introMs: 5400,           // logo → frase (~5.4s) → mapa
+  introMs: 3000,           // ♥ + BA blanco + frase → mapa (3s)
   trazadoMs: 26000,        // animación lenta del recorrido + kms
   numKms: 21,
   slideMs: 5000,
@@ -3648,14 +3613,8 @@ function resetIntroFases(){
 function arrancarIntro(){
   pararIntro();
   resetIntroFases();
-  const total = CFG.introMs || 5400;
-  /* logo ~56%; “La ciudad…” un poco más corta */
-  const aFrase = Math.round(total * 0.56);
-  S.tIntroFrase = setTimeout(()=>{
-    if(S.estado !== "ATTRACT") return;
-    attract.classList.remove("fase-logo");
-    attract.classList.add("fase-frase");
-  }, aFrase);
+  const total = CFG.introMs || 3000;
+  S.tIntroFrase = null;
   S.tIntro = setTimeout(()=>{
     if(S.estado === "ATTRACT") irA("MAPA");
   }, total);
@@ -3732,18 +3691,6 @@ attract.addEventListener("pointerdown", e=>{
       if(S.estado === "POPUP") salirDePopup();
     }
   });
-})();
-(function initStandbyRedondeo(){
-  const blur = document.querySelector("#sb-redondear feGaussianBlur");
-  const wm = document.getElementById("sbWm");
-  if(!blur || !wm) return;
-  function ajustar(){
-    const fs = parseFloat(getComputedStyle(wm).fontSize) || 64;
-    blur.setAttribute("stdDeviation", (fs * 0.038).toFixed(2));
-  }
-  window.addEventListener("resize", ajustar);
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(ajustar);
-  ajustar();
 })();
 
 function reiniciarInactividad(){
