@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-72">
+<meta name="totem-version" content="2026-08-14-v17-build-73">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 72</div>
+  <div id="buildTag" aria-hidden="true">v17 · 73</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2044,6 +2044,9 @@ const CFG = {
   tilesNolabels: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
   /* mapa a color natural (CARTO Voyager; etiquetas las controla el panel) */
   tilesNatural: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
+  /* satélite (Esri World Imagery — no es Google; similar look híbrido) */
+  tilesSatelite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  atribucionSatelite: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
   /* Voyager labels: prioriza avenidas / vías principales sobre callecitas */
   tilesLabelsMedio: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png",
   tilesDia: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
@@ -2357,19 +2360,47 @@ function urlBasemapNatural(){
 function urlBasemapClaro(){
   return tileUrlCarto(CFG.tilesCompleto || CFG.tilesDia || "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png");
 }
+function urlBasemapSatelite(){
+  return CFG.tilesSatelite || "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+}
+/* degrade | natural | satellite (migra mapDegrade viejo) */
+function modoMapaLook(){
+  const f = (temaState && temaState.filters) || {};
+  const look = f.mapLook;
+  if(look === "degrade" || look === "natural" || look === "satellite") return look;
+  if(f.mapDegrade === false) return "natural";
+  return "degrade";
+}
+function setModoMapaLook(look){
+  if(!temaState.filters) temaState.filters = {};
+  const v = (look === "natural" || look === "satellite") ? look : "degrade";
+  temaState.filters.mapLook = v;
+  temaState.filters.mapDegrade = v === "degrade";
+}
 const CAPAS_MAPA_PROPIAS = {
   "ruta-linea": 1,
   "huellas": 1,
   "huellas-trazado": 1,
   "edificios-3d": 1,
+  "basemap-foto-layer": 1,
   "basemap-natural-layer": 1,
   "carto-raster-layer": 1,
   "carto": 1
 };
-/* degradé BA (filtro) vs mapa Voyager a color natural */
+function urlParaMapLook(look){
+  if(look === "satellite") return urlBasemapSatelite();
+  if(look === "natural") return urlBasemapNatural();
+  return urlBasemapClaro();
+}
+function atribucionParaMapLook(look){
+  if(look === "satellite") return CFG.atribucionSatelite || CFG.atribucion || "";
+  return CFG.atribucion || "";
+}
+/* degradé BA · Voyager color · satélite Esri */
 function aplicarMapaBaseLook(){
   if(!map) return;
-  const natural = !(temaState && temaState.filters && temaState.filters.mapDegrade !== false);
+  const look = modoMapaLook();
+  const foto = look === "natural" || look === "satellite";
   let style;
   try{ style = map.getStyle(); }catch(_){ return; }
   if(!style || !style.layers) return;
@@ -2383,41 +2414,49 @@ function aplicarMapaBaseLook(){
 
   /* fallback raster puro (capa "carto") */
   if(map.getLayer("carto") || map.getSource("carto")){
-    setTilesSiHay("carto", natural ? urlBasemapNatural() : urlBasemapClaro());
+    setTilesSiHay("carto", urlParaMapLook(look));
     return;
   }
   /* respaldo raster encima del vector */
   if(map.getLayer("carto-raster-layer") || map.getSource("carto-raster")){
-    setTilesSiHay("carto-raster", natural ? urlBasemapNatural() : urlBasemapClaro());
+    setTilesSiHay("carto-raster", urlParaMapLook(look));
     try{ map.setLayoutProperty("carto-raster-layer", "visibility", "visible"); }catch(_){}
     return;
   }
 
-  if(natural){
-    if(!map.getSource("basemap-natural")){
+  /* capa foto compartida (Voyager o satélite) */
+  const fotoUrl = urlParaMapLook(look);
+  const fotoAttr = atribucionParaMapLook(look);
+  if(foto){
+    if(!map.getSource("basemap-foto")){
       try{
-        map.addSource("basemap-natural", {
+        map.addSource("basemap-foto", {
           type: "raster",
-          tiles: [urlBasemapNatural()],
+          tiles: [fotoUrl],
           tileSize: 256,
-          attribution: CFG.atribucion || ""
+          attribution: fotoAttr
         });
       }catch(e){ console.warn(e); }
     }else{
-      setTilesSiHay("basemap-natural", urlBasemapNatural());
+      setTilesSiHay("basemap-foto", fotoUrl);
     }
-    if(!map.getLayer("basemap-natural-layer") && map.getSource("basemap-natural")){
+    if(!map.getLayer("basemap-foto-layer") && map.getSource("basemap-foto")){
       const bottom = (style.layers[0] && style.layers[0].id) || undefined;
       try{
         map.addLayer({
-          id: "basemap-natural-layer",
+          id: "basemap-foto-layer",
           type: "raster",
-          source: "basemap-natural"
+          source: "basemap-foto"
         }, bottom);
       }catch(e){ console.warn(e); }
     }
-    try{ map.setLayoutProperty("basemap-natural-layer", "visibility", "visible"); }catch(_){}
-    for(const layer of style.layers){
+    try{ map.setLayoutProperty("basemap-foto-layer", "visibility", "visible"); }catch(_){}
+    if(map.getLayer("basemap-natural-layer")){
+      try{ map.setLayoutProperty("basemap-natural-layer", "visibility", "none"); }catch(_){}
+    }
+    /* refrescar style tras addLayer */
+    try{ style = map.getStyle(); }catch(_){}
+    for(const layer of (style.layers || [])){
       const id = layer.id;
       if(CAPAS_MAPA_PROPIAS[id]) continue;
       if(layer.type === "symbol") continue;
@@ -2425,6 +2464,9 @@ function aplicarMapaBaseLook(){
       try{ map.setLayoutProperty(id, "visibility", "none"); }catch(_){}
     }
   }else{
+    if(map.getLayer("basemap-foto-layer")){
+      try{ map.setLayoutProperty("basemap-foto-layer", "visibility", "none"); }catch(_){}
+    }
     if(map.getLayer("basemap-natural-layer")){
       try{ map.setLayoutProperty("basemap-natural-layer", "visibility", "none"); }catch(_){}
     }
@@ -4844,6 +4886,7 @@ const TEMA_DEFAULT = {
     "rutaGrosor": 5.25,
     "tiltSens": 7,
     "calles": "solo",
+    "mapLook": "degrade",
     "mapDegrade": true
   }
 };
@@ -4921,6 +4964,12 @@ function deepMergeTema(base, patch){
   if(!c["map-grad-3"]) c["map-grad-3"] = TEMA_DEFAULT.colors["map-grad-3"];
   if(!c["map-grad-4"]) c["map-grad-4"] = TEMA_DEFAULT.colors["map-grad-4"];
   if(!c["map-grad-5"]) c["map-grad-5"] = c["map-grad-3"] || TEMA_DEFAULT.colors["map-grad-5"];
+  /* mapLook: degrade | natural | satellite */
+  const f = out.filters;
+  if(f.mapLook !== "degrade" && f.mapLook !== "natural" && f.mapLook !== "satellite"){
+    f.mapLook = (f.mapDegrade === false) ? "natural" : "degrade";
+  }
+  f.mapDegrade = f.mapLook === "degrade";
   return out;
 }
 function cargarTemaGuardado(){
@@ -4947,7 +4996,8 @@ function cargarTemaGuardado(){
 function cssTemaLive(){
   const c = temaState.colors, f = temaState.filters;
   const blend = f.blend || "multiply";
-  const degradeOn = f.mapDegrade !== false;
+  const look = (typeof modoMapaLook === "function") ? modoMapaLook() : "degrade";
+  const degradeOn = look === "degrade";
   const mg1 = c["map-grad-1"] || c["sb-grad-1"];
   const mg2 = c["map-grad-2"] || TEMA_DEFAULT.colors["map-grad-2"];
   const mg3 = c["map-grad-3"] || c["sb-grad-2"];
@@ -5038,22 +5088,26 @@ function renderPanelTema(){
     colores.appendChild(wrap);
   }
   filtros.innerHTML = "";
-  const degradeOn = temaState.filters.mapDegrade !== false;
-  const degradeField = document.createElement("div");
-  degradeField.className = "temaField";
-  degradeField.innerHTML = `
+  const look = (typeof modoMapaLook === "function") ? modoMapaLook() : "degrade";
+  const lookField = document.createElement("div");
+  lookField.className = "temaField";
+  lookField.innerHTML = `
     <label>Aspecto del mapa</label>
     <div class="temaSeg" role="radiogroup" aria-label="Aspecto del mapa">
-      <label class="${degradeOn?"on":""}">
-        <input type="radio" name="temaDegrade" data-degrade="1" value="on"${degradeOn?" checked":""}>
+      <label class="${look==="degrade"?"on":""}">
+        <input type="radio" name="temaMapLook" data-maplook="1" value="degrade"${look==="degrade"?" checked":""}>
         <span>Degradé<br><small style="font-weight:600;opacity:.7">Filtro BA rosa–naranja</small></span>
       </label>
-      <label class="${!degradeOn?"on":""}">
-        <input type="radio" name="temaDegrade" data-degrade="1" value="off"${!degradeOn?" checked":""}>
+      <label class="${look==="natural"?"on":""}">
+        <input type="radio" name="temaMapLook" data-maplook="1" value="natural"${look==="natural"?" checked":""}>
         <span>Color natural<br><small style="font-weight:600;opacity:.7">Mapa Voyager a color</small></span>
       </label>
+      <label class="${look==="satellite"?"on":""}">
+        <input type="radio" name="temaMapLook" data-maplook="1" value="satellite"${look==="satellite"?" checked":""}>
+        <span>Satélite<br><small style="font-weight:600;opacity:.7">Foto aérea + calles</small></span>
+      </label>
     </div>`;
-  filtros.appendChild(degradeField);
+  filtros.appendChild(lookField);
   const callesVal = temaState.filters.calles || "solo";
   const callesField = document.createElement("div");
   callesField.className = "temaField";
@@ -5151,12 +5205,17 @@ function initPanelTema(){
   document.getElementById("temaColores").addEventListener("input", onTemaColorInput);
   document.getElementById("temaFiltros").addEventListener("input", e=>{
     const t = e.target;
-    if(t.dataset.degrade){
-      temaState.filters.mapDegrade = t.value !== "off";
-      document.querySelectorAll('#temaFiltros input[data-degrade]').forEach(inp=>{
+    if(t.dataset.maplook){
+      setModoMapaLook(t.value);
+      document.querySelectorAll('#temaFiltros input[data-maplook]').forEach(inp=>{
         const lab = inp.closest("label");
         if(lab) lab.classList.toggle("on", inp.checked);
       });
+      aplicarTemaLive();
+      return;
+    }
+    if(t.dataset.degrade){
+      setModoMapaLook(t.value === "off" ? "natural" : "degrade");
       aplicarTemaLive();
       return;
     }
@@ -5184,12 +5243,17 @@ function initPanelTema(){
   });
   document.getElementById("temaFiltros").addEventListener("change", e=>{
     const t = e.target;
-    if(t.dataset.degrade){
-      temaState.filters.mapDegrade = t.value !== "off";
-      document.querySelectorAll('#temaFiltros input[data-degrade]').forEach(inp=>{
+    if(t.dataset.maplook){
+      setModoMapaLook(t.value);
+      document.querySelectorAll('#temaFiltros input[data-maplook]').forEach(inp=>{
         const lab = inp.closest("label");
         if(lab) lab.classList.toggle("on", inp.checked);
       });
+      aplicarTemaLive();
+      return;
+    }
+    if(t.dataset.degrade){
+      setModoMapaLook(t.value === "off" ? "natural" : "degrade");
       aplicarTemaLive();
       return;
     }
