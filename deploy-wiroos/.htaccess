@@ -1,0 +1,44 @@
+# Wiroos / LiteSpeed — caché producción (tótem 21K v17 · 47)
+# Subir junto con index.html y fotos/
+
+# Seguridad básica
+Options -Indexes
+ServerSignature Off
+
+# Compresión (si el módulo está disponible)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Tipos MIME útiles
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+</IfModule>
+
+# HTML: caché corta + revalidación (updates visibles rápido tras deploy)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html?)$">
+    Header set Cache-Control "public, max-age=300, must-revalidate"
+  </FilesMatch>
+
+  # Estáticos locales: caché larga (usar ?v=47 en URLs al actualizar)
+  <FilesMatch "\.(webp|jpg|jpeg|png|gif|ico|css|js|mjs|woff2?|ttf|otf|svg)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 5 minutes"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+</IfModule>

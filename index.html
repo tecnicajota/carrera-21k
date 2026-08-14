@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="totem-version" content="2026-08-13-v17-build-26">
+<meta name="totem-version" content="2026-08-13-v17-build-46">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -243,9 +243,27 @@ path.trazaRuta{
     rotateY(var(--tilt-ry, 0deg));
   will-change:transform;
 }
-#mapaWrap.tilt-on{
-  touch-action:auto;
-  cursor:auto;
+/* con popup abierto: sin bleed 3D para que el cartel no se corte */
+#mapaWrap.tilt-on.popup-abierto #tiltStage #mapa,
+#mapaWrap.tilt-on.popup-abierto #tiltStage .mapa-tinte-overlay{
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  transform:none !important;
+  will-change:auto;
+}
+#mapaWrap.popup-abierto #tiltStage{
+  overflow:hidden;
+}
+/* popups más compactos si venís de inclinación */
+body.tilt-activo .hito-pop-foto{
+  max-height:min(14dvh, 110px) !important;
+}
+body.tilt-activo .hito-pop-body{
+  max-height:min(20dvh, 150px) !important;
+}
+body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
+  max-height:min(62dvh, 62vh) !important;
 }
 @media (prefers-reduced-motion: reduce){
   #btnInclinar{display:none !important;}
@@ -294,14 +312,28 @@ path.trazaRuta{
   100%{opacity:0;}
 }
 
-/* marcadores de km */
+/* marcadores de km (ref recorrido oficial) */
+.km-wrap{
+  width:28px;height:28px;
+  pointer-events:none;
+}
 .kmIcono{
-  width:30px;height:30px;border-radius:50%;
-  background:var(--km);color:var(--km-num);
+  width:28px;height:28px;border-radius:50%;
+  background:var(--ruta, #F7C21C);color:#fff;
   display:grid;place-items:center;
-  font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;
-  border:2px solid var(--fondo);
-  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:800;font-stretch:108%;font-size:12px;
+  letter-spacing:-.02em;
+  border:2px solid #fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  opacity:0;transform:scale(.45);
+  transition:opacity .4s ease, transform .4s cubic-bezier(.2,1.2,.3,1);
+}
+.kmIcono.visible{
+  opacity:1;transform:scale(1);
+}
+#mapa .maplibregl-marker:has(.kmIcono){
+  z-index:6 !important;
 }
 .hidraIcono{
   width:20px;height:20px;border-radius:50%;
@@ -319,6 +351,120 @@ path.trazaRuta{
   display:grid;place-items:center;
   cursor:pointer;
   overflow:visible;
+}
+.pin-grupo{
+  /* NO position:relative acá: este nodo ES el .maplibregl-marker
+     y MapLibre necesita position:absolute + top/left 0 para anclar al geo */
+  width:36px;height:36px;
+  overflow:visible;
+  pointer-events:auto;
+}
+/* icono del lugar: sale del corazón hacia arriba */
+.pin-info-fly{
+  position:absolute;
+  left:50%;top:50%;
+  width:64px;height:64px;
+  margin:0;
+  transform:translate(-50%, -50%) scale(.12);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  z-index:6;
+}
+.pin-info{
+  display:grid;place-items:center;
+  position:relative;
+  width:64px;height:64px;
+  border-radius:50%;
+  padding:0;margin:0;
+  /* globito blanco con falso 3D */
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255,255,255,1) 0%, rgba(255,255,255,.92) 28%, rgba(245,245,245,.98) 55%, rgba(220,222,224,1) 100%);
+  border:1.5px solid rgba(255,255,255,.95);
+  box-shadow:
+    inset 0 -6px 10px rgba(0,0,0,.12),
+    inset 0 4px 8px rgba(255,255,255,.95),
+    inset -3px -3px 6px rgba(0,0,0,.06),
+    0 3px 8px rgba(0,0,0,.28),
+    0 1px 2px rgba(0,0,0,.18);
+  color:var(--ruta, #F7C21C);
+  filter:none;
+  cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+  transform:translateY(0);
+  overflow:hidden;
+}
+.pin-info::before{
+  content:"";
+  position:absolute;
+  left:16%;top:12%;
+  width:38%;height:22%;
+  border-radius:50%;
+  background:radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.95) 0%, rgba(255,255,255,.35) 55%, transparent 72%);
+  pointer-events:none;
+  z-index:0;
+}
+.pin-info svg{
+  width:44px;height:44px;
+  display:block;
+  overflow:visible;
+  pointer-events:none;
+  position:relative;
+  z-index:1;
+}
+.pin-grupo.activo-sel .pin-info-fly{
+  visibility:visible;
+  pointer-events:auto;
+  animation:pinInfoFlyOut .6s cubic-bezier(.2,1.2,.35,1) forwards;
+}
+.pin-grupo.activo-sel .pin-info-fly.rebote{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%, calc(-50% - 58px)) scale(1);
+  animation:none;
+}
+.pin-grupo.activo-sel .pin-info-fly.rebote .pin-info{
+  animation:pinInfoBounce 1.25s ease-in-out infinite;
+}
+.pin-grupo.activo-sel .pin-info:active{
+  transform:scale(.9);
+}
+@keyframes pinInfoFlyOut{
+  0%{
+    opacity:0;
+    visibility:visible;
+    transform:translate(-50%, -50%) scale(.1);
+  }
+  72%{
+    opacity:1;
+    transform:translate(-50%, calc(-50% - 64px)) scale(1.08);
+  }
+  100%{
+    opacity:1;
+    visibility:visible;
+    transform:translate(-50%, calc(-50% - 58px)) scale(1);
+  }
+}
+@keyframes pinInfoBounce{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-4px); }
+}
+#mapa.popup-blur .pin-info-fly{
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+  animation:none !important;
+}
+.pin-flotante .pin-info-fly,
+#pin-flotante-clone .pin-info-fly{display:none !important;}
+@media (prefers-reduced-motion: reduce){
+  .pin-grupo.activo-sel .pin-info-fly{
+    animation:none;
+    opacity:1;visibility:visible;
+    transform:translate(-50%, calc(-50% - 58px)) scale(1);
+  }
+  .pin-grupo.activo-sel .pin-info-fly.rebote .pin-info{animation:none;}
 }
 .pinIcono .pin-flat{
   position:relative;z-index:2;
@@ -690,6 +836,26 @@ path.trazaRuta{
 .hint b{color:var(--acento);}
 @keyframes latir{0%,100%{opacity:1;}50%{opacity:.6;}}
 
+#btnSaltarTrazado{
+  position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+  transform:translateX(-50%);
+  z-index:920;
+  display:none;
+  align-items:center;justify-content:center;
+  padding:12px 22px;min-height:44px;border-radius:99px;
+  background:var(--boton);border:2.5px solid var(--tinta);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:700;font-size:13px;letter-spacing:-.01em;
+  color:var(--tinta);box-shadow:var(--sombra);
+}
+#btnSaltarTrazado.visible{display:inline-flex;}
+#btnSaltarTrazado:active{transform:translateX(-50%) scale(.96);background:var(--acento);color:var(--tarjeta);}
+@media (max-width: 768px){
+  #btnSaltarTrazado{
+    bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+    padding:11px 18px;font-size:12px;min-height:42px;
+  }
+}
 
 #zoomCtrl{
   position:absolute;
@@ -713,8 +879,84 @@ path.trazaRuta{
 /* header oculto: mapa a pantalla completa */
 header{display:none !important;}
 
+/* popup fijo: viewport entero, fuera de #tiltStage/#mapaWrap → no lo corta la inclinación */
+.hito-fixed-pop{
+  position:fixed;inset:0;z-index:1200;
+  display:grid;place-items:center;
+  padding:
+    max(12px, env(safe-area-inset-top, 0px))
+    max(12px, env(safe-area-inset-right, 0px))
+    max(14px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
+  pointer-events:none;
+  box-sizing:border-box;
+}
+.hito-fixed-pop[hidden]{display:none !important;}
+.hito-fixed-backdrop{
+  position:absolute;inset:0;
+  background:rgba(15,18,20,.28);
+  pointer-events:auto;
+}
+.hito-fixed-card{
+  position:relative;
+  z-index:1;
+  pointer-events:auto;
+  width:min(92vw, 340px);
+  max-height:min(78dvh, 78vh);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  background:#fff;
+  color:#1B2221;
+  border-radius:2px;
+  border:1.5px solid rgba(27,34,33,.18);
+  box-shadow:0 14px 36px rgba(0,0,0,.32);
+  padding:12px 12px 14px;
+  box-sizing:border-box;
+  transform-origin:50% 60%;
+  animation:hitoPopFromDot .55s cubic-bezier(.22,1.15,.36,1) both;
+}
+.hito-fixed-close{
+  position:absolute;top:4px;right:6px;
+  width:36px;height:36px;padding:0;margin:0;
+  border:0;background:transparent;cursor:pointer;
+  font-size:24px;line-height:1;color:#1B2221;opacity:.55;
+  z-index:2;
+}
+.hito-fixed-close:hover{opacity:1;}
+.hito-fixed-inner .hito-pop-title{margin-right:34px;}
+.hito-fixed-inner .hito-pop-foto{
+  max-height:min(22dvh, 150px);
+}
+.hito-fixed-inner .hito-pop-body{
+  max-height:min(28dvh, 200px);
+}
+body.tilt-activo .hito-fixed-card{
+  width:min(90vw, 320px);
+  max-height:min(72dvh, 72vh);
+}
+body.tilt-activo .hito-fixed-inner .hito-pop-foto{
+  max-height:min(16dvh, 110px);
+}
+body.tilt-activo .hito-fixed-inner .hito-pop-body{
+  max-height:min(22dvh, 150px);
+}
+@media (max-width: 640px){
+  .hito-fixed-card{width:min(92vw, 300px);max-height:min(74dvh, 74vh);padding:10px;}
+  .hito-fixed-inner .hito-pop-foto{max-height:min(18dvh, 120px);}
+  .hito-fixed-inner .hito-pop-body{max-height:min(24dvh, 160px);}
+}
+@media (max-height: 500px){
+  .hito-fixed-card{max-height:min(86dvh, 86vh);width:min(48vw, 280px);}
+  .hito-fixed-inner .hito-pop-foto{max-height:min(20dvh, 88px);}
+  .hito-fixed-inner .hito-pop-body{max-height:min(34dvh, 130px);font-size:11px;}
+}
+
 /* ---------- POPUP anclado al corazón (estilo ref AI) ---------- */
-.maplibregl-popup.hito-popup{margin-bottom:14px;}
+.maplibregl-popup.hito-popup{
+  margin-bottom:10px;
+  max-width:min(92vw, 340px) !important;
+  z-index:60 !important;
+}
 .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper{
   background:#fff;
   color:#1B2221;
@@ -722,13 +964,23 @@ header{display:none !important;}
   border:1.5px solid rgba(27,34,33,.18);
   box-shadow:0 10px 28px rgba(0,0,0,.28);
   padding:0;
+  max-width:min(92vw, 340px);
+  max-height:min(78dvh, 78vh);
+  display:flex;
+  flex-direction:column;
+  box-sizing:border-box;
   transform-origin:50% 100%;
-  animation:hitoPopCardIn var(--pop-dur,.65s) cubic-bezier(.22,1.15,.36,1) both;
+  animation:hitoPopFromDot var(--pop-dur,.65s) cubic-bezier(.22,1.15,.36,1) both;
 }
 .maplibregl-popup.hito-popup .maplibregl-popup-content{
-  margin:12px 12px 14px;
-  min-width:240px;
-  max-width:320px;
+  margin:10px 12px 12px;
+  min-width:0;
+  width:min(86vw, 320px);
+  max-width:min(86vw, 320px);
+  max-height:min(72dvh, 72vh);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  box-sizing:border-box;
 }
 .maplibregl-popup.hito-popup .maplibregl-popup-tip-container{
   margin-top:-1px;
@@ -780,6 +1032,7 @@ header{display:none !important;}
   display:block;
   width:100%;
   aspect-ratio:1500 / 610;
+  max-height:min(22dvh, 160px);
   object-fit:cover;
   border-radius:2px;
   margin:0 0 10px;
@@ -791,11 +1044,11 @@ header{display:none !important;}
   font-family:'Archivo',system-ui,sans-serif;
   font-stretch:100%;
   font-weight:500;
-  font-size:12.5px;
+  font-size:clamp(11.5px, 2.8vw, 12.5px);
   letter-spacing:-.01em;
   line-height:1.55;
   color:#2a3030;
-  max-height:min(36vh, 220px);
+  max-height:min(28dvh, 200px);
   overflow:auto;
   padding-right:2px;
   animation:hitoPopFadeUp .45s ease both;
@@ -804,6 +1057,11 @@ header{display:none !important;}
 .hito-pop-body p{margin:0 0 8px;}
 .hito-pop-body p:last-child{margin-bottom:0;}
 .hito-pop-body b{color:#E7671A;font-weight:700;}
+@keyframes hitoPopFromDot{
+  0%{opacity:0;transform:translateY(10px) scale(.28)}
+  62%{opacity:1;transform:translateY(-3px) scale(1.03)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
 @keyframes hitoPopCardIn{
   0%{opacity:0;transform:translateY(14px) scale(.9)}
   70%{opacity:1;transform:translateY(-2px) scale(1.02)}
@@ -826,86 +1084,141 @@ header{display:none !important;}
   }
 }
 
-/* ---------- ATTRACT / STAND-BY (BA ♥ linda para recorrerla) ---------- */
+/* ---------- ATTRACT / STAND-BY (corazon AI + BA -> frase) ---------- */
 #attract{
   position:absolute;inset:0;z-index:1100;
   display:grid;place-items:center;
   text-align:center;
-  padding:4vmin;
-  opacity:1;transition:opacity .5s ease, background .4s ease;
+  padding:max(4vmin, env(safe-area-inset-top, 0px)) 4vmin max(5vmin, env(safe-area-inset-bottom, 0px));
+  overflow:hidden;
+  opacity:1;transition:opacity .55s ease, background .4s ease;
   background:
     radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--sb-grad-3, #dfa63f) 85%, transparent) 0%, transparent 55%),
     radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--sb-grad-1, #9b2677) 75%, transparent) 0%, transparent 50%),
     linear-gradient(135deg, var(--sb-grad-1, #9b2677) 0%, var(--sb-grad-2, #c53737) 38%, var(--sb-grad-3, #dfa63f) 100%);
   font-family:'Inter',system-ui,sans-serif;
-  color:var(--sb-texto, #fff);
+  color:var(--sb-ba, #063042);
+  --sb-ba:#063042;
 }
-#attract.oculto{opacity:0;pointer-events:none;}
-#attract .screen{text-align:center;padding:0;}
+#attract.oculto{
+  opacity:0;
+  pointer-events:none;
+  /* congelar contenido: evita flash del logo mientras se desvanece */
+  visibility:hidden;
+  transition:opacity .55s ease, visibility 0s linear .55s;
+}
+#attract:not(.oculto){
+  visibility:visible;
+  transition:opacity .55s ease, visibility 0s linear 0s, background .4s ease;
+}
+#attract .screen{
+  position:relative;
+  width:min(96vw, 1100px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(14px, 3.2vmin, 28px);
+  text-align:center;
+  padding:2vmin 0;
+  overflow:visible;
+}
+#attract .intro-logo{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:clamp(10px, 2.2vmin, 20px);
+  transition:opacity .75s ease, transform .75s cubic-bezier(.22,1,.36,1);
+  will-change:opacity, transform;
+}
 #attract .lockup{
   display:flex;align-items:center;justify-content:center;
-  gap:.12em;
+  gap:clamp(6px, 1.4vmin, 16px);
   font-size:clamp(4rem, 18vmin, 11rem);
-  filter:drop-shadow(0 .04em .12em rgba(230, 80, 30, .35));
+  filter:drop-shadow(0 .05em .16em rgba(0, 20, 40, .22));
 }
-#attract .wordmark{
-  font-family:'Archivo',system-ui,sans-serif;
-  font-weight:900;
-  font-stretch:108%;
-  font-size:1em;
-  color:var(--sb-texto, #fff);
-  letter-spacing:-.015em;
-  line-height:1;
-  padding:.06em 0;
-  user-select:none;
-}
-#attract .heart-wrap{
-  display:inline-block;
-  filter:drop-shadow(0 .06em .14em rgba(255,60,20,.35));
+#attract .sb-heart{
+  display:block;
+  width:clamp(72px, 18vmin, 168px);
+  height:auto;
   animation:sb-latido 1.4s ease-out infinite;
   transform-origin:center;
-  will-change:transform;
+  filter:drop-shadow(0 .06em .14em rgba(255,60,20,.28));
+  user-select:none;
+  pointer-events:none;
 }
-#attract .heart{
-  --size:.85em;
-  width:var(--size);height:var(--size);
-  position:relative;display:inline-block;
-  -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3 0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/></svg>') center / contain no-repeat;
-          mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3 0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/></svg>') center / contain no-repeat;
-  background:
-    radial-gradient(circle at 80% 85%, rgba(255,240,90,1) 0%, rgba(255,205,20,.7) 30%, transparent 58%),
-    radial-gradient(circle at 22% 18%, rgba(255,80,120,.6) 0%, transparent 42%),
-    linear-gradient(135deg, #f5063f 0%, #ff3617 38%, #ff8c00 70%, #ffcc00 100%);
+#attract .wordmark{
+  font-family:'Archivo Black','Archivo',system-ui,sans-serif;
+  font-weight:400;
+  font-stretch:112%;
+  font-size:1em;
+  color:var(--sb-ba, #063042);
+  letter-spacing:-.06em;
+  line-height:.82;
+  padding:.02em 0 .08em;
+  user-select:none;
 }
-#attract .heart::before{
-  content:"";position:absolute;
-  top:9%;left:14%;width:42%;height:34%;
-  border-radius:50%;
-  background:radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.95) 0%, rgba(255,255,255,.45) 45%, transparent 72%);
-  filter:blur(calc(var(--size) * 0.02));
-  transform:rotate(-18deg);
+#attract .subline{
+  margin:0;
+  font-family:'Archivo',system-ui,sans-serif;
+  font-weight:500;
+  font-size:clamp(1.2rem, 3.9vmin, 2rem);
+  letter-spacing:-0.01em;
+  line-height:1.2;
+  color:var(--sb-ba, #063042);
+  text-align:center;
+  white-space:nowrap;
+  max-width:96vw;
 }
-#attract .heart::after{
-  content:"";position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse at 50% 108%, rgba(255,255,220,.5) 0%, transparent 38%),
-    radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(150,0,50,.35) 100%);
+#attract .subline .re{
+  font-style:italic;
+  font-weight:700;
+  font-stretch:105%;
+  letter-spacing:.02em;
+  padding:0 .05em;
 }
 #attract .tagline{
-  margin-top:3.5vmin;
-  font-family:'Inter',system-ui,sans-serif;
+  position:absolute;
+  left:50%;top:50%;
+  margin:0;
+  width:max-content;
+  max-width:96vw;
+  font-family:'Archivo',system-ui,sans-serif;
   font-weight:700;
-  font-size:clamp(1.2rem, 4.2vmin, 2.4rem);
-  letter-spacing:-0.01em;
-  color:var(--sb-texto, #fff);
-  text-shadow:0 2px 12px rgba(230, 80, 30, .45);
+  font-stretch:100%;
+  font-size:clamp(1.05rem, 4.1vw, 2.55rem);
+  letter-spacing:-0.02em;
+  line-height:1.1;
+  color:var(--sb-ba, #063042);
+  text-align:center;
+  white-space:nowrap;
+  opacity:0;
+  transform:translate(-50%, -50%) scale(.22);
+  transform-origin:50% 50%;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 10px rgba(0,20,40,.18));
+  transition:opacity .95s cubic-bezier(.22,1,.36,1), transform 1.15s cubic-bezier(.16,1,.3,1);
+  will-change:opacity, transform;
+}
+/* fase 1: ♥ BA + linda para RE correrla */
+#attract.fase-logo .intro-logo{opacity:1;transform:scale(1);}
+#attract.fase-logo .tagline{opacity:0;transform:translate(-50%, -50%) scale(.22);}
+/* fase 2: solo “La ciudad…” horizontal */
+#attract.fase-frase .intro-logo{
+  opacity:0;
+  transform:scale(.86) translateY(-6%);
+  pointer-events:none;
+}
+#attract.fase-frase .tagline{
+  opacity:1;
+  transform:translate(-50%, -50%) scale(1);
 }
 #attract .cta{display:none;}
 @keyframes sb-latido{
   0%   { transform:scale(1); }
-  8%   { transform:scale(1.16); }
+  8%   { transform:scale(1.12); }
   16%  { transform:scale(.98); }
-  24%  { transform:scale(1.12); }
+  24%  { transform:scale(1.08); }
   36%  { transform:scale(1); }
   100% { transform:scale(1); }
 }
@@ -914,8 +1227,9 @@ header{display:none !important;}
   50%      { opacity:.55; }
 }
 @media (prefers-reduced-motion: reduce){
-  #attract .heart-wrap,
-  #attract .cta{animation:none;}
+  #attract .sb-heart{animation:none;}
+  #attract .intro-logo,
+  #attract .tagline{transition-duration:.01ms !important;}
 }
 
 #demoBar{display:none;}
@@ -971,30 +1285,44 @@ header{display:none !important;}
   }
 
   .kmIcono{width:24px;height:24px;font-size:11px;}
+  .km-wrap{width:24px;height:24px;}
   .hidraIcono{width:16px;height:16px;font-size:9px;}
   .pinIcono{width:32px;height:32px;}
+  .pin-grupo{width:32px;height:32px;}
+  .pin-info-fly{width:52px;height:52px;}
+  .pin-info{width:52px;height:52px;}
+  .pin-info svg{width:36px;height:36px;}
+  .pin-grupo.activo-sel .pin-info-fly.rebote{
+    transform:translate(-50%, calc(-50% - 48px)) scale(1);
+  }
+  @keyframes pinInfoFlyOut{
+    0%{opacity:0;visibility:visible;transform:translate(-50%, -50%) scale(.1);}
+    72%{opacity:1;transform:translate(-50%, calc(-50% - 52px)) scale(1.08);}
+    100%{opacity:1;visibility:visible;transform:translate(-50%, calc(-50% - 48px)) scale(1);}
+  }
   .pinIcono .pin-flat{width:20px;height:20px;}
   .pinIcono .heart{--size:26px;}
   .pinIcono.activo .heart{--size:32px;}
 
   .maplibregl-popup.hito-popup{
-    max-width:min(86vw, 300px);
+    max-width:min(92vw, 300px) !important;
   }
   .maplibregl-popup.hito-popup .maplibregl-popup-content,
   .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
-    margin:10px 12px 12px;
+    margin:8px 10px 10px;
     min-width:0;
-    width:min(78vw, 280px);
-    max-width:min(78vw, 280px);
+    width:min(86vw, 280px);
+    max-width:min(86vw, 280px);
+    max-height:min(70dvh, 70vh);
     box-sizing:border-box;
   }
   .hito-pop-title{font-size:12.5px;margin:0 28px 8px 0;}
   .hito-pop-dir{font-size:10.5px;}
   .hito-pop-body{
     font-size:12px;line-height:1.5;
-    max-height:min(32vh, 180px);
+    max-height:min(26dvh, 160px);
   }
-  .hito-pop-foto{margin-bottom:8px;}
+  .hito-pop-foto{margin-bottom:8px;max-height:min(18dvh, 120px);}
   .maplibregl-popup.hito-popup button.maplibregl-popup-close-button{
     width:36px;height:36px;top:2px;right:2px;font-size:22px;
   }
@@ -1059,7 +1387,9 @@ header{display:none !important;}
     padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px));
   }
   #attract .lockup{font-size:clamp(3.2rem, 20vw, 7rem);}
-  #attract .tagline{font-size:clamp(1.05rem, 4.5vw, 1.6rem);margin-top:3vmin;}
+  #attract .sb-heart{width:clamp(64px, 22vw, 120px);}
+  #attract .tagline{font-size:clamp(.92rem, 4.4vw, 1.55rem);}
+  #attract .subline{font-size:clamp(1.05rem, 4vw, 1.4rem);}
 
   #demoBar{opacity:.35;transform:scale(.9);transform-origin:bottom left;}
 }
@@ -1072,10 +1402,12 @@ header{display:none !important;}
   #btnInclinar .ico-inclinar{width:16px;height:16px;}
   .maplibregl-popup.hito-popup .maplibregl-popup-content,
   .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
-    width:min(86vw, 260px);
     max-width:min(86vw, 260px);
+    width:min(86vw, 260px);
+    max-height:min(66dvh, 66vh);
   }
-  .hito-pop-body{max-height:min(28vh, 150px);}
+  .hito-pop-body{max-height:min(24dvh, 140px);}
+  .hito-pop-foto{max-height:min(16dvh, 100px);}
 }
 
 /* Landscape en celu / ventana baja */
@@ -1093,19 +1425,22 @@ header{display:none !important;}
   #zoomCtrl button#btnUbicacion svg{width:15px;height:15px;}
   .maplibregl-popup.hito-popup .maplibregl-popup-content,
   .maplibregl-popup.hito-popup .maplibregl-popup-content-wrapper .maplibregl-popup-content{
-    max-width:min(48vw, 230px);
-    width:min(48vw, 230px);
+    max-width:min(48vw, 240px);
+    width:min(48vw, 240px);
+    max-height:min(78dvh, 78vh);
     margin:8px 10px 10px;
   }
   .hito-pop-title{font-size:12px;}
-  .hito-pop-body{font-size:11px;max-height:min(42vh, 140px);}
-  .hito-pop-foto{max-height:72px;object-fit:cover;}
+  .hito-pop-body{font-size:11px;max-height:min(36dvh, 130px);}
+  .hito-pop-foto{max-height:min(22dvh, 90px);object-fit:cover;}
   #btnInclinar, #btnTema{width:34px;height:34px;padding:0;min-height:0;font-size:0;}
   #btnInclinar .ico-inclinar{width:16px;height:16px;}
   #btnTema{top:calc(46px + env(safe-area-inset-top, 0px));}
   #temaCard{max-height:min(94dvh, 100%);}
   #attract .lockup{font-size:clamp(2.6rem, 16vh, 5.5rem);}
-  #attract .tagline{margin-top:2vmin;font-size:clamp(1rem, 3.8vh, 1.35rem);}
+  #attract .sb-heart{width:clamp(56px, 14vh, 110px);}
+  #attract .tagline{font-size:clamp(.95rem, 3.6vw, 1.45rem);}
+  #attract .subline{font-size:clamp(.95rem, 3.2vw, 1.25rem);}
   .toast-3d{bottom:calc(56px + env(safe-area-inset-bottom, 0px));}
 }
 
@@ -1127,27 +1462,16 @@ header{display:none !important;}
   filter:blur(5px);
   transition:filter .35s ease;
 }
-/* markers: sin filter (el blur del canvas no los tiene que tocar).
-   Solo bajar un poco los que NO están activos. */
+/* con popup: todos los pines (incluido el corazon activo) se blurrean */
 #mapa.popup-blur .maplibregl-marker{
-  opacity:.42;
-  filter:none !important;
-  transition:opacity .3s ease;
+  opacity:.5;
+  filter:blur(3.5px) !important;
+  transition:opacity .3s ease, filter .3s ease;
 }
 #mapa.popup-blur .maplibregl-marker.pin-activo-wrap{
-  opacity:1 !important;
-  filter:none !important;
-  z-index:40 !important;
-  mix-blend-mode:normal !important;
-}
-/* el corazón activo: nítido, sin drop-shadow ni blur interno */
-#mapa.popup-blur .maplibregl-marker.pin-activo-wrap .pin-3d,
-#mapa.popup-blur .maplibregl-marker.pin-activo-wrap .heart,
-#mapa.popup-blur .maplibregl-marker.pin-activo-wrap .heart::before,
-#mapa.popup-blur .maplibregl-marker.pin-activo-wrap .heart::after,
-.pinIcono.activo .pin-3d,
-.pinIcono.activo .heart::before{
-  filter:none !important;
+  opacity:.55 !important;
+  filter:blur(4px) !important;
+  z-index:6 !important;
 }
 #mapa.popup-blur .maplibregl-popup{
   filter:none !important;
@@ -1167,6 +1491,10 @@ header{display:none !important;}
 /* el degradé se queda igual con popup abierto */
 #mapa .maplibregl-canvas-container{z-index:0;}
 #mapa .maplibregl-marker{
+  position:absolute !important;
+  top:0 !important;
+  left:0 !important;
+  will-change:transform;
   z-index:800 !important;
   filter:none !important;
 }
@@ -1229,13 +1557,16 @@ header{display:none !important;}
 
 <div id="app">
 
-  <div id="attract">
+  <div id="attract" class="fase-logo">
     <div class="screen">
-      <div class="lockup">
-        <span class="heart-wrap"><span class="heart" aria-hidden="true"></span></span>
-        <span class="wordmark" id="sbWm">BA</span>
+      <div class="intro-logo" id="sbLogoBlock">
+        <div class="lockup" id="sbLockup">
+          <img class="sb-heart" src="fotos/intro-heart.png?v=2" alt="" width="168" height="143" decoding="async">
+          <span class="wordmark" id="sbWm">BA</span>
+        </div>
+        <p class="subline" id="sbSubline">Linda para <span class="re">RE</span> correrla.</p>
       </div>
-      <p class="tagline">Linda para recorrerla</p>
+      <p class="tagline" id="sbTagline">La ciudad más linda del mundo</p>
     </div>
   </div>
 
@@ -1251,6 +1582,7 @@ header{display:none !important;}
     </div>
     <div id="toast3d" class="toast-3d" role="status" aria-live="polite"></div>
     <div class="hint" hidden></div>
+    <button id="btnSaltarTrazado" type="button" hidden>Saltar animación</button>
     <button id="btnInclinar" type="button" aria-pressed="false" aria-label="Inclinación" title="Inclinación">
       <svg class="ico-inclinar" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="8" y="3.2" width="8" height="17.6" rx="1.7" stroke="currentColor" stroke-width="2" transform="rotate(-20 12 12)"/>
@@ -1271,7 +1603,16 @@ header{display:none !important;}
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 26</div>
+  <!-- fuera de #mapaWrap/#tiltStage: no se recorta con overflow ni transform 3D -->
+  <div id="hitoFixedPop" class="hito-fixed-pop" hidden>
+    <div class="hito-fixed-backdrop" data-close-pop="1" aria-hidden="true"></div>
+    <div class="hito-fixed-card" role="dialog" aria-modal="true">
+      <button type="button" class="hito-fixed-close" aria-label="Cerrar">&times;</button>
+      <div class="hito-fixed-inner" id="hitoFixedInner"></div>
+    </div>
+  </div>
+
+  <div id="buildTag" aria-hidden="true">v17 · 46</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -1439,11 +1780,23 @@ const HITOS = [
     foto:"fotos/planetario.jpg",
     texto:"Completamente renovado, el Planetario es uno de los atractivos imperdibles de la ciudad.El Planetario es el principal centro de divulgación de astronomía de la ciudad. Cuenta con una sala de proyección semiesférica con trescientas sesenta butacas reclinables y una cúpula de veinte metros de diámetro donde se reproducen cerca de 8.900 estrellas, planetas y satélites del universoSu edificio de cinco pisos también cuenta con un museo y una pequeña sala de proyección secundaria, además de albergar una colección de meteoritos provenientes del norte argentino."
   },
-  { id:"policia", nombre:"Museo de la Policía Federal Argentina (anexo)",
-    dir:"Av. Pres. Figueroa Alcorta 3701, C1425 CLC, Cdad. Autónoma de Buenos Aires",
-    geo:[-34.575007,-58.406070],
-    foto:"fotos/policia.png",
-    texto:"En este espacio se exponen bienes patrimoniales que reflejan la historia y los valores de la Policía Federal Argentina. A través de la colección, se hace un recorrido histórico sobre la labor de la fuerza y su papel fundamental en la construcción de la identidad nacional."
+  { id:"hipodromo", nombre:"Hipódromo Argentino de Palermo",
+    dir:"Av. del Libertador 4101, C1426 Cdad. Autónoma de Buenos Aires",
+    geo:[-34.569048,-58.426160],
+    foto:"fotos/hipodromo.jpg",
+    texto:"Este es un gran atractivo turístico de la Ciudad de Buenos Aires. Se destaca por su construcción arquitectónica monumental del siglo XIX y por los grandes eventos hípicos que se disputan durante todo el año, como el Gran Premio Nacional. El ingreso al predio es libre y gratuito. La Tribuna Oficial se destaca por su impactante arquitectura —que la convirtió en Patrimonio Histórico de la Ciudad— y por tener la mejor ubicación, frente al disco de llegada. Además, hay otras tres: Paddock, Especial y Nueva."
+  },
+  { id:"ecoparque", nombre:"Ecoparque",
+    dir:"Av. Gral. Las Heras 4267, C1425 Cdad. Autónoma de Buenos Aires",
+    geo:[-34.581202,-58.420045],
+    foto:"fotos/ecoparque.jpg",
+    texto:"El Ecoparque es un centro para la conservación de especies autóctonas en peligro de extinción que colabora activamente con la recuperación de los ecosistemas y el enriquecimiento de la biodiversidad argentina, abriendo sus puertas para promover la educación ambiental."
+  },
+  { id:"jardinjapones", nombre:"Jardín Japonés",
+    dir:"Av. Casares 3450, Cdad. Autónoma de Buenos Aires",
+    geo:[-34.574641,-58.409836],
+    foto:"fotos/jardinjapones.jpg",
+    texto:"Rodeado por los Bosques de Palermo, el Jardín Japonés es un rincón de Buenos Aires que enamora a quien lo visite. Construido en 1967 en ocasión de la visita del emperador de Japón Akihito y su esposa Michiko, se trata del jardín de estilo japonés más grande fuera del país nipón."
   },
   { id:"malba", nombre:"Museo de Arte Latinoamericano de Buenos Aires (MALBA)",
     dir:"Av. Pres. Figueroa Alcorta 3415",
@@ -1529,6 +1882,24 @@ const HITOS = [
     foto:"fotos/bellasartes.jpg",
     texto:"El Museo Nacional de Bellas Artes es uno de los más antiguos en la Ciudad y de los más importantes de Latinoamérica. Tiene la mayor colección de arte argentino del país. Está ubicado en el barrio de Recoleta y fue inaugurado en la Navidad de 1896. El objetivo era albergar arte internacional de todos los períodos históricos y promover y consolidar el arte argentino."
   },
+  { id:"ccrecoleta", nombre:"Centro Cultural Recoleta",
+    dir:"Junín 1930, C1113AAX Cdad. Autónoma de Buenos Aires",
+    geo:[-34.586506,-58.391677],
+    foto:"fotos/ccrecoleta.jpg",
+    texto:"Este edificio albergaba originalmente el convento de los monjes recoletos, que dio nombre al barrio. Fue construido en 1732 en terrenos donados por don Fernando de Valdez e Inclán y su esposa, según el diseño de los arquitectos jesuitas Juan Kraus y Juan Wolf."
+  },
+  { id:"cementerio", nombre:"Cementerio de la Recoleta",
+    dir:"Junín 1760, Cdad. Autónoma de Buenos Aires",
+    geo:[-34.587364,-58.392956],
+    foto:"fotos/cementerio.jpg",
+    texto:"El Cementerio de la Recoleta se encuentra ubicado en el exclusivo barrio de la Recoleta, que debe su nombre a que allí se hallaba el convento de los monjes recoletos, al que también pertenecía la vecina Basílica Nuestra Señora del Pilar (en la antigua huerta de los monjes se construyó el cementerio)."
+  },
+  { id:"palais", nombre:"Palais de Glace",
+    dir:"Posadas 1725, C1112ADE Cdad. Autónoma de Buenos Aires",
+    geo:[-34.585578,-58.389251],
+    foto:"fotos/palais.jpg",
+    texto:"El Palais de Glace fue construido por J. L. Ruiz Basadre como pista de patinaje sobre hielo (1911-1921). Fue inaugurado en 1910 y más tarde habilitado como salón de baile popular, hasta que en 1931 pasó a ser sala de exposiciones de obras artísticas. El techo abovedado culmina en una magnífica cúpula de vidrio y lucernas destinadas a brindar luz natural a la pista de patinaje. Actualmente se encuentra cerrado temporalmente."
+  },
   { id:"decorativo", nombre:"Museo Nacional de Arte Decorativo",
     dir:"Av. del Libertador 1902, C1425 Cdad. Autónoma de Buenos Aires",
     geo:[-34.582673,-58.401076],
@@ -1545,7 +1916,9 @@ const HITOS = [
 
 const CFG = {
   inactividadMs: 60000,
-  introMs: 3000,           // mini intro stand-by → mapa
+  introMs: 5400,           // logo → frase (~5.4s) → mapa
+  trazadoMs: 26000,        // animación lenta del recorrido + kms
+  numKms: 21,
   slideMs: 5000,
   rotadorMs: 3200,
   nocheDesde: 19, nocheHasta: 7,
@@ -1922,31 +2295,140 @@ function refrescarRutaGeoJSON(){
     geometry: { type: "LineString", coordinates: RUTA_GPS.map(aLngLat) }
   });
 }
+let trazadoRaf = 0;
+let trazadoActivo = false;
+let kmMarkers = [];
+function limpiarKms(){
+  kmMarkers.forEach(k=>{
+    try{ k.marker.remove(); }catch(_){}
+  });
+  kmMarkers = [];
+}
+function asegurarKms(){
+  if(!map) return;
+  if(kmMarkers.length) return;
+  if(!LARGO_TOTAL || LARGO_TOTAL < 1) recalcularDistancias();
+  const n = CFG.numKms || 21;
+  for(let km = 1; km <= n; km++){
+    const metros = Math.min(km * 1000, Math.max(0, LARGO_TOTAL - 8));
+    const {latlng} = puntoEn(metros);
+    const wrap = document.createElement("div");
+    wrap.className = "km-wrap";
+    const el = document.createElement("div");
+    el.className = "kmIcono";
+    el.textContent = String(km);
+    el.setAttribute("aria-label", `Kilómetro ${km}`);
+    wrap.appendChild(el);
+    const marker = new maplibregl.Marker({
+      element: wrap,
+      anchor: "center"
+    }).setLngLat(aLngLat(latlng)).addTo(map);
+    kmMarkers.push({ km, metros, marker, el, visible: false });
+  }
+}
+function ocultarKms(){
+  kmMarkers.forEach(k=>{
+    k.visible = false;
+    k.el.classList.remove("visible");
+  });
+}
+function revelarKmsHasta(metros){
+  kmMarkers.forEach(k=>{
+    if(!k.visible && metros >= k.metros - 2){
+      k.visible = true;
+      k.el.classList.add("visible");
+    }
+  });
+}
+function revelarTodosKms(){
+  kmMarkers.forEach(k=>{
+    k.visible = true;
+    k.el.classList.add("visible");
+  });
+}
+function metrosHastaPunto(idx){
+  if(!ACUM.length) return 0;
+  const i = Math.max(0, Math.min(idx, ACUM.length - 1));
+  return ACUM[i];
+}
+/* polyline hasta `metros` sobre la ruta (velocidad constante en distancia) */
+function coordsHastaMetros(metros){
+  if(!LARGO_TOTAL || LARGO_TOTAL < 1) recalcularDistancias();
+  const m = Math.max(0, Math.min(LARGO_TOTAL, metros));
+  const coords = [RUTA_LNGLAT[0]];
+  let i = 1;
+  while(i < ACUM.length && ACUM[i] <= m + 1e-6){
+    coords.push(RUTA_LNGLAT[i]);
+    i++;
+  }
+  if(m < LARGO_TOTAL - 0.05 && i < RUTA_GEO.length){
+    const {latlng} = puntoEn(m);
+    const ll = aLngLat(latlng);
+    const last = coords[coords.length - 1];
+    if(!last || last[0] !== ll[0] || last[1] !== ll[1]) coords.push(ll);
+  }
+  if(coords.length < 2){
+    coords.push(RUTA_LNGLAT[Math.min(1, RUTA_LNGLAT.length - 1)]);
+  }
+  return coords;
+}
+function mostrarBtnSaltarTrazado(si){
+  const btn = document.getElementById("btnSaltarTrazado");
+  if(!btn) return;
+  btn.hidden = !si;
+  btn.classList.toggle("visible", !!si);
+}
+function terminarTrazado(){
+  if(!trazadoActivo) return;
+  trazadoActivo = false;
+  if(trazadoRaf){ cancelAnimationFrame(trazadoRaf); trazadoRaf = 0; }
+  mostrarBtnSaltarTrazado(false);
+  refrescarRutaGeoJSON();
+  asegurarKms();
+  revelarTodosKms();
+  const mapaEl = document.getElementById("mapa");
+  if(mapaEl) mapaEl.classList.remove("dibujando");
+  aplicarAnimacion();
+}
+function saltarTrazado(){
+  if(!trazadoActivo) return;
+  terminarTrazado();
+}
 function animarTrazado(){
   if(!map || !map.getSource("ruta")) return;
-  const total = RUTA_LNGLAT.length;
-  if(total < 2) return;
+  if(RUTA_LNGLAT.length < 2) return;
+  if(!LARGO_TOTAL || LARGO_TOTAL < 1) recalcularDistancias();
+  if(trazadoRaf){ cancelAnimationFrame(trazadoRaf); trazadoRaf = 0; }
+  trazadoActivo = true;
   const mapaEl = document.getElementById("mapa");
   if(mapaEl) mapaEl.classList.add("dibujando");
   limpiarHuellas();
-  const dur = 2600;
+  asegurarKms();
+  ocultarKms();
+  mostrarBtnSaltarTrazado(true);
+  map.getSource("ruta").setData({
+    type: "Feature",
+    geometry: { type: "LineString", coordinates: coordsHastaMetros(0) }
+  });
+  const dur = CFG.trazadoMs || 26000;
   const t0 = performance.now();
   function frame(now){
+    if(!trazadoActivo) return;
+    /* progreso lineal por metros: misma velocidad en todo el recorrido */
     const u = Math.min(1, (now - t0) / dur);
-    const n = Math.max(2, Math.floor(1 + u * (total - 1)));
+    const metros = u * LARGO_TOTAL;
     map.getSource("ruta").setData({
       type: "Feature",
-      geometry: { type: "LineString", coordinates: RUTA_LNGLAT.slice(0, n) }
+      geometry: { type: "LineString", coordinates: coordsHastaMetros(metros) }
     });
-    if(u < 1) requestAnimationFrame(frame);
-    else {
-      refrescarRutaGeoJSON();
-      if(mapaEl) mapaEl.classList.remove("dibujando");
-      /* pies recién cuando la línea terminó de dibujarse */
-      aplicarAnimacion();
+    revelarKmsHasta(metros);
+    if(u < 1){
+      trazadoRaf = requestAnimationFrame(frame);
+    }else{
+      terminarTrazado();
     }
   }
-  requestAnimationFrame(frame);
+  trazadoRaf = requestAnimationFrame(frame);
 }
 
 /* ---------- popups / hitos ---------- */
@@ -1967,6 +2449,8 @@ function popupHtml(h){
 function setPopupBlur(on){
   const el = document.getElementById("mapa");
   if(el) el.classList.toggle("popup-blur", !!on);
+  const wrap = document.getElementById("mapaWrap");
+  if(wrap) wrap.classList.toggle("popup-abierto", !!on);
   const canvas = el?.querySelector?.(".maplibregl-canvas");
   if(canvas){
     canvas.style.filter = on ? "blur(5px)" : "";
@@ -1974,6 +2458,17 @@ function setPopupBlur(on){
   }
   pausarTiltPorPopup(!!on);
   if(!on) soltarPinFlotante();
+  /* al sacar el bleed 3D hay que resize: si no, el popup queda mal/cortado */
+  if(map){
+    requestAnimationFrame(()=>{
+      try{ map.resize(); }catch(_){}
+      if(on){
+        requestAnimationFrame(()=> ajustarPopupAlViewport());
+        setTimeout(()=> ajustarPopupAlViewport(), 120);
+        setTimeout(()=> ajustarPopupAlViewport(), 420);
+      }
+    });
+  }
 }
 function soltarPinFlotante(){
   const clone = document.getElementById("pin-flotante-clone");
@@ -2042,13 +2537,207 @@ function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
 function cerrarPopupDom(){
   S._cerrandoPopup = true;
   if(popupActual){ try{ popupActual.remove(); }catch(_){} popupActual = null; }
+  ocultarPopupFijo();
   S.hito = null;
   S._cerrandoPopup = false;
 }
+function ocultarPopupFijo(){
+  const layer = document.getElementById("hitoFixedPop");
+  const inner = document.getElementById("hitoFixedInner");
+  if(layer){
+    layer.hidden = true;
+    layer.setAttribute("hidden", "");
+  }
+  if(inner) inner.innerHTML = "";
+}
+function mostrarPopupFijo(h){
+  const layer = document.getElementById("hitoFixedPop");
+  const inner = document.getElementById("hitoFixedInner");
+  if(!layer || !inner) return;
+  inner.innerHTML = popupHtml(h);
+  layer.hidden = false;
+  layer.removeAttribute("hidden");
+  /* reflow anim */
+  const card = layer.querySelector(".hito-fixed-card");
+  if(card){
+    card.style.animation = "none";
+    void card.offsetWidth;
+    card.style.animation = "";
+  }
+  ajustarPopupFijo();
+}
+function ajustarPopupFijo(){
+  const layer = document.getElementById("hitoFixedPop");
+  if(!layer || layer.hidden) return;
+  const card = layer.querySelector(".hito-fixed-card");
+  const body = layer.querySelector(".hito-pop-body");
+  const foto = layer.querySelector(".hito-pop-foto");
+  const vh = window.visualViewport?.height || window.innerHeight || 800;
+  const avail = Math.max(160, vh - 28);
+  const compact = document.body.classList.contains("tilt-activo") || avail < 560;
+  if(card){
+    card.style.maxHeight = Math.round(avail * (compact ? 0.72 : 0.78)) + "px";
+  }
+  if(foto){
+    foto.style.maxHeight = Math.min(compact ? 100 : 150, Math.round(avail * (compact ? 0.15 : 0.20))) + "px";
+  }
+  if(body){
+    body.style.maxHeight = Math.min(compact ? 140 : 200, Math.round(avail * (compact ? 0.22 : 0.28))) + "px";
+  }
+}
+const HITO_ICONOS = {
+  planetario: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="21" r="13"/>
+<circle cx="27" cy="16" r="1" fill="currentColor" stroke="none"/>
+<circle cx="36.5" cy="19" r="1" fill="currentColor" stroke="none"/>
+<circle cx="30.5" cy="24" r="1" fill="currentColor" stroke="none"/>
+<ellipse cx="32" cy="33.5" rx="19" ry="5.5"/>
+<path d="M15.5 36C13 43.5 9 48.5 5.5 51M48.5 36C51 43.5 55 48.5 58.5 51"/>
+<path d="M25 38.5C24 44 22.5 48.5 21 52M39 38.5c1 5.5 2.5 10 4 13.5"/></svg>`,
+  hipodromo: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 48V33c0-11 7.2-19 17-19s17 8 17 19v15"/>
+<path d="M10.5 48h9M44.5 48h9"/>
+<circle cx="20" cy="33" r="1.5" fill="currentColor" stroke="none"/>
+<circle cx="20" cy="41" r="1.5" fill="currentColor" stroke="none"/>
+<circle cx="44" cy="33" r="1.5" fill="currentColor" stroke="none"/>
+<circle cx="44" cy="41" r="1.5" fill="currentColor" stroke="none"/>
+<circle cx="26" cy="23" r="1.5" fill="currentColor" stroke="none"/>
+<circle cx="38" cy="23" r="1.5" fill="currentColor" stroke="none"/>
+<circle cx="32" cy="21" r="1.5" fill="currentColor" stroke="none"/></svg>`,
+  ecoparque: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 11C30 9 12 23 14 48 39.5 50 52 34 50 11Z"/>
+<path d="M14 48C24 37 35 27 47 15.5"/>
+<path d="M14 48c-1.5 2.5-2.5 4.5-3 7"/></svg>`,
+  jardinjapones: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 16c8-3.5 38-3.5 46 0"/>
+<path d="M15 15.2 13 11M49 15.2 51 11"/>
+<path d="M14.5 26h35"/>
+<path d="M18.5 16.5 21 54M45.5 16.5 43 54"/>
+<path d="M32 16.8V26"/></svg>`,
+  malba: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14h42v12H10z"/>
+<path d="M15 20h3.5M22 20h3.5M29 20h3.5"/>
+<path d="M36 26h16v24H36z"/>
+<path d="M16 26v16M23 26v16M30 26v16"/>
+<path d="M12 46h20"/>
+<path d="M8 50h48"/></svg>`,
+  bellasartes: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16h40v7H12z"/>
+<path d="M17 19.5h4M24.5 19.5h4M32 19.5h4M39.5 19.5h4"/>
+<path d="M15 27h34"/>
+<path d="M20 28v17M28 28v17M36 28v17M44 28v17"/>
+<path d="M4 46V31h9M60 46V31h-9"/>
+<path d="M14 46h36"/>
+<path d="M10 50h44M6 54h52"/></svg>`,
+  floralis: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 27C28 20 28 11 32 5c4 6 4 15 0 22z"/>
+<path d="M32 27C28 20 28 11 32 5c4 6 4 15 0 22z" transform="rotate(44 32 29.5)"/>
+<path d="M32 27C28 20 28 11 32 5c4 6 4 15 0 22z" transform="rotate(-44 32 29.5)"/>
+<path d="M30.5 28.5C29.5 22.5 27.5 18 25 15"/>
+<circle cx="24.5" cy="13.8" r="1.2" fill="currentColor" stroke="none"/>
+<path d="M33.5 28.5c1-6 3-10.5 5.5-13.5"/>
+<circle cx="39.5" cy="13.8" r="1.2" fill="currentColor" stroke="none"/>
+<circle cx="32" cy="31" r="2.6"/>
+<path d="M32 33.5V46"/>
+<path d="M18 46a14 6 0 0 0 28 0"/></svg>`,
+  ccrecoleta: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 22l5-9h38l5 9"/>
+<path d="M8 22h48"/>
+<path d="M13 52V38a5.5 5.5 0 0 1 11 0v14M26.5 52V38a5.5 5.5 0 0 1 11 0v14M40 52V38a5.5 5.5 0 0 1 11 0v14"/>
+<path d="M10 52h44"/></svg>`,
+  cementerio: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 4v9M28.5 7.5h7"/>
+<path d="M11 27 32 16l21 11"/>
+<path d="M14 27v27M50 27v27"/>
+<path d="M26 54V41a6 6 0 0 1 12 0v13"/>
+<path d="M10 54h44"/></svg>`,
+  derecho: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14h36v8H14z"/>
+<path d="M17 22v18M23 22v18M29 22v18M35 22v18M41 22v18M47 22v18"/>
+<path d="M14 40h36"/>
+<path d="M12 44.5h40M9 49h46M6 53.5h52"/></svg>`,
+  thays: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="25" cy="16.5" r="1.6" fill="currentColor" stroke="none"/>
+<circle cx="32" cy="13.5" r="1.6" fill="currentColor" stroke="none"/>
+<circle cx="39" cy="16.5" r="1.6" fill="currentColor" stroke="none"/>
+<path d="M25 18.5V22M32 16v6M39 18.5V22"/>
+<path d="M20 24h24"/>
+<path d="M21 24c.5 6.5 4.5 11 11 11s10.5-4.5 11-11"/>
+<path d="M32 35v4.5"/>
+<path d="M26.5 40h11"/>
+<path d="M23.5 45.5h17M26.5 45.5v-5.5h11v5.5"/>
+<path d="M27 45.5V52M37 45.5V52"/>
+<path d="M21 52h22"/></svg>`,
+  palais: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 14V6.5M32 8.5l7 2-7 2.5"/>
+<path d="M17 29c1-8.5 7-15 15-15s14 6.5 15 15"/>
+<path d="M18 29v23M46 29v23"/>
+<path d="M14 52h36M15 29h34"/>
+<path d="M22 52v-8a3.5 3.5 0 0 1 7 0v8M35 52v-8a3.5 3.5 0 0 1 7 0v8"/></svg>`,
+  marq: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 11 32 5l14 6"/>
+<path d="M20 11h24v13H20z"/>
+<path d="M27 20v-3.5a2 2 0 0 1 4 0V20M33 20v-3.5a2 2 0 0 1 4 0V20"/>
+<path d="M25 24v28M39 24v28"/>
+<path d="M25 33h14M25 42h14"/>
+<path d="M29.5 52v-5.5a2.5 2.5 0 0 1 5 0V52"/>
+<path d="M20 52h24"/></svg>`,
+  colon: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 52V23a22 17 0 0 1 44 0v29"/>
+<path d="M12 13C19 21 26 23.5 32 23.5S45 21 52 13"/>
+<path d="M14.5 15.5C17 25 17 36 14 47"/>
+<path d="M49.5 15.5C47 25 47 36 50 47"/>
+<path d="M32 26.5v2.5"/>
+<circle cx="32" cy="31.5" r="2.2"/>
+<path d="M22 47.5h20"/>
+<path d="M10 52h44"/></svg>`,
+  obelisco: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M27.5 49 30.5 12l1.5-4 1.5 4 3 37z"/>
+<path d="M30.8 17h2.4"/>
+<path d="M24 49h16M26 54h12"/></svg>`,
+  granrex: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 9h34v8H10z"/>
+<path d="M15 13h5.5M24 13h5.5M33 13h5.5"/>
+<path d="M10 17h34v31H10z"/>
+<path d="M18.5 17v31M27 17v31M35.5 17v31"/>
+<path d="M10 28h34M10 38h34"/>
+<path d="M48 12h8v26h-8z"/>
+<path d="M50.5 17.5h3M50.5 24.5h3M50.5 31.5h3"/>
+<path d="M7 52h50"/></svg>`,
+  libertad: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M25 13a7 6.5 0 0 1 14 0"/>
+<circle cx="32" cy="9.5" r="2.2"/>
+<path d="M22 30V13h20v17"/>
+<path d="M27 17v9M32 18v8M37 17v9"/>
+<path d="M10 54V30h44v24"/>
+<path d="M15 54v-6a3.5 3.5 0 0 1 7 0v6M28.5 54v-7.5a3.5 3.5 0 0 1 7 0V54M42 54v-6a3.5 3.5 0 0 1 7 0v6"/>
+<path d="M7 54h50"/></svg>`,
+  casarosada: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 17V7M32 8.5h9v5.5h-9"/>
+<path d="M24 26v-9h16v9"/>
+<path d="M28.5 26v-3.5a3.5 3.5 0 0 1 7 0V26"/>
+<path d="M8 54V26h48v28"/>
+<path d="M9 24v-1a5 5 0 0 1 10 0v1M45 24v-1a5 5 0 0 1 10 0v1"/>
+<path d="M26 54V42a6 6 0 0 1 12 0v12"/>
+<path d="M14 42v-4a3 3 0 0 1 6 0v4M44 42v-4a3 3 0 0 1 6 0v4"/>
+<path d="M6 54h52"/></svg>`,
+  plazamayo: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="10.5" r="2.8"/>
+<path d="M32 13.5v6M32 15.5l5.5-3"/>
+<path d="M28.5 45 30.5 19.5h3L35.5 45z"/>
+<path d="M25 45h14M23 50h18M20 54h24"/></svg>`,
+  nuevedejulio: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M29.6 14 30.9 5.8 32 3.5l1.1 2.3L34.4 14z"/>
+<path d="M26.5 14h11"/>
+<path d="M14 54 27.5 16.5M50 54 36.5 16.5"/>
+<path d="M32 20v3.5M32 29v4.5M32 39v5M32 49.5v4.5"/>
+<path d="M24 45.5l1.5-6M40 45.5l-1.5-6"/></svg>`,
+  manzana: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M28.5 18v-4.5a3.5 3.2 0 0 1 7 0V18"/>
+<circle cx="32" cy="14.5" r="1.2" fill="currentColor" stroke="none"/>
+<path d="M11 18h42"/>
+<path d="M11 32h42"/>
+<path d="M14 30v-5a4.5 4.5 0 0 1 9 0v5M27.5 30v-5a4.5 4.5 0 0 1 9 0v5M41 30v-5a4.5 4.5 0 0 1 9 0v5"/>
+<path d="M14 52v-8.5a4.5 4.8 0 0 1 9 0V52M27.5 52v-8.5a4.5 4.8 0 0 1 9 0V52M41 52v-8.5a4.5 4.8 0 0 1 9 0V52"/>
+<path d="M9 52h46"/></svg>`,
+  decorativo: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 22a21 13 0 0 1 42 0"/>
+<path d="M9 22h46"/>
+<path d="M12 26h40"/>
+<path d="M15 26v22M21 26v22M43 26v22M49 26v22"/>
+<path d="M27 48V37a5 5 0 0 1 10 0v11"/>
+<path d="M10 48h44"/>
+<path d="M13 52h38"/></svg>`,
+  josehernandez: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M35 26 46.5 8"/>
+<circle cx="47.5" cy="6.8" r="2"/>
+<ellipse cx="31" cy="26.5" rx="10" ry="3.4"/>
+<path d="M21 26.5c0 9 2 16.5 4.5 20 3 4 8 4 11 0 2.5-3.5 4.5-11 4.5-20"/>
+<path d="M23 37.5c5 2 11 2 16 0"/></svg>`,
+};
+
 function crearPinEl(h, delay){
   /* wrapper: MapLibre transforma el root; el pin anima adentro (como v14) */
   const root = document.createElement("div");
-  root.style.cssText = "width:36px;height:36px;cursor:pointer;";
+  root.className = "pin-grupo";
+  root.style.cssText = "width:36px;height:36px;cursor:pointer;overflow:visible;";
   const el = document.createElement("div");
   el.className = "pinIcono";
   el.id = "pin-" + h.id;
@@ -2056,10 +2745,29 @@ function crearPinEl(h, delay){
   el.innerHTML = `<span class="pin-radar" aria-hidden="true"></span>
     <span class="pin-flat">${CORAZON_SVG}</span>
     ${CORAZON_3D}`;
+  const fly = document.createElement("div");
+  fly.className = "pin-info-fly";
+  const info = document.createElement("button");
+  info.type = "button";
+  info.className = "pin-info";
+  info.setAttribute("aria-label", `Ver información de ${h.nombre}`);
+  info.title = "Ver información";
+  const ico = (typeof HITO_ICONOS !== "undefined" && HITO_ICONOS[h.id])
+    ? HITO_ICONOS[h.id]
+    : `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="10" fill="currentColor" stroke="none"/></svg>`;
+  info.innerHTML = ico;
+  fly.appendChild(info);
   root.appendChild(el);
-  root.addEventListener("click", e=>{
+  root.appendChild(fly);
+  /* corazón: solo zoom / enfoque */
+  el.addEventListener("click", e=>{
     e.stopPropagation();
-    volarYAbrir(h);
+    volarAHito(h);
+  });
+  /* puntito: abre el popup */
+  info.addEventListener("click", e=>{
+    e.stopPropagation();
+    abrirPopupHito(h);
   });
   return root;
 }
@@ -2081,15 +2789,96 @@ function renderHitos(){
     marcadores[h.id] = marker;
   });
 }
+function prepararIconoTrazo(btn){
+  if(!btn) return;
+  btn.querySelectorAll("svg *").forEach(el=>{
+    if(typeof el.getTotalLength === "function"){
+      let len; try{ len = el.getTotalLength(); }catch(_){ len = 0; }
+      if(len >= 1){
+        el.style.transition = "none";
+        el.style.strokeDasharray = String(len);
+        el.style.strokeDashoffset = String(len);
+      }
+    }
+    const fill = el.getAttribute("fill");
+    if(fill && fill !== "none"){
+      el.style.transition = "none";
+      el.style.opacity = "0";
+    }
+  });
+  void btn.offsetWidth;
+}
+function animarIconoTrazo(btn){
+  if(!btn || matchMedia("(prefers-reduced-motion: reduce)").matches){
+    if(btn){
+      btn.querySelectorAll("svg *").forEach(el=>{
+        el.style.strokeDashoffset = "0";
+        el.style.opacity = "";
+        el.style.transition = "none";
+      });
+    }
+    return;
+  }
+  btn.querySelectorAll("svg *").forEach((el,i)=>{
+    const delay = i * 45;
+    if(typeof el.getTotalLength === "function"){
+      let len; try{ len = el.getTotalLength(); }catch(_){ len = 0; }
+      if(len >= 1){
+        el.style.transition = `stroke-dashoffset .75s ease ${delay}ms`;
+        el.style.strokeDashoffset = "0";
+      }
+    }
+    const fill = el.getAttribute("fill");
+    if(fill && fill !== "none"){
+      el.style.transition = `opacity .35s ease ${delay + 220}ms`;
+      el.style.opacity = "1";
+    }
+  });
+}
+function armarSalidaPuntito(root){
+  const fly = root && root.querySelector(".pin-info-fly");
+  if(!fly) return;
+  const info = fly.querySelector(".pin-info");
+  fly.classList.remove("rebote");
+  /* primero ocultar trazos: no mostrar el ícono completo antes de dibujar */
+  prepararIconoTrazo(info);
+  fly.style.animation = "none";
+  void fly.offsetWidth;
+  fly.style.animation = "";
+  /* dibujar en paralelo con la salida (no después) */
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=> animarIconoTrazo(info));
+  });
+  const finish = ()=>{
+    fly.classList.add("rebote");
+  };
+  const onEnd = (ev)=>{
+    if(ev.target !== fly) return;
+    if(ev.animationName && ev.animationName !== "pinInfoFlyOut") return;
+    finish();
+    fly.removeEventListener("animationend", onEnd);
+  };
+  fly.addEventListener("animationend", onEnd);
+  clearTimeout(fly._reboteT);
+  fly._reboteT = setTimeout(()=>{
+    if(root.classList.contains("activo-sel")) finish();
+  }, 680);
+}
 function marcarActivo(id, opts){
   const sinFlip = !!(opts && opts.sinFlip);
+  const sinPuntitoAnim = !!(opts && opts.sinPuntitoAnim);
   Object.values(marcadores).forEach(m=>{
     try{
       const root = m.getElement();
       if(!root) return;
-      root.classList.remove("pin-activo-wrap");
+      root.classList.remove("pin-activo-wrap", "activo-sel");
       root.style.filter = "";
       root.style.opacity = "";
+      const fly = root.querySelector(".pin-info-fly");
+      if(fly){
+        fly.classList.remove("rebote");
+        clearTimeout(fly._reboteT);
+      }
       root.querySelector(".pinIcono")?.classList.remove("activo-ya");
     }catch(_){}
   });
@@ -2103,75 +2892,111 @@ function marcarActivo(id, opts){
       try{
         const root = marcadores[h.id].getElement();
         if(!root) return;
-        root.classList.add("pin-activo-wrap");
-        root.style.filter = "none";
-        root.style.opacity = "1";
+        const flyPrev = root.querySelector(".pin-info-fly");
+        if(flyPrev && !sinPuntitoAnim){
+          prepararIconoTrazo(flyPrev.querySelector(".pin-info"));
+        }
+        root.classList.add("pin-activo-wrap", "activo-sel");
         root.style.zIndex = "40";
+        if(sinPuntitoAnim){
+          const fly = root.querySelector(".pin-info-fly");
+          if(fly){
+            fly.style.animation = "";
+            fly.classList.add("rebote");
+            /* ya visible: no re-dibujar (evita flash ícono → animación) */
+            const info = fly.querySelector(".pin-info");
+            if(info){
+              info.querySelectorAll("svg *").forEach(el=>{
+                el.style.strokeDashoffset = "0";
+                el.style.opacity = "";
+                el.style.transition = "none";
+              });
+            }
+          }
+        }else{
+          armarSalidaPuntito(root);
+        }
       }catch(_){}
     }
   });
 }
-function volarYAbrir(h){
-  /* sinFlip: el 3D entra suave; el clon no reinicia el giro */
-  marcarActivo(h.id, { sinFlip: true });
-  S.hito = h;
-  cerrarPopupDom();
-  S.hito = h;
-  irA("POPUP", h);
-  marcarActivo(h.id, { sinFlip: true });
+function camaraHaciaHito(h, opts){
+  const forPopup = !!(opts && opts.popup) || S.estado === "POPUP";
   const center = aLngLat(geoHito(h));
   S._popupLl = center;
   const zMax = CFG.zoomHito || 15.25;
   const zNow = map.getZoom();
-  /* zoom progresivo: no salta de golpe al zoom final */
   const zTarget = zNow < zMax - 0.35
     ? Math.min(zMax, zNow + Math.max(0.85, (zMax - zNow) * 0.55))
     : Math.min(map.getMaxZoom(), Math.max(zNow, zMax));
-  const keep3d = modo3D || map.getPitch() > 8;
+  const keep3d = !forPopup && (modo3D || map.getPitch() > 8);
   const hView = map.getContainer().clientHeight || 800;
   const needZoom = Math.abs(zTarget - zNow) > 0.08;
   const dur = needZoom ? 820 : 640;
-
-  /* misma duración corazón ↔ popup */
   document.documentElement.style.setProperty("--pop-dur", (dur / 1000).toFixed(2) + "s");
-
-  anclarPinActivoFueraDelBlur(h);
-
-  /* closeOnClick:false — si no, el click/ghost-touch del tótem cierra al toque el popup */
-  S._popupLockHasta = performance.now() + dur + 450;
-  popupActual = new maplibregl.Popup({
-    closeButton: true,
-    closeOnClick: false,
-    maxWidth: "340px",
-    offset: [0, -22],
-    className: "hito-popup",
-    anchor: "bottom",
-    focusAfterOpen: false
-  })
-    .setLngLat(center)
-    .setHTML(popupHtml(h))
-    .addTo(map);
-  popupActual.on("close", ()=>{
-    if(S._cerrandoPopup) return;
-    if(S.estado === "POPUP" && S.hito && S.hito.id === h.id){
-      salirDePopup();
-    }
-  });
-
   map.stop();
+  const yOff = forPopup
+    ? Math.round(Math.min(hView * 0.30, Math.max(hView * 0.22, 140)))
+    : Math.round(Math.min(hView * 0.16, Math.max(hView * 0.10, 70)));
+  const padding = forPopup
+    ? { top: Math.round(hView * 0.08), bottom: Math.round(hView * 0.34), left: 24, right: 24 }
+    : { top:0, bottom:0, left:0, right:0 };
   map.easeTo({
     center,
     zoom: zTarget,
-    pitch: keep3d ? map.getPitch() : 0,
+    pitch: forPopup ? 0 : (keep3d ? map.getPitch() : 0),
     bearing: map.getBearing(),
-    offset: [0, Math.round(hView * 0.13)],
-    padding: { top:0, bottom:0, left:0, right:0 },
+    offset: [0, yOff],
+    padding,
     duration: dur,
     easing: easeOutCubic,
     essential: true
   });
+  return { center, dur };
+}
+function volarAHito(h){
+  /* solo zoom al corazón — sin popup */
+  if(S.estado === "POPUP"){
+    S.estado = "MAPA";
+    S._popupLockHasta = 0;
+    soltarPinFlotante();
+    setPopupBlur(false);
+    cerrarPopupDom();
+  }
+  marcarActivo(h.id, { sinFlip: true });
+  camaraHaciaHito(h);
   reiniciarInactividad();
 }
+function abrirPopupHito(h){
+  marcarActivo(h.id, { sinFlip: true, sinPuntitoAnim: true });
+  S.hito = h;
+  cerrarPopupDom();
+  S.hito = h;
+  irA("POPUP", h);
+  marcarActivo(h.id, { sinFlip: true, sinPuntitoAnim: true });
+  const { center, dur } = camaraHaciaHito(h, { popup: true });
+  soltarPinFlotante();
+  setPopupBlur(true);
+  S._popupLockHasta = performance.now() + Math.min(dur, 420) + 160;
+  /* overlay fijo fuera del tiltStage: no se corta en inclinación */
+  popupActual = null;
+  mostrarPopupFijo(h);
+  setTimeout(()=> ajustarPopupFijo(), Math.min(dur + 40, 600));
+  reiniciarInactividad();
+}
+function ajustarPopupAlViewport(){
+  ajustarPopupFijo();
+}
+window.addEventListener("resize", ()=>{ if(S.estado === "POPUP") ajustarPopupFijo(); }, {passive:true});
+window.addEventListener("orientationchange", ()=>{
+  setTimeout(()=>{ if(S.estado === "POPUP") ajustarPopupFijo(); }, 280);
+}, {passive:true});
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize", ()=>{
+    if(S.estado === "POPUP") ajustarPopupFijo();
+  }, {passive:true});
+}
+function volarYAbrir(h){ abrirPopupHito(h); }
 function salirDePopup(){
   if(S.estado !== "POPUP") return;
   S.estado = "MAPA";
@@ -2206,12 +3031,46 @@ function salirDePopup(){
   reiniciarInactividad();
 }
 function onMapClickCerrarPopup(e){
-  if(S.estado !== "POPUP") return;
-  if(performance.now() < (S._popupLockHasta || 0)) return;
   const t = e && e.originalEvent && e.originalEvent.target;
-  if(t && (t.closest && (t.closest(".maplibregl-popup") || t.closest(".pinIcono") || t.closest(".pin-flotante")))) return;
-  salirDePopup();
+  if(t && t.closest && t.closest(".hito-fixed-pop .hito-fixed-card, .maplibregl-popup, .pinIcono, .pin-info, .pin-grupo, .pin-flotante, button, a, #zoomCtrl, #btnInclinar, #btnTema, #temaPanel")) return;
+  if(S.estado === "POPUP"){
+    if(performance.now() < (S._popupLockHasta || 0)) return;
+    salirDePopup();
+    return;
+  }
+  if(S.estado === "MAPA" && document.querySelector(".pin-grupo.activo-sel")){
+    marcarActivo(null);
+  }
 }
+/* tap corto en el wrap: cierra popup / deselecciona aunque MapLibre no dispare click */
+(function bindTapVolverAlMapa(){
+  const wrap = document.getElementById("mapaWrap");
+  if(!wrap) return;
+  let tap = null;
+  wrap.addEventListener("pointerdown", e=>{
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    if(e.target && e.target.closest && e.target.closest(".hito-fixed-card, .maplibregl-popup, .pinIcono, .pin-info, .pin-grupo, button, a, #zoomCtrl, #btnInclinar, #btnTema, #temaPanel")){
+      tap = null; return;
+    }
+    tap = { x:e.clientX, y:e.clientY, t:performance.now(), id:e.pointerId };
+  }, {passive:true});
+  const end = e=>{
+    if(!tap || tap.id !== e.pointerId) return;
+    const dt = performance.now() - tap.t;
+    const dx = Math.abs(e.clientX - tap.x);
+    const dy = Math.abs(e.clientY - tap.y);
+    tap = null;
+    if(dt > 420 || dx > 14 || dy > 14) return;
+    if(S.estado === "POPUP"){
+      if(performance.now() < (S._popupLockHasta || 0)) return;
+      salirDePopup();
+    }else if(S.estado === "MAPA" && document.querySelector(".pin-grupo.activo-sel")){
+      marcarActivo(null);
+    }
+  };
+  wrap.addEventListener("pointerup", end, {passive:true});
+  wrap.addEventListener("pointercancel", ()=>{ tap = null; }, {passive:true});
+})();
 
 /* ---------- huellas (capa canvas: detrás de edificios y de corazones HTML) ---------- */
 let huellaRaf = 0;
@@ -2344,7 +3203,7 @@ function aplicarAnimacion(){
   if(CFG.animarMapa) generarHuellas();
   else limpiarHuellas();
 }
-function renderKms(){ /* desactivado como en v14 */ }
+function renderKms(){ /* KMs se crean en asegurarKms() durante el trazado */ }
 
 /* ---------- INCLINACIÓN — mouse (desktop) + giroscopio (móvil), como v14 ---------- */
 const mapaWrapTilt = document.getElementById("mapaWrap");
@@ -2644,6 +3503,7 @@ function activarInclinacion(si){
   tilt.paused = false;
   tilt.gyroOk = false;
   mapaWrapTilt.classList.remove("tilt-on");
+  document.body.classList.toggle("tilt-activo", tilt.on);
   btnInclinar.classList.toggle("activo", tilt.on);
   btnInclinar.setAttribute("aria-pressed", tilt.on ? "true" : "false");
   btnInclinar.innerHTML = labelInclinar();
@@ -2729,6 +3589,7 @@ function resetCamaraPlana(){
     tilt.paused = false;
     clearTimeout(tilt.gyroWatch);
     mapaWrapTilt.classList.remove("tilt-on");
+    document.body.classList.remove("tilt-activo");
     if(btnInclinar){
       btnInclinar.classList.remove("activo");
       btnInclinar.setAttribute("aria-pressed", "false");
@@ -2759,19 +3620,35 @@ function setModo3D(si){
 
 /* ---------- estado / UI ---------- */
 const S = { estado:"ATTRACT", hito:null, slide:0, _popupLl:null,
-            tInactividad:null, tIntro:null, tSlides:null, tRotador:null, _cerrandoPopup:false,
+            tInactividad:null, tIntro:null, tIntroFrase:null, tSlides:null, tRotador:null, _cerrandoPopup:false,
             _popupLockHasta:0 };
 const $ = s => document.querySelector(s);
 const attract = $("#attract");
 function pararIntro(){
   clearTimeout(S.tIntro);
+  clearTimeout(S.tIntroFrase);
   S.tIntro = null;
+  S.tIntroFrase = null;
+}
+function resetIntroFases(){
+  if(!attract) return;
+  attract.classList.remove("fase-frase");
+  attract.classList.add("fase-logo");
 }
 function arrancarIntro(){
   pararIntro();
+  resetIntroFases();
+  const total = CFG.introMs || 5400;
+  /* logo ~56%; “La ciudad…” un poco más corta */
+  const aFrase = Math.round(total * 0.56);
+  S.tIntroFrase = setTimeout(()=>{
+    if(S.estado !== "ATTRACT") return;
+    attract.classList.remove("fase-logo");
+    attract.classList.add("fase-frase");
+  }, aFrase);
   S.tIntro = setTimeout(()=>{
     if(S.estado === "ATTRACT") irA("MAPA");
-  }, CFG.introMs || 3000);
+  }, total);
 }
 function irA(estado, dato){
   const anterior = S.estado;
@@ -2779,7 +3656,16 @@ function irA(estado, dato){
   if(estado === "ATTRACT"){
     cerrarPopupDom(); marcarActivo(null);
     if(typeof limpiarUbicacion === "function") limpiarUbicacion();
+    if(typeof trazadoActivo !== "undefined" && trazadoActivo){
+      trazadoActivo = false;
+      if(trazadoRaf){ cancelAnimationFrame(trazadoRaf); trazadoRaf = 0; }
+      mostrarBtnSaltarTrazado(false);
+      const mapaEl = document.getElementById("mapa");
+      if(mapaEl) mapaEl.classList.remove("dibujando");
+    }
+    if(typeof ocultarKms === "function") ocultarKms();
     setPopupBlur(false);
+    resetIntroFases();
     attract.classList.remove("oculto");
     encuadrar(false);
     resetCamaraPlana();
@@ -2788,6 +3674,7 @@ function irA(estado, dato){
     pararIntro();
   }
   if(estado === "MAPA"){
+    /* no resetear a fase-logo acá: si no, durante el fade se ve un flash del ♥ BA */
     attract.classList.add("oculto");
     const veniaPopup = anterior === "POPUP";
     cerrarPopupDom(); marcarActivo(null);
@@ -2826,6 +3713,16 @@ attract.addEventListener("pointerdown", e=>{
   if(document.getElementById("temaPanel")?.classList.contains("abierto")) return;
   irA("MAPA");
 });
+(function bindPopupFijoUI(){
+  const layer = document.getElementById("hitoFixedPop");
+  if(!layer) return;
+  layer.addEventListener("click", e=>{
+    if(e.target.closest(".hito-fixed-close") || e.target.closest("[data-close-pop]")){
+      if(performance.now() < (S._popupLockHasta || 0)) return;
+      if(S.estado === "POPUP") salirDePopup();
+    }
+  });
+})();
 (function initStandbyRedondeo(){
   const blur = document.querySelector("#sb-redondear feGaussianBlur");
   const wm = document.getElementById("sbWm");
@@ -2861,6 +3758,12 @@ document.getElementById("zMenos").addEventListener("pointerdown", e=>{
 document.getElementById("zReset").addEventListener("pointerdown", e=>{
   e.stopPropagation();
   encuadrar(true);
+});
+document.getElementById("btnSaltarTrazado")?.addEventListener("pointerdown", e=>{
+  e.stopPropagation();
+  e.preventDefault();
+  saltarTrazado();
+  if(typeof reiniciarInactividad === "function") reiniciarInactividad();
 });
 
 /* geoloc — punto blanco + seguir ubicación */
