@@ -4460,6 +4460,7 @@ function irA(estado, dato){
       if(typeof limpiarCorazonesTrazado === "function") limpiarCorazonesTrazado();
       const mapaEl = document.getElementById("mapa");
       if(mapaEl) mapaEl.classList.remove("dibujando");
+      if(typeof setEtiquetasCallesTrazado === "function") setEtiquetasCallesTrazado(false);
       if(tilt.on) tilt.paused = false;
     }
     if(typeof ocultarKms === "function") ocultarKms();
