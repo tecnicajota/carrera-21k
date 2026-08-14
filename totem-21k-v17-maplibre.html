@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-71">
+<meta name="totem-version" content="2026-08-14-v17-build-72">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 71</div>
+  <div id="buildTag" aria-hidden="true">v17 · 72</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2042,6 +2042,8 @@ const CFG = {
      Respaldo: Voyager si el base no carga. */
   tilesCompleto: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
   tilesNolabels: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+  /* mapa a color natural (CARTO Voyager; etiquetas las controla el panel) */
+  tilesNatural: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
   /* Voyager labels: prioriza avenidas / vías principales sobre callecitas */
   tilesLabelsMedio: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png",
   tilesDia: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
@@ -2345,6 +2347,96 @@ function toast3d(msg){
   el.classList.add("visto");
   clearTimeout(toast3d._t);
   toast3d._t = setTimeout(()=> el.classList.remove("visto"), 3200);
+}
+function tileUrlCarto(tpl){
+  return (tpl || "").replace("{s}", "a");
+}
+function urlBasemapNatural(){
+  return tileUrlCarto(CFG.tilesNatural || "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png");
+}
+function urlBasemapClaro(){
+  return tileUrlCarto(CFG.tilesCompleto || CFG.tilesDia || "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png");
+}
+const CAPAS_MAPA_PROPIAS = {
+  "ruta-linea": 1,
+  "huellas": 1,
+  "huellas-trazado": 1,
+  "edificios-3d": 1,
+  "basemap-natural-layer": 1,
+  "carto-raster-layer": 1,
+  "carto": 1
+};
+/* degradé BA (filtro) vs mapa Voyager a color natural */
+function aplicarMapaBaseLook(){
+  if(!map) return;
+  const natural = !(temaState && temaState.filters && temaState.filters.mapDegrade !== false);
+  let style;
+  try{ style = map.getStyle(); }catch(_){ return; }
+  if(!style || !style.layers) return;
+
+  const setTilesSiHay = (sourceId, url)=>{
+    const src = map.getSource(sourceId);
+    if(src && typeof src.setTiles === "function"){
+      try{ src.setTiles([url]); }catch(_){}
+    }
+  };
+
+  /* fallback raster puro (capa "carto") */
+  if(map.getLayer("carto") || map.getSource("carto")){
+    setTilesSiHay("carto", natural ? urlBasemapNatural() : urlBasemapClaro());
+    return;
+  }
+  /* respaldo raster encima del vector */
+  if(map.getLayer("carto-raster-layer") || map.getSource("carto-raster")){
+    setTilesSiHay("carto-raster", natural ? urlBasemapNatural() : urlBasemapClaro());
+    try{ map.setLayoutProperty("carto-raster-layer", "visibility", "visible"); }catch(_){}
+    return;
+  }
+
+  if(natural){
+    if(!map.getSource("basemap-natural")){
+      try{
+        map.addSource("basemap-natural", {
+          type: "raster",
+          tiles: [urlBasemapNatural()],
+          tileSize: 256,
+          attribution: CFG.atribucion || ""
+        });
+      }catch(e){ console.warn(e); }
+    }else{
+      setTilesSiHay("basemap-natural", urlBasemapNatural());
+    }
+    if(!map.getLayer("basemap-natural-layer") && map.getSource("basemap-natural")){
+      const bottom = (style.layers[0] && style.layers[0].id) || undefined;
+      try{
+        map.addLayer({
+          id: "basemap-natural-layer",
+          type: "raster",
+          source: "basemap-natural"
+        }, bottom);
+      }catch(e){ console.warn(e); }
+    }
+    try{ map.setLayoutProperty("basemap-natural-layer", "visibility", "visible"); }catch(_){}
+    for(const layer of style.layers){
+      const id = layer.id;
+      if(CAPAS_MAPA_PROPIAS[id]) continue;
+      if(layer.type === "symbol") continue;
+      if(layer.type === "raster") continue;
+      try{ map.setLayoutProperty(id, "visibility", "none"); }catch(_){}
+    }
+  }else{
+    if(map.getLayer("basemap-natural-layer")){
+      try{ map.setLayoutProperty("basemap-natural-layer", "visibility", "none"); }catch(_){}
+    }
+    for(const layer of style.layers){
+      const id = layer.id;
+      if(CAPAS_MAPA_PROPIAS[id]) continue;
+      if(layer.type === "symbol") continue;
+      if(layer.type === "raster") continue;
+      try{ map.setLayoutProperty(id, "visibility", "visible"); }catch(_){}
+    }
+    try{ aplanarEstiloLiberty(); }catch(_){}
+  }
 }
 function activarRespaldoRaster(msg){
   if(respaldoRaster || !map) return;
@@ -4617,6 +4709,9 @@ function initMap(){
     try{ aplanarEstiloLiberty(); }catch(e){ console.warn(e); }
     try{ agregarExtrusion(); }catch(e){ console.warn(e); }
     try{
+      if(typeof aplicarMapaBaseLook === "function") aplicarMapaBaseLook();
+    }catch(e){ console.warn(e); }
+    try{
       const calles = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.calles) || "solo";
       aplicarModoCalles(calles);
     }catch(e){ console.warn(e); }
@@ -4895,6 +4990,7 @@ function aplicarTemaLive(){
     asegurarIconosHuella(true).catch(()=>{});
   }
   const calles = (temaState.filters && temaState.filters.calles) || "solo";
+  if(typeof aplicarMapaBaseLook === "function") aplicarMapaBaseLook();
   if(typeof aplicarModoCalles === "function") aplicarModoCalles(calles);
   if(typeof aplicarSensInclinacion === "function") aplicarSensInclinacion();
 }
@@ -4946,15 +5042,15 @@ function renderPanelTema(){
   const degradeField = document.createElement("div");
   degradeField.className = "temaField";
   degradeField.innerHTML = `
-    <label>Degradé del mapa</label>
-    <div class="temaSeg" role="radiogroup" aria-label="Degradé del mapa">
+    <label>Aspecto del mapa</label>
+    <div class="temaSeg" role="radiogroup" aria-label="Aspecto del mapa">
       <label class="${degradeOn?"on":""}">
         <input type="radio" name="temaDegrade" data-degrade="1" value="on"${degradeOn?" checked":""}>
-        <span>Con degradé<br><small style="font-weight:600;opacity:.7">Filtro de color</small></span>
+        <span>Degradé<br><small style="font-weight:600;opacity:.7">Filtro BA rosa–naranja</small></span>
       </label>
       <label class="${!degradeOn?"on":""}">
         <input type="radio" name="temaDegrade" data-degrade="1" value="off"${!degradeOn?" checked":""}>
-        <span>Sin nada<br><small style="font-weight:600;opacity:.7">Mapa base limpio</small></span>
+        <span>Color natural<br><small style="font-weight:600;opacity:.7">Mapa Voyager a color</small></span>
       </label>
     </div>`;
   filtros.appendChild(degradeField);
