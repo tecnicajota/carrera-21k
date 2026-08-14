@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-78">
+<meta name="totem-version" content="2026-08-14-v17-build-79">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1709,7 +1709,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 78</div>
+  <div id="buildTag" aria-hidden="true">v17 · 79</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -4799,6 +4799,8 @@ function aplicarModoCalles(modo){
       || /housenumber|park.?label|mountain|peak|aerodrome|building.?name/i.test(id);
     const hasText = !!(layer.layout && layer.layout["text-field"] != null);
     const isLabel = isCalle || isLugar || isAgua || isOtro || isPoi || hasText;
+    const esMenor = /minor|path/i.test(id);
+    const esMayor = /major|shield|motorway|primary|secondary/i.test(id);
 
     let vis = "visible";
     if(m === "solo"){
@@ -4807,48 +4809,63 @@ function aplicarModoCalles(modo){
       if(isPoi || isLugar || isAgua || isOtro || (!isCalle && isLabel)){
         vis = "none";
       }else if(isCalle){
-        const esMenor = /minor|path/i.test(id);
-        const esMayor = /major|shield/i.test(id);
-        vis = esMenor ? "none" : (esMayor ? "visible" : "none");
+        /* principales + shields; sin callecitas/path */
+        vis = esMenor ? "none" : "visible";
       }
     }else{
       /* completo: nombres sí, POIs de íconos no */
       vis = isPoi ? "none" : "visible";
     }
     try{ map.setLayoutProperty(id, "visibility", vis); }catch(_){}
+    if(vis !== "visible") continue;
+    if(!isCalle && !(m === "completo" && (isLugar || isAgua))) continue;
 
-    /* mapa completo: calles muy legibles (más grandes + halo negro fuerte) */
-    if(vis === "visible" && (isCalle || (m === "completo" && (isLugar || isAgua)))){
-      if(m === "completo"){
+    /* no tocar text-font: OpenFreeMap solo tiene Noto Sans Regular/Italic */
+    if(m === "completo"){
+      if(isCalle){
+        try{
+          map.setLayerZoomRange(
+            id,
+            esMenor ? 13.2 : 11.2,
+            24
+          );
+        }catch(_){}
         try{
           map.setLayoutProperty(id, "text-size", [
             "interpolate", ["linear"], ["zoom"],
-            11, isCalle ? 13 : 12,
-            13, isCalle ? 16 : 14,
-            15, isCalle ? 20 : 17,
-            17, isCalle ? 26 : 22
+            11, esMenor ? 12 : 14,
+            13, esMenor ? 14 : 17,
+            15, esMenor ? 17 : 22,
+            17, esMenor ? 20 : 28
           ]);
         }catch(_){}
-        try{ map.setPaintProperty(id, "text-color", "#ffffff"); }catch(_){}
-        try{ map.setPaintProperty(id, "text-halo-color", "#000000"); }catch(_){}
-        try{ map.setPaintProperty(id, "text-halo-width", isCalle ? 2.6 : 2.1); }catch(_){}
-        try{ map.setPaintProperty(id, "text-halo-blur", 0.15); }catch(_){}
-        try{ map.setLayoutProperty(id, "text-font", ["Noto Sans Bold", "Noto Sans Regular"]); }catch(_){}
-        try{ map.setLayoutProperty(id, "symbol-sort-key", 1); }catch(_){}
-      }else if(isCalle){
-        /* medio: legible pero más contenido */
+      }else{
         try{
           map.setLayoutProperty(id, "text-size", [
             "interpolate", ["linear"], ["zoom"],
-            12, 11,
-            14, 13,
-            16, 16
+            11, 12,
+            14, 16,
+            16, 20
           ]);
         }catch(_){}
-        try{ map.setPaintProperty(id, "text-halo-color", "#000000"); }catch(_){}
-        try{ map.setPaintProperty(id, "text-halo-width", 1.6); }catch(_){}
-        try{ map.setPaintProperty(id, "text-color", "#ffffff"); }catch(_){}
       }
+      try{ map.setPaintProperty(id, "text-color", "#ffffff"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-color", "#000000"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-width", isCalle ? 2.8 : 2.2); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-blur", 0.1); }catch(_){}
+      try{ map.setPaintProperty(id, "text-opacity", 1); }catch(_){}
+    }else if(isCalle){
+      try{
+        map.setLayoutProperty(id, "text-size", [
+          "interpolate", ["linear"], ["zoom"],
+          12, 12,
+          14, 15,
+          16, 18
+        ]);
+      }catch(_){}
+      try{ map.setPaintProperty(id, "text-color", "#ffffff"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-color", "#000000"); }catch(_){}
+      try{ map.setPaintProperty(id, "text-halo-width", 2); }catch(_){}
     }
   }
   aplicarModoCalles._actual = m;
@@ -4912,7 +4929,7 @@ const TEMA_DEFAULT = {
     "hue": 339,
     "rutaGrosor": 5.25,
     "tiltSens": 7,
-    "calles": "solo",
+    "calles": "completo",
     "mapLook": "degrade",
     "mapDegrade": true,
     "trazadoTempo": 5,
