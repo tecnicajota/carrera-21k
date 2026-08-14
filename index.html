@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-79">
+<meta name="totem-version" content="2026-08-14-v17-build-80">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1709,7 +1709,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 79</div>
+  <div id="buildTag" aria-hidden="true">v17 · 80</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2525,17 +2525,47 @@ function slotAntesDeEdificios(){
   return primerSymbolLayerId();
 }
 function asegurarOrdenCapasRecorrido(){
-  /* abajo → arriba: ruta → huellas-trazado → huellas → edificios 3D */
+  /* la línea queda ARRIBA de nombres de calles para no camuflarse */
   if(!map) return;
-  const before = slotAntesDeEdificios();
   try{
-    if(map.getLayer("huellas") && before) map.moveLayer("huellas", before);
-    if(map.getLayer("huellas-trazado") && map.getLayer("huellas")) map.moveLayer("huellas-trazado", "huellas");
-    else if(map.getLayer("huellas-trazado") && before) map.moveLayer("huellas-trazado", before);
-    if(map.getLayer("ruta-linea") && map.getLayer("huellas-trazado")) map.moveLayer("ruta-linea", "huellas-trazado");
-    else if(map.getLayer("ruta-linea") && map.getLayer("huellas")) map.moveLayer("ruta-linea", "huellas");
-    else if(map.getLayer("ruta-linea") && before) map.moveLayer("ruta-linea", before);
+    if(map.getLayer("huellas")){
+      const before = slotAntesDeEdificios();
+      if(before) map.moveLayer("huellas", before);
+    }
+    if(map.getLayer("huellas-trazado")){
+      if(map.getLayer("huellas")) map.moveLayer("huellas-trazado", "huellas");
+      else{
+        const before = slotAntesDeEdificios();
+        if(before) map.moveLayer("huellas-trazado", before);
+      }
+    }
+    if(map.getLayer("ruta-linea")){
+      map.moveLayer("ruta-linea"); /* tope del stack: tapa etiquetas */
+    }
   }catch(_){}
+}
+/* durante el trazado: borrar nombres de calles; al terminar se vuelven a escribir */
+function setEtiquetasCallesTrazado(ocultar){
+  if(!map) return;
+  if(!ocultar){
+    const calles = (typeof temaState !== "undefined" && temaState.filters && temaState.filters.calles) || "completo";
+    if(typeof aplicarModoCalles === "function") aplicarModoCalles(calles);
+    asegurarOrdenCapasRecorrido();
+    return;
+  }
+  let style;
+  try{ style = map.getStyle(); }catch(_){ return; }
+  if(!style || !style.layers) return;
+  for(const layer of style.layers){
+    if(layer.type !== "symbol") continue;
+    const id = layer.id;
+    if(id === "huellas" || id === "huellas-trazado") continue;
+    const sl = layer["source-layer"] || "";
+    const isCalle = sl === "transportation_name"
+      || /highway-name|highway-shield|road_shield|road_label|street.?name/i.test(id);
+    if(!isCalle) continue;
+    try{ map.setLayoutProperty(id, "visibility", "none"); }catch(_){}
+  }
 }
 function agregarRuta(){
   if(map.getSource("ruta")) return;
@@ -2841,8 +2871,13 @@ function terminarTrazado(opts){
   revelarTodosKms();
   const mapaEl = document.getElementById("mapa");
   if(mapaEl) mapaEl.classList.remove("dibujando");
+  /* nombres de calles se vuelven a escribir; línea queda encima */
+  if(typeof setEtiquetasCallesTrazado === "function"){
+    setTimeout(()=> setEtiquetasCallesTrazado(false), 180);
+  }
   volverCorazonesBlancosTrasTrazado();
   aplicarAnimacion();
+  asegurarOrdenCapasRecorrido();
   if(tilt.on){
     tilt.paused = false;
     tilt.pitchAnchor = 0;
