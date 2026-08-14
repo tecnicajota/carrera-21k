@@ -3027,6 +3027,7 @@ async function animarTrazado(){
   }
   setRutaCoordsVacias();
   setRutaVisibleTrazado(false);
+  if(typeof setEtiquetasCallesTrazado === "function") setEtiquetasCallesTrazado(true);
   /* sin huellas en el trazado */
   if(!trazadoActivo) return;
   /* 1) cámara del recorrido → 2) flip → 3) trazo (misma cámara, sin reacomodar) */
@@ -3036,6 +3037,7 @@ async function animarTrazado(){
   await esperarMs(CFG.trazadoIntroCorazonMs || 900);
   if(!trazadoActivo) return;
   setRutaVisibleTrazado(true);
+  asegurarOrdenCapasRecorrido();
   map.getSource("ruta").setData({
     type: "Feature",
     geometry: { type: "LineString", coordinates: coordsHastaMetros(0) }
