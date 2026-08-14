@@ -1,11 +1,11 @@
 {
   "colors": {
-    "tinta": "#183246",
-    "marca": "#EF981F",
-    "acento": "#EF981F",
-    "sb-grad-1": "#9b2677",
-    "sb-grad-2": "#c53737",
-    "sb-grad-3": "#dfa63f",
+    "tinta": "#1D3243",
+    "marca": "#F89919",
+    "acento": "#F89919",
+    "sb-grad-1": "#1D3243",
+    "sb-grad-2": "#1D3243",
+    "sb-grad-3": "#1D3243",
     "sb-texto": "#ffffff",
     "sb-borde": "#ffffff",
     "map-grad-1": "#AE2087",
@@ -14,9 +14,9 @@
     "map-grad-4": "#F05C26",
     "map-grad-5": "#F8BA1B",
     "fondo": "#F3F2F1",
-    "ruta": "#F7C21C",
+    "ruta": "#1D3243",
     "hito": "#FFFFFF",
-    "boton": "#FFFFFF",
+    "boton": "#F89919",
     "tarjeta": "#FFFFFF"
   },
   "filters": {

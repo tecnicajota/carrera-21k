@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-82">
+<meta name="totem-version" content="2026-08-14-v17-build-84">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,6 +32,8 @@
   --ba-papel:#F3F2F1;
   --ba-naranja:#EF981F;
   --ba-azul:#183246;
+  --ba-petroleo:#1D3243;
+  --ba-amarillo-cta:#F89919;
   --ba-verde:#054D4B;
   --ba-fluo:#5E992E;
   --ba-heart-1:#F7C21C;
@@ -44,19 +46,20 @@
   --header:var(--ba-papel);
   --tinta:var(--ba-azul);
   --tinta-suave:var(--ba-gris);
-  --ruta:#F7C21C;
-  --km:#183246;
-  --km-num:#F7C21C;
+  --ruta:var(--ba-petroleo);
+  --km:var(--ba-amarillo-cta);
+  --km-num:var(--ba-petroleo);
   --hito:#FFFFFF;
-  --marca:#EF981F;
-  --acento:#EF981F;
+  --marca:var(--ba-amarillo-cta);
+  --acento:var(--ba-amarillo-cta);
   --hidra:var(--ba-verde);
   --tarjeta:#FFFFFF;
-  --boton:#FFFFFF;
-  --standby:var(--ba-papel);
-  --sb-grad-1:#9b2677;
-  --sb-grad-2:#c53737;
-  --sb-grad-3:#dfa63f;
+  --boton:var(--ba-amarillo-cta);
+  --boton-texto:var(--ba-petroleo);
+  --standby:var(--ba-petroleo);
+  --sb-grad-1:var(--ba-petroleo);
+  --sb-grad-2:var(--ba-petroleo);
+  --sb-grad-3:var(--ba-petroleo);
   --sb-texto:#ffffff;
   --sb-borde:#FFFFFF;
   --linea:rgba(24,50,70,.22);
@@ -72,19 +75,20 @@ body.noche{
   --header:var(--ba-azul);
   --tinta:var(--ba-papel);
   --tinta-suave:var(--ba-gris-claro);
-  --ruta:#F7C21C;
-  --km:#F7C21C;
-  --km-num:var(--ba-azul);
+  --ruta:var(--ba-petroleo);
+  --km:var(--ba-amarillo-cta);
+  --km-num:var(--ba-petroleo);
   --hito:#FFFFFF;
-  --marca:var(--ba-fluo);
-  --acento:var(--ba-fluo);
+  --marca:var(--ba-amarillo-cta);
+  --acento:var(--ba-amarillo-cta);
   --hidra:var(--ba-fluo);
   --tarjeta:var(--ba-verde);
-  --boton:var(--ba-verde);
-  --standby:var(--ba-azul);
-  --sb-grad-1:#9b2677;
-  --sb-grad-2:#c53737;
-  --sb-grad-3:#dfa63f;
+  --boton:var(--ba-amarillo-cta);
+  --boton-texto:var(--ba-petroleo);
+  --standby:var(--ba-petroleo);
+  --sb-grad-1:var(--ba-petroleo);
+  --sb-grad-2:var(--ba-petroleo);
+  --sb-grad-3:var(--ba-petroleo);
   --sb-texto:#ffffff;
   --sb-borde:#FFFFFF;
   --linea:rgba(243,242,241,.22);
@@ -340,15 +344,16 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 }
 .kmIcono{
   width:34px;height:34px;border-radius:50%;
-  background:var(--ruta, #F7C21C);color:#fff;
+  background:var(--ba-amarillo-cta, #F89919);
+  color:var(--ba-petroleo, #1D3243);
   display:grid;place-items:center;
   font-family:'Archivo',system-ui,sans-serif;
   font-weight:900;font-stretch:112%;font-size:15px;
   letter-spacing:-.02em;
-  border:2.5px solid #111;
+  border:2.5px solid var(--ba-petroleo, #1D3243);
   box-shadow:0 2px 8px rgba(0,0,0,.45);
-  text-shadow:0 0 2px #000, 0 1px 2px #000;
-  -webkit-text-stroke:0.55px #000;
+  text-shadow:none;
+  -webkit-text-stroke:0;
   paint-order:stroke fill;
   opacity:0;transform:scale(.45);
   transition:opacity .4s ease, transform .4s cubic-bezier(.2,1.2,.3,1);
@@ -364,10 +369,10 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   width:42px;height:42px;
   font-size:18px;
   font-weight:900;
-  border:3px solid #111;
+  border:3px solid var(--ba-petroleo, #1D3243);
   box-shadow:0 3px 12px rgba(0,0,0,.5);
-  text-shadow:0 0 2px #000, 0 1px 3px #000;
-  -webkit-text-stroke:0.7px #000;
+  text-shadow:none;
+  -webkit-text-stroke:0;
 }
 #mapa .maplibregl-marker:has(.kmIcono){
   z-index:6 !important;
@@ -616,6 +621,74 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   opacity:1;
   animation:pinFlipInTrazado .58s cubic-bezier(.22,1,.36,1) both;
 }
+/* cartel nombre al lado del corazón (solo durante animación) */
+.pin-cartel-nombre{
+  position:absolute;
+  left:calc(100% + 6px);
+  top:50%;
+  transform:translateY(-50%) translateX(-4px);
+  z-index:5;
+  max-width:min(42vw, 148px);
+  padding:3px 7px;
+  border-radius:6px;
+  background:rgba(29,50,67,.92);
+  color:#fff;
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:9px;
+  font-weight:700;
+  line-height:1.2;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  opacity:0;
+  pointer-events:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  transition:opacity .28s ease, transform .28s ease;
+}
+.pinIcono.trazado-3d .pin-cartel-nombre{
+  opacity:1;
+  transform:translateY(-50%) translateX(0);
+}
+/* globo Largada — amarillo CTA / azul petróleo */
+.pin-globo-largada{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 8px);
+  transform:translateX(-50%) translateY(6px) scale(.92);
+  z-index:6;
+  padding:7px 14px;
+  border-radius:999px;
+  background:var(--ba-amarillo-cta, #F89919);
+  color:var(--ba-petroleo, #1D3243);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:-.01em;
+  white-space:nowrap;
+  opacity:0;
+  pointer-events:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.28);
+  transition:opacity .35s ease, transform .35s cubic-bezier(.22,1,.36,1);
+}
+.pin-globo-largada::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:100%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:var(--ba-amarillo-cta, #F89919);
+}
+.pinIcono.trazado-3d .pin-globo-largada{
+  opacity:1;
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+.pinIcono.trazado-vuelta .pin-cartel-nombre,
+.pinIcono.trazado-vuelta .pin-globo-largada{
+  opacity:0 !important;
+  transition-duration:.2s;
+}
 /* fin del trazado: vuelta a blanco (mismo tamaño) */
 .pinIcono.trazado-vuelta .pin-3d{
   animation:pinFlipOutTrazado .48s cubic-bezier(.22,1,.36,1) both !important;
@@ -697,9 +770,11 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   padding:0;
   width:42px;height:42px;min-height:0;
   border-radius:50%;
-  background:var(--boton);border:2.5px solid var(--tinta);
+  background:var(--boton, var(--ba-amarillo-cta, #F89919));
+  border:2.5px solid var(--boton-texto, var(--ba-petroleo, #1D3243));
   font-size:0;font-weight:600;letter-spacing:0;
-  color:var(--tinta);box-shadow:var(--sombra);
+  color:var(--boton-texto, var(--ba-petroleo, #1D3243));
+  box-shadow:var(--sombra);
 }
 #btnInclinar{position:absolute;left:12px;}
 #btnInclinar .ico-inclinar{
@@ -709,7 +784,10 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 #btnTema .dot{display:none;}
 #btnInclinar.activo,
 #btnTema.activo{
-  border-color:var(--acento);color:var(--acento);
+  border-color:var(--ba-petroleo, #1D3243);
+  color:var(--ba-petroleo, #1D3243);
+  background:var(--ba-amarillo-cta, #F89919);
+  filter:brightness(.96);
 }
 #btnInclinar.activo .dot,
 #btnTema.activo .dot{
@@ -750,7 +828,9 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 #temaCard.tema-unico .temaField input[type="text"]{background:#fff;color:#183246;}
 #temaCard.tema-unico .temaField input[type="range"]{accent-color:#EF981F;}
 #temaCard.tema-unico .temaAcciones .primario{
-  background:#EF981F;border-color:#EF981F;color:#1B2221;
+  background:var(--ba-amarillo-cta, #F89919);
+  border-color:var(--ba-amarillo-cta, #F89919);
+  color:var(--ba-petroleo, #1D3243);
 }
 .temaHead{
   position:sticky;top:0;z-index:2;
@@ -826,10 +906,14 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   font-size:12px;font-weight:700;border:2px solid currentColor;
 }
 .temaAcciones .primario{
-  background:#EF981F;border-color:#EF981F;color:#1B2221;
+  background:var(--ba-amarillo-cta, #F89919);
+  border-color:var(--ba-amarillo-cta, #F89919);
+  color:var(--ba-petroleo, #1D3243);
 }
 #temaCard.tema-noche .temaAcciones .primario{
-  background:#5E992E;border-color:#5E992E;color:#F3F2F1;
+  background:var(--ba-amarillo-cta, #F89919);
+  border-color:var(--ba-amarillo-cta, #F89919);
+  color:var(--ba-petroleo, #1D3243);
 }
 .temaMsg{
   font-size:12px;min-height:1.2em;opacity:.85;
@@ -915,14 +999,19 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
   display:none;
   align-items:center;justify-content:center;
   padding:12px 22px;min-height:44px;border-radius:99px;
-  background:var(--boton);border:2.5px solid var(--tinta);
+  background:var(--ba-amarillo-cta, #F89919);
+  border:2.5px solid var(--ba-amarillo-cta, #F89919);
   font-family:'Archivo',system-ui,sans-serif;
-  font-weight:700;font-size:13px;letter-spacing:-.01em;
-  color:var(--tinta);box-shadow:var(--sombra);
+  font-weight:800;font-size:13px;letter-spacing:-.01em;
+  color:var(--ba-petroleo, #1D3243);
+  box-shadow:var(--sombra);
   pointer-events:auto;
 }
 #btnSaltarTrazado.visible{display:inline-flex;}
-#btnSaltarTrazado:active{transform:translateX(-50%) scale(.96);background:var(--acento);color:var(--tarjeta);}
+#btnSaltarTrazado:active{
+  transform:translateX(-50%) scale(.96);
+  filter:brightness(.95);
+}
 /* durante el trazado: captura toques; solo “Saltar” queda por encima */
 #trazadoLock{
   position:absolute;inset:0;z-index:910;
@@ -956,12 +1045,17 @@ body.tilt-activo .maplibregl-popup.hito-popup .maplibregl-popup-content{
 }
 #zoomCtrl button{
   width:42px;height:42px;border-radius:50%;
-  background:var(--boton);border:2.5px solid var(--tinta);
-  font-size:18px;font-weight:600;color:var(--tinta);
+  background:var(--ba-amarillo-cta, #F89919);
+  border:2.5px solid var(--ba-petroleo, #1D3243);
+  font-size:18px;font-weight:700;
+  color:var(--ba-petroleo, #1D3243);
   box-shadow:var(--sombra);
   display:grid;place-items:center;
 }
-#zoomCtrl button:active{transform:scale(.92);background:var(--acento);color:var(--tarjeta);}
+#zoomCtrl button:active{
+  transform:scale(.92);
+  filter:brightness(.95);
+}
 #zoomCtrl button#btnUbicacion svg{
   width:18px;height:18px;
 }
@@ -1182,10 +1276,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
   padding:max(4vmin, env(safe-area-inset-top, 0px)) 4vmin max(5vmin, env(safe-area-inset-bottom, 0px));
   overflow:hidden;
   opacity:1;transition:opacity .55s ease, background .4s ease;
-  background:
-    radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--sb-grad-3, #dfa63f) 85%, transparent) 0%, transparent 55%),
-    radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--sb-grad-1, #9b2677) 75%, transparent) 0%, transparent 50%),
-    linear-gradient(135deg, var(--sb-grad-1, #9b2677) 0%, var(--sb-grad-2, #c53737) 38%, var(--sb-grad-3, #dfa63f) 100%);
+  background:var(--ba-petroleo, #1D3243);
   font-family:'Inter',system-ui,sans-serif;
   color:var(--sb-texto, #ffffff);
 }
@@ -1600,7 +1691,9 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
 }
 #mapa .maplibregl-popup{z-index:850 !important;}
 .maplibregl-marker .pinIcono{
+  position:relative;
   width:36px;height:36px;
+  overflow:visible;
 }
 #buildTag{
   position:fixed;
@@ -1664,7 +1757,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
           <img class="sb-heart" src="fotos/intro-heart.webp?v=47" alt="" width="168" height="143" decoding="async">
           <img class="sb-ba wordmark" id="sbWm" src="fotos/intro-ba.webp?v=50" alt="BA" width="563" height="303" decoding="async">
         </div>
-        <p class="subline" id="sbSubline">Linda para <span class="re">RE</span> correrla.</p>
+        <p class="subline" id="sbSubline">Cada KM tiene su historia</p>
       </div>
     </div>
   </div>
@@ -1712,7 +1805,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 82</div>
+  <div id="buildTag" aria-hidden="true">v17 · 84</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2562,7 +2655,7 @@ function agregarRuta(){
     type: "line",
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
-      "line-color": "#F7C21C",
+      "line-color": "#1D3243",
       "line-width": grosorRuta(),
       "line-opacity": 1
     }
@@ -2607,6 +2700,7 @@ function asegurarKms(){
     }).setLngLat(aLngLat(latlng)).addTo(map);
     kmMarkers.push({ km, metros, marker, el, visible: false });
   }
+  actualizarTamanoKmsPorZoom();
 }
 function ocultarKms(){
   kmMarkers.forEach(k=>{
@@ -2859,7 +2953,7 @@ function terminarTrazado(opts){
   limpiarHuellasTrazado();
   refrescarRutaGeoJSON();
   asegurarKms();
-  revelarTodosKms();
+  ocultarKms();
   const mapaEl = document.getElementById("mapa");
   if(mapaEl) mapaEl.classList.remove("dibujando");
   volverCorazonesBlancosTrasTrazado();
@@ -3351,6 +3445,11 @@ const HITO_ICONOS = {
 <path d="M23 37.5c5 2 11 2 16 0"/></svg>`,
 };
 
+function nombreCortoHito(nombre){
+  const n = String(nombre || "").trim();
+  if(n.length <= 34) return n;
+  return n.slice(0, 32).replace(/\s+\S*$/, "") + "…";
+}
 function crearPinEl(h, delay){
   /* wrapper: MapLibre transforma el root; el pin anima adentro (como v14) */
   const root = document.createElement("div");
@@ -3360,9 +3459,13 @@ function crearPinEl(h, delay){
   el.className = "pinIcono";
   el.id = "pin-" + h.id;
   el.style.setProperty("--delay", delay);
+  const cartel = h.id === "largada"
+    ? `<span class="pin-globo-largada">Largada</span>`
+    : `<span class="pin-cartel-nombre">${nombreCortoHito(h.nombre)}</span>`;
   el.innerHTML = `<span class="pin-radar" aria-hidden="true"></span>
     <span class="pin-flat">${CORAZON_SVG}</span>
-    ${CORAZON_3D}`;
+    ${CORAZON_3D}
+    ${cartel}`;
   const fly = document.createElement("div");
   fly.className = "pin-info-fly";
   const info = document.createElement("button");
@@ -4934,15 +5037,15 @@ function cfgCamaraSuavidad(){
     centerLerp: 0.055 - u * 0.028   /* 0.055 → 0.027 */
   };
 }
-const TEMA_KEY = "totem21k-tema-v27";
+const TEMA_KEY = "totem21k-tema-v28";
 const TEMA_DEFAULT = {
   "colors": {
-    "tinta": "#183246",
-    "marca": "#EF981F",
-    "acento": "#EF981F",
-    "sb-grad-1": "#9b2677",
-    "sb-grad-2": "#c53737",
-    "sb-grad-3": "#dfa63f",
+    "tinta": "#1D3243",
+    "marca": "#F89919",
+    "acento": "#F89919",
+    "sb-grad-1": "#1D3243",
+    "sb-grad-2": "#1D3243",
+    "sb-grad-3": "#1D3243",
     "sb-texto": "#ffffff",
     "sb-borde": "#ffffff",
     "map-grad-1": "#AE2087",
@@ -4951,9 +5054,9 @@ const TEMA_DEFAULT = {
     "map-grad-4": "#F05C26",
     "map-grad-5": "#F8BA1B",
     "fondo": "#F3F2F1",
-    "ruta": "#F7C21C",
+    "ruta": "#1D3243",
     "hito": "#FFFFFF",
-    "boton": "#FFFFFF",
+    "boton": "#F89919",
     "tarjeta": "#FFFFFF"
   },
   "filters": {
@@ -5064,12 +5167,12 @@ function deepMergeTema(base, patch){
 function cargarTemaGuardado(){
   try{
     const rawV27 = localStorage.getItem(TEMA_KEY);
-    const rawOld = localStorage.getItem("totem21k-tema-v26") || localStorage.getItem("totem21k-tema-v25") || localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
+    const rawOld = localStorage.getItem("totem21k-tema-v27") || localStorage.getItem("totem21k-tema-v26") || localStorage.getItem("totem21k-tema-v25") || localStorage.getItem("totem21k-tema-v21") || localStorage.getItem("totem21k-tema-v20") || localStorage.getItem("totem21k-tema-v19") || localStorage.getItem("totem21k-tema-v18") || localStorage.getItem("totem21k-tema-v17");
     if(rawV27){
       temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawV27));
       return;
     }
-    /* v27 estándar: satélite + calles medio (ignora prefs viejas de look/calles) */
+    /* v28 estándar marca GCBA: azul petróleo + amarillo CTA */
     if(rawOld){
       temaState = deepMergeTema(TEMA_DEFAULT, JSON.parse(rawOld));
     }
@@ -5080,11 +5183,8 @@ function cargarTemaGuardado(){
     temaState.filters.tiltSens = TEMA_DEFAULT.filters.tiltSens;
     temaState.filters.trazadoTempo = TEMA_DEFAULT.filters.trazadoTempo;
     temaState.filters.trazadoSuavidad = TEMA_DEFAULT.filters.trazadoSuavidad;
-    ["map-grad-1","map-grad-2","map-grad-3","map-grad-4","map-grad-5"].forEach(k=>{
-      temaState.colors[k] = TEMA_DEFAULT.colors[k];
-    });
-    ["sb-grad-1","sb-grad-2","sb-grad-3"].forEach(k=>{
-      temaState.colors[k] = TEMA_DEFAULT.colors[k];
+    ["ruta","marca","acento","boton","tinta","sb-grad-1","sb-grad-2","sb-grad-3","map-grad-1","map-grad-2","map-grad-3","map-grad-4","map-grad-5"].forEach(k=>{
+      if(TEMA_DEFAULT.colors[k]) temaState.colors[k] = TEMA_DEFAULT.colors[k];
     });
   }catch(_){}
 }
@@ -5109,7 +5209,7 @@ function cssTemaLive(){
   --fondo:${c.fondo};--header:${c.fondo};
   --tinta:${c.tinta};--tinta-suave:${c.tinta};
   --ruta:${c.ruta};--hito:${c.hito};--marca:${c.marca};--acento:${c.acento};
-  --tarjeta:${c.tarjeta};--boton:${c.boton};--standby:${c.fondo};
+  --tarjeta:${c.tarjeta};--boton:${c.boton};--boton-texto:${c.tinta || "#1D3243"};--standby:${c.fondo};
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
   --map-grad-1:${mg1};--map-grad-2:${mg2};--map-grad-3:${mg3};--map-grad-4:${mg4};--map-grad-5:${mg5};
