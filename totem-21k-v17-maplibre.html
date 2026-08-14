@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-75">
+<meta name="totem-version" content="2026-08-14-v17-build-76">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 75</div>
+  <div id="buildTag" aria-hidden="true">v17 · 76</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2772,33 +2772,10 @@ function camaraSeguirTrazado(metros, {instant} = {}){
 }
 function volverEncuadreTrasTrazado(opts){
   if(!map) return;
-  const saltar = !!(opts && opts.saltar);
-  if(saltar){
-    zoomOutSuaveAlSaltar();
-    return;
-  }
-  const w = window.innerWidth || 800;
-  const maxZoom = w < 768 ? 15.05 : 14.4;
-  try{ map.stop(); }catch(_){}
-  try{
-    map.fitBounds(BOUNDS_RUTA, {
-      padding: padMapa(),
-      maxZoom,
-      pitch: 0,
-      bearing: 0,
-      duration: Math.round((CFG.flyBoundsMs || 1.4) * 1000),
-      essential: true,
-      offset: [0, 0]
-    });
-  }catch(_){
-    try{
-      map.easeTo({ pitch: 0, bearing: 0, duration: 900, essential: true });
-      encuadrar(true);
-    }catch(__){}
-  }
-  setTimeout(()=>{ try{ actualizarExtrusion(); }catch(_){} }, 400);
+  /* mismo zoom out suave al terminar o al saltar */
+  zoomOutSuaveAlSaltar();
 }
-/* saltar: zoom out continuo desde la cámara actual (sin salto brusco) */
+/* zoom out continuo desde la cámara actual (fin o saltar) */
 function zoomOutSuaveAlSaltar(){
   if(!map) return;
   const w = window.innerWidth || 800;
@@ -2868,12 +2845,8 @@ function terminarTrazado(opts){
     tilt.bearingAnchor = 0;
   }
   volverEncuadreTrasTrazado(opts);
-  /* inclinación al final: si saltó, esperar el zoom out suave */
-  if(saltar){
-    setTimeout(()=>{ activarInclinacionTrasTrazado(); }, 2400);
-  }else{
-    activarInclinacionTrasTrazado();
-  }
+  /* esperar el zoom out suave (fin o saltar) antes de inclinación */
+  setTimeout(()=>{ activarInclinacionTrasTrazado(); }, 2400);
 }
 async function activarInclinacionTrasTrazado(){
   if(!btnInclinar) return;
