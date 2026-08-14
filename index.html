@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-76">
+<meta name="totem-version" content="2026-08-14-v17-build-77">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2847,6 +2847,7 @@ function terminarTrazado(opts){
   volverEncuadreTrasTrazado(opts);
   /* esperar el zoom out suave (fin o saltar) antes de inclinación */
   setTimeout(()=>{ activarInclinacionTrasTrazado(); }, 2400);
+  if(typeof reiniciarInactividad === "function") reiniciarInactividad();
 }
 async function activarInclinacionTrasTrazado(){
   if(!btnInclinar) return;
@@ -2969,6 +2970,7 @@ async function animarTrazado(){
   trazadoActivo = true;
   _trazadoCamListo = false;
   _trazadoCenter = null;
+  try{ clearTimeout(S.tInactividad); }catch(_){}
   const mapaEl = document.getElementById("mapa");
   if(mapaEl) mapaEl.classList.add("dibujando");
   limpiarHuellas();
@@ -4484,8 +4486,11 @@ attract.addEventListener("pointerdown", e=>{
 
 function reiniciarInactividad(){
   clearTimeout(S.tInactividad);
+  /* durante el trazado no volver a intro (puede durar > 60s) */
+  if(typeof trazadoActivo !== "undefined" && trazadoActivo) return;
   S.tInactividad = setTimeout(()=>{
     if(typeof modoEdicion !== "undefined" && modoEdicion) return;
+    if(typeof trazadoActivo !== "undefined" && trazadoActivo) return;
     irA("ATTRACT");
   }, CFG.inactividadMs);
 }
