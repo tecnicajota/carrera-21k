@@ -2655,6 +2655,7 @@ async function activarInclinacionTrasTrazado(){
   }
   activarInclinacion(true, {quiet: true});
 }
+function saltarTrazado(){
   if(!trazadoActivo) return;
   terminarTrazado();
 }
