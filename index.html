@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-67">
+<meta name="totem-version" content="2026-08-14-v17-build-68">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 66</div>
+  <div id="buildTag" aria-hidden="true">v17 · 68</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2628,23 +2628,20 @@ function camaraSeguirTrazado(metros, {instant} = {}){
 function volverEncuadreTrasTrazado(opts){
   if(!map) return;
   const saltar = !!(opts && opts.saltar);
+  if(saltar){
+    zoomOutSuaveAlSaltar();
+    return;
+  }
   const w = window.innerWidth || 800;
-  /* saltar: más zoom out y padding equilibrado → ruta al centro */
-  const maxZoom = saltar
-    ? (w < 768 ? 14.05 : 13.45)
-    : (w < 768 ? 15.05 : 14.4);
-  const padding = saltar ? padMapaOverview() : padMapa();
-  const dur = saltar
-    ? Math.round((CFG.flyBoundsMs || 1.4) * 1200)
-    : Math.round((CFG.flyBoundsMs || 1.4) * 1000);
+  const maxZoom = w < 768 ? 15.05 : 14.4;
   try{ map.stop(); }catch(_){}
   try{
     map.fitBounds(BOUNDS_RUTA, {
-      padding,
+      padding: padMapa(),
       maxZoom,
       pitch: 0,
       bearing: 0,
-      duration: dur,
+      duration: Math.round((CFG.flyBoundsMs || 1.4) * 1000),
       essential: true,
       offset: [0, 0]
     });
@@ -2656,8 +2653,56 @@ function volverEncuadreTrasTrazado(opts){
   }
   setTimeout(()=>{ try{ actualizarExtrusion(); }catch(_){} }, 400);
 }
+/* saltar: zoom out continuo desde la cámara actual (sin salto brusco) */
+function zoomOutSuaveAlSaltar(){
+  if(!map) return;
+  const w = window.innerWidth || 800;
+  const maxZoom = w < 768 ? 14.05 : 13.45;
+  const padding = padMapaOverview();
+  let zNow = 16, pitchNow = 50, bearingNow = 0, centerNow = null;
+  try{
+    zNow = map.getZoom();
+    pitchNow = map.getPitch();
+    bearingNow = map.getBearing();
+    centerNow = map.getCenter();
+  }catch(_){}
+  try{ map.stop(); }catch(_){}
+  /* 1) bajar pitch + empezar a alejar, sin cambiar mucho el centro */
+  const zPaso = Math.max(maxZoom + 0.85, zNow - 1.35);
+  try{
+    map.easeTo({
+      center: centerNow || undefined,
+      zoom: Math.min(zNow, zPaso),
+      pitch: Math.max(0, pitchNow * 0.28),
+      bearing: bearingNow * 0.35,
+      offset: [0, 0],
+      duration: 780,
+      essential: true,
+      easing: t => 1 - Math.pow(1 - t, 2.2)
+    });
+  }catch(_){}
+  /* 2) encuadre final centrado, más lento */
+  setTimeout(()=>{
+    if(!map) return;
+    try{
+      map.fitBounds(BOUNDS_RUTA, {
+        padding,
+        maxZoom,
+        pitch: 0,
+        bearing: 0,
+        duration: 1550,
+        essential: true,
+        offset: [0, 0]
+      });
+    }catch(_){
+      try{ encuadrar(true); }catch(__){}
+    }
+    setTimeout(()=>{ try{ actualizarExtrusion(); }catch(_){} }, 500);
+  }, 760);
+}
 function terminarTrazado(opts){
   if(!trazadoActivo) return;
+  const saltar = !!(opts && opts.saltar);
   trazadoActivo = false;
   if(trazadoRaf){ cancelAnimationFrame(trazadoRaf); trazadoRaf = 0; }
   _trazadoCamListo = false;
@@ -2677,8 +2722,12 @@ function terminarTrazado(opts){
     tilt.bearingAnchor = 0;
   }
   volverEncuadreTrasTrazado(opts);
-  /* al salir del recorrido: inclinación ya activa (compu + móvil) */
-  activarInclinacionTrasTrazado();
+  /* inclinación al final: si saltó, esperar el zoom out suave */
+  if(saltar){
+    setTimeout(()=>{ activarInclinacionTrasTrazado(); }, 2400);
+  }else{
+    activarInclinacionTrasTrazado();
+  }
 }
 async function activarInclinacionTrasTrazado(){
   if(!btnInclinar) return;
