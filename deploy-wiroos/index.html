@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-68">
+<meta name="totem-version" content="2026-08-14-v17-build-69">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 68</div>
+  <div id="buildTag" aria-hidden="true">v17 · 69</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2019,7 +2019,10 @@ const CFG = {
   trazadoPitch: 60,
   trazadoLookAheadM: 220,  // cámara delante del tip (vista desde adelante)
   trazadoCamOffsetY: 90,
-  trazadoPasoHuellaM: 42,  // huellitas densas detrás del tip
+  trazadoPasoHuellaM: 62,      // espacio entre huellas delante del tip
+  trazadoHuellaAheadMinM: 45,  // empiezan delante del tip
+  trazadoHuellaAheadMaxM: 220, // hasta acá adelante
+  trazadoHuellaSize: 0.62,     // tamaño medio (visibles)
   numKms: 21,
   slideMs: 5000,
   rotadorMs: 3200,
@@ -2383,12 +2386,15 @@ function slotAntesDeEdificios(){
   return primerSymbolLayerId();
 }
 function asegurarOrdenCapasRecorrido(){
-  /* abajo → arriba: ruta → huellas → edificios 3D */
+  /* abajo → arriba: ruta → huellas-trazado → huellas → edificios 3D */
   if(!map) return;
   const before = slotAntesDeEdificios();
   try{
     if(map.getLayer("huellas") && before) map.moveLayer("huellas", before);
-    if(map.getLayer("ruta-linea") && map.getLayer("huellas")) map.moveLayer("ruta-linea", "huellas");
+    if(map.getLayer("huellas-trazado") && map.getLayer("huellas")) map.moveLayer("huellas-trazado", "huellas");
+    else if(map.getLayer("huellas-trazado") && before) map.moveLayer("huellas-trazado", before);
+    if(map.getLayer("ruta-linea") && map.getLayer("huellas-trazado")) map.moveLayer("ruta-linea", "huellas-trazado");
+    else if(map.getLayer("ruta-linea") && map.getLayer("huellas")) map.moveLayer("ruta-linea", "huellas");
     else if(map.getLayer("ruta-linea") && before) map.moveLayer("ruta-linea", before);
   }catch(_){}
 }
@@ -2709,6 +2715,7 @@ function terminarTrazado(opts){
   _trazadoCenter = null;
   mostrarBtnSaltarTrazado(false);
   setRutaVisibleTrazado(true);
+  limpiarHuellasTrazado();
   refrescarRutaGeoJSON();
   asegurarKms();
   revelarTodosKms();
@@ -2866,6 +2873,8 @@ async function animarTrazado(){
   }
   setRutaCoordsVacias();
   setRutaVisibleTrazado(false);
+  await asegurarCapaHuellasTrazado();
+  if(!trazadoActivo) return;
   /* 1) cámara del recorrido → 2) flip → 3) trazo (misma cámara, sin reacomodar) */
   await camaraIntroRecorrido();
   if(!trazadoActivo) return;
@@ -2877,6 +2886,7 @@ async function animarTrazado(){
     type: "Feature",
     geometry: { type: "LineString", coordinates: coordsHastaMetros(0) }
   });
+  actualizarHuellasTrazado(0);
   const dur = CFG.trazadoMs || 52000;
   const t0 = performance.now();
   function frame(now){
@@ -2887,6 +2897,7 @@ async function animarTrazado(){
       type: "Feature",
       geometry: { type: "LineString", coordinates: coordsHastaMetros(metros) }
     });
+    actualizarHuellasTrazado(metros);
     revelarKmsHasta(metros);
     revelarCorazones3dCerca(metros);
     camaraSeguirTrazado(metros);
@@ -3624,6 +3635,7 @@ function tickHuellaOpacidad(){
 }
 function limpiarHuellas(){
   pararAnimHuellas();
+  limpiarHuellasTrazado();
   if(map && map.getLayer("huellas")){
     try{ map.removeLayer("huellas"); }catch(_){}
   }
@@ -3631,6 +3643,93 @@ function limpiarHuellas(){
     try{ map.removeSource("huellas"); }catch(_){}
   }
   huellaMarkers = [];
+}
+function limpiarHuellasTrazado(){
+  if(!map) return;
+  try{ if(map.getLayer("huellas-trazado")) map.removeLayer("huellas-trazado"); }catch(_){}
+  try{ if(map.getSource("huellas-trazado")) map.removeSource("huellas-trazado"); }catch(_){}
+}
+async function asegurarCapaHuellasTrazado(){
+  if(!map) return;
+  await asegurarIconosHuella();
+  if(!map.getSource("huellas-trazado")){
+    map.addSource("huellas-trazado", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] }
+    });
+  }
+  if(!map.getLayer("huellas-trazado")){
+    const beforeId = map.getLayer("huellas")
+      ? "huellas"
+      : (map.getLayer("edificios-3d") ? "edificios-3d" : primerSymbolLayerId());
+    const sz = CFG.trazadoHuellaSize || 0.62;
+    map.addLayer({
+      id: "huellas-trazado",
+      type: "symbol",
+      source: "huellas-trazado",
+      layout: {
+        "icon-image": ["case", ["==", ["get", "flip"], 1], "huella-flip", "huella"],
+        "icon-size": sz,
+        "icon-rotate": ["get", "rumbo"],
+        "icon-offset": [
+          "case",
+          ["==", ["get", "flip"], 1],
+          ["literal", [-7, 0]],
+          ["literal", [7, 0]]
+        ],
+        "icon-rotation-alignment": "map",
+        "icon-pitch-alignment": "map",
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": ["get", "opacity"]
+      }
+    }, beforeId || undefined);
+  }
+  asegurarOrdenCapasRecorrido();
+}
+/* huellas delante del tip: se apagan al llegar la línea */
+function actualizarHuellasTrazado(metros){
+  if(!map || !map.getSource("huellas-trazado")) return;
+  if(!LARGO_TOTAL || LARGO_TOTAL < 1) return;
+  const paso = CFG.trazadoPasoHuellaM || 62;
+  const a0 = CFG.trazadoHuellaAheadMinM || 45;
+  const a1 = CFG.trazadoHuellaAheadMaxM || 220;
+  const fadeNear = Math.max(12, a0 * 0.55); /* cerca del tip → opacity 0 */
+  const feats = [];
+  let i = 0;
+  const mMax = Math.min(LARGO_TOTAL - 0.5, metros + a1);
+  for(let m = metros + a0; m <= mMax; m += paso, i++){
+    const {latlng, rumbo} = puntoEn(m);
+    const ahead = m - metros;
+    let op = 1;
+    if(ahead <= fadeNear){
+      op = Math.max(0, (ahead - 6) / Math.max(1, fadeNear - 6));
+    }
+    /* suave al fondo del “haz” adelante */
+    const farStart = a1 - paso * 1.2;
+    if(ahead > farStart){
+      op *= Math.max(0, (a1 - ahead) / Math.max(1, a1 - farStart));
+    }
+    if(op < 0.04) continue;
+    const lado = (i % 2 === 0) ? 1 : -1;
+    feats.push({
+      type: "Feature",
+      properties: {
+        rumbo,
+        flip: lado === -1 ? 1 : 0,
+        opacity: Math.round(op * 100) / 100
+      },
+      geometry: { type: "Point", coordinates: aLngLat(latlng) }
+    });
+  }
+  try{
+    map.getSource("huellas-trazado").setData({
+      type: "FeatureCollection",
+      features: feats
+    });
+  }catch(_){}
 }
 async function generarHuellas(){
   limpiarHuellas();
@@ -4173,6 +4272,7 @@ function irA(estado, dato){
       if(trazadoRaf){ cancelAnimationFrame(trazadoRaf); trazadoRaf = 0; }
       _trazadoCamListo = false;
       mostrarBtnSaltarTrazado(false);
+      if(typeof limpiarHuellasTrazado === "function") limpiarHuellasTrazado();
       if(typeof setRutaVisibleTrazado === "function") setRutaVisibleTrazado(true);
       if(typeof refrescarRutaGeoJSON === "function") refrescarRutaGeoJSON();
       if(typeof limpiarCorazonesTrazado === "function") limpiarCorazonesTrazado();
