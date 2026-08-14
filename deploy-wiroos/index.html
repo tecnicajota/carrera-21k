@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
-<meta name="totem-version" content="2026-08-14-v17-build-69">
+<meta name="totem-version" content="2026-08-14-v17-build-70">
 <title>21K Buenos Aires — Tótem v17 MapLibre 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1705,7 +1705,7 @@ body.tilt-activo .hito-fixed-inner .hito-pop-body{
     </div>
   </div>
 
-  <div id="buildTag" aria-hidden="true">v17 · 69</div>
+  <div id="buildTag" aria-hidden="true">v17 · 70</div>
 
   <div id="temaPanel" aria-hidden="true">
     <aside id="temaCard" class="tema-unico" role="dialog" aria-label="Configuración de colores">
@@ -2019,10 +2019,11 @@ const CFG = {
   trazadoPitch: 60,
   trazadoLookAheadM: 220,  // cámara delante del tip (vista desde adelante)
   trazadoCamOffsetY: 90,
-  trazadoPasoHuellaM: 62,      // espacio entre huellas delante del tip
-  trazadoHuellaAheadMinM: 45,  // empiezan delante del tip
-  trazadoHuellaAheadMaxM: 220, // hasta acá adelante
-  trazadoHuellaSize: 0.62,     // tamaño medio (visibles)
+  trazadoPasoHuellaM: 48,      // zancada (espacio entre pisadas)
+  trazadoHuellaAheadMinM: 28,  // primera pisada delante del tip
+  trazadoHuellaAheadMaxM: 160, // no más lejos (pocas a la vez = caminar)
+  trazadoHuellaSize: 0.98,     // grandes, bien visibles
+  trazadoHuellaFadeM: 22       // se apagan al llegar la línea
   numKms: 21,
   slideMs: 5000,
   rotadorMs: 3200,
@@ -3644,13 +3645,20 @@ function limpiarHuellas(){
   }
   huellaMarkers = [];
 }
+/* pisadas del trazado: aparecen de a una (caminata), no como trazo continuo */
+let huellasWalk = { nextM: null, stepI: 0, steps: [] };
+function resetHuellasWalk(){
+  huellasWalk = { nextM: null, stepI: 0, steps: [] };
+}
 function limpiarHuellasTrazado(){
+  resetHuellasWalk();
   if(!map) return;
   try{ if(map.getLayer("huellas-trazado")) map.removeLayer("huellas-trazado"); }catch(_){}
   try{ if(map.getSource("huellas-trazado")) map.removeSource("huellas-trazado"); }catch(_){}
 }
 async function asegurarCapaHuellasTrazado(){
   if(!map) return;
+  resetHuellasWalk();
   await asegurarIconosHuella();
   if(!map.getSource("huellas-trazado")){
     map.addSource("huellas-trazado", {
@@ -3662,20 +3670,24 @@ async function asegurarCapaHuellasTrazado(){
     const beforeId = map.getLayer("huellas")
       ? "huellas"
       : (map.getLayer("edificios-3d") ? "edificios-3d" : primerSymbolLayerId());
-    const sz = CFG.trazadoHuellaSize || 0.62;
+    const sz = CFG.trazadoHuellaSize || 0.98;
     map.addLayer({
       id: "huellas-trazado",
       type: "symbol",
       source: "huellas-trazado",
       layout: {
         "icon-image": ["case", ["==", ["get", "flip"], 1], "huella-flip", "huella"],
-        "icon-size": sz,
+        "icon-size": [
+          "interpolate", ["linear"], ["get", "pop"],
+          0, sz * 0.55,
+          1, sz
+        ],
         "icon-rotate": ["get", "rumbo"],
         "icon-offset": [
           "case",
           ["==", ["get", "flip"], 1],
-          ["literal", [-7, 0]],
-          ["literal", [7, 0]]
+          ["literal", [-14, 0]],
+          ["literal", [14, 0]]
         ],
         "icon-rotation-alignment": "map",
         "icon-pitch-alignment": "map",
@@ -3689,41 +3701,59 @@ async function asegurarCapaHuellasTrazado(){
   }
   asegurarOrdenCapasRecorrido();
 }
-/* huellas delante del tip: se apagan al llegar la línea */
+/* caminata delante del tip: izquierda/derecha de a una; se apagan al llegar la línea */
 function actualizarHuellasTrazado(metros){
   if(!map || !map.getSource("huellas-trazado")) return;
   if(!LARGO_TOTAL || LARGO_TOTAL < 1) return;
-  const paso = CFG.trazadoPasoHuellaM || 62;
-  const a0 = CFG.trazadoHuellaAheadMinM || 45;
-  const a1 = CFG.trazadoHuellaAheadMaxM || 220;
-  const fadeNear = Math.max(12, a0 * 0.55); /* cerca del tip → opacity 0 */
-  const feats = [];
-  let i = 0;
-  const mMax = Math.min(LARGO_TOTAL - 0.5, metros + a1);
-  for(let m = metros + a0; m <= mMax; m += paso, i++){
+  const paso = CFG.trazadoPasoHuellaM || 48;
+  const a0 = CFG.trazadoHuellaAheadMinM || 28;
+  const fadeM = CFG.trazadoHuellaFadeM || 22;
+  const now = performance.now();
+  if(huellasWalk.nextM == null){
+    huellasWalk.nextM = metros + a0;
+    huellasWalk.stepI = 0;
+    huellasWalk.steps = [];
+  }
+  /* una pisada nueva al avanzar; deja 1–2 adelante (par caminando) */
+  while(huellasWalk.nextM <= metros + a0 + paso * 1.05 && huellasWalk.nextM < LARGO_TOTAL - 0.5){
+    const m = huellasWalk.nextM;
     const {latlng, rumbo} = puntoEn(m);
-    const ahead = m - metros;
-    let op = 1;
-    if(ahead <= fadeNear){
-      op = Math.max(0, (ahead - 6) / Math.max(1, fadeNear - 6));
+    const flip = (huellasWalk.stepI % 2 === 1) ? 1 : 0;
+    huellasWalk.steps.push({
+      m, rumbo, flip,
+      born: now,
+      coords: aLngLat(latlng)
+    });
+    huellasWalk.stepI++;
+    huellasWalk.nextM += paso;
+  }
+  const popMs = 240;
+  const feats = [];
+  const keep = [];
+  for(const s of huellasWalk.steps){
+    const ahead = s.m - metros;
+    if(ahead < -10) continue;
+    let op = 0.95;
+    const age = now - s.born;
+    const pop = Math.min(1, age / popMs);
+    if(age < popMs) op *= 0.25 + 0.75 * pop;
+    if(ahead < fadeM){
+      op *= Math.max(0, (ahead - 2) / Math.max(1, fadeM - 2));
     }
-    /* suave al fondo del “haz” adelante */
-    const farStart = a1 - paso * 1.2;
-    if(ahead > farStart){
-      op *= Math.max(0, (a1 - ahead) / Math.max(1, a1 - farStart));
-    }
-    if(op < 0.04) continue;
-    const lado = (i % 2 === 0) ? 1 : -1;
+    if(op < 0.03) continue;
+    keep.push(s);
     feats.push({
       type: "Feature",
       properties: {
-        rumbo,
-        flip: lado === -1 ? 1 : 0,
-        opacity: Math.round(op * 100) / 100
+        rumbo: s.rumbo,
+        flip: s.flip,
+        opacity: Math.round(op * 100) / 100,
+        pop: Math.round(pop * 100) / 100
       },
-      geometry: { type: "Point", coordinates: aLngLat(latlng) }
+      geometry: { type: "Point", coordinates: s.coords }
     });
   }
+  huellasWalk.steps = keep;
   try{
     map.getSource("huellas-trazado").setData({
       type: "FeatureCollection",
@@ -4718,7 +4748,8 @@ const TEMA_DEFAULT = {
     "hue": 339,
     "rutaGrosor": 5.25,
     "tiltSens": 7,
-    "calles": "solo"
+    "calles": "solo",
+    "mapDegrade": true
   }
 };
 const CALLES_OPTIONS = [
@@ -4821,11 +4852,18 @@ function cargarTemaGuardado(){
 function cssTemaLive(){
   const c = temaState.colors, f = temaState.filters;
   const blend = f.blend || "multiply";
+  const degradeOn = f.mapDegrade !== false;
   const mg1 = c["map-grad-1"] || c["sb-grad-1"];
   const mg2 = c["map-grad-2"] || TEMA_DEFAULT.colors["map-grad-2"];
   const mg3 = c["map-grad-3"] || c["sb-grad-2"];
   const mg4 = c["map-grad-4"] || TEMA_DEFAULT.colors["map-grad-4"];
   const mg5 = c["map-grad-5"] || c["sb-grad-3"];
+  const sat = degradeOn ? (f.sat ?? 2.5) : 1;
+  const hue = degradeOn ? (f.hue ?? 339) : 0;
+  const bri = degradeOn ? (f.bri ?? 0.99) : 1;
+  const dark = degradeOn ? (f.dark ?? 0.04) : 0;
+  const con = degradeOn ? (f.con ?? 1.08) : 1;
+  const tinte = degradeOn ? (f.tinte ?? 0.62) : 0;
   return `
 :root{
   --fondo:${c.fondo};--header:${c.fondo};
@@ -4835,7 +4873,7 @@ function cssTemaLive(){
   --sb-grad-1:${c["sb-grad-1"]};--sb-grad-2:${c["sb-grad-2"]};--sb-grad-3:${c["sb-grad-3"]};
   --sb-texto:${c["sb-texto"]};--sb-borde:${c["sb-borde"]};
   --map-grad-1:${mg1};--map-grad-2:${mg2};--map-grad-3:${mg3};--map-grad-4:${mg4};--map-grad-5:${mg5};
-  --map-sat:${f.sat ?? 2.5};--map-hue:${f.hue ?? 339};--map-bri:${f.bri ?? 0.99};--map-dark:${f.dark ?? 0.04};--map-con:${f.con ?? 1.08};--map-tinte-op:${f.tinte ?? 0.62};
+  --map-sat:${sat};--map-hue:${hue};--map-bri:${bri};--map-dark:${dark};--map-con:${con};--map-tinte-op:${tinte};
   --map-blend:${blend};
 }`;
 }
@@ -4904,6 +4942,22 @@ function renderPanelTema(){
     colores.appendChild(wrap);
   }
   filtros.innerHTML = "";
+  const degradeOn = temaState.filters.mapDegrade !== false;
+  const degradeField = document.createElement("div");
+  degradeField.className = "temaField";
+  degradeField.innerHTML = `
+    <label>Degradé del mapa</label>
+    <div class="temaSeg" role="radiogroup" aria-label="Degradé del mapa">
+      <label class="${degradeOn?"on":""}">
+        <input type="radio" name="temaDegrade" data-degrade="1" value="on"${degradeOn?" checked":""}>
+        <span>Con degradé<br><small style="font-weight:600;opacity:.7">Filtro de color</small></span>
+      </label>
+      <label class="${!degradeOn?"on":""}">
+        <input type="radio" name="temaDegrade" data-degrade="1" value="off"${!degradeOn?" checked":""}>
+        <span>Sin nada<br><small style="font-weight:600;opacity:.7">Mapa base limpio</small></span>
+      </label>
+    </div>`;
+  filtros.appendChild(degradeField);
   const callesVal = temaState.filters.calles || "solo";
   const callesField = document.createElement("div");
   callesField.className = "temaField";
@@ -5001,6 +5055,15 @@ function initPanelTema(){
   document.getElementById("temaColores").addEventListener("input", onTemaColorInput);
   document.getElementById("temaFiltros").addEventListener("input", e=>{
     const t = e.target;
+    if(t.dataset.degrade){
+      temaState.filters.mapDegrade = t.value !== "off";
+      document.querySelectorAll('#temaFiltros input[data-degrade]').forEach(inp=>{
+        const lab = inp.closest("label");
+        if(lab) lab.classList.toggle("on", inp.checked);
+      });
+      aplicarTemaLive();
+      return;
+    }
     if(t.dataset.blend){
       temaState.filters.blend = t.value;
       aplicarTemaLive();
@@ -5009,7 +5072,8 @@ function initPanelTema(){
     if(t.dataset.calles){
       temaState.filters.calles = t.value;
       document.querySelectorAll("#temaFiltros .temaSeg label").forEach(lab=>{
-        lab.classList.toggle("on", lab.querySelector("input")?.value === t.value);
+        const inp = lab.querySelector("input");
+        if(inp && inp.name === "temaCalles") lab.classList.toggle("on", inp.value === t.value);
       });
       aplicarTemaLive();
       return;
@@ -5024,10 +5088,20 @@ function initPanelTema(){
   });
   document.getElementById("temaFiltros").addEventListener("change", e=>{
     const t = e.target;
+    if(t.dataset.degrade){
+      temaState.filters.mapDegrade = t.value !== "off";
+      document.querySelectorAll('#temaFiltros input[data-degrade]').forEach(inp=>{
+        const lab = inp.closest("label");
+        if(lab) lab.classList.toggle("on", inp.checked);
+      });
+      aplicarTemaLive();
+      return;
+    }
     if(t.dataset.calles){
       temaState.filters.calles = t.value;
       document.querySelectorAll("#temaFiltros .temaSeg label").forEach(lab=>{
-        lab.classList.toggle("on", lab.querySelector("input")?.value === t.value);
+        const inp = lab.querySelector("input");
+        if(inp && inp.name === "temaCalles") lab.classList.toggle("on", inp.value === t.value);
       });
       aplicarTemaLive();
       return;
